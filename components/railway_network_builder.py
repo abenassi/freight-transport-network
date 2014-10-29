@@ -7,11 +7,12 @@ class RailwayNetworkBuilder():
 
     XL_PARAMETERS = "data/railway_parameters.xlsx"
     XL_OD_PAIRS = "data/railway_od_pairs.xlsx"
+    XL_OD_PAIRS_CURRENT = "data/railway_od_pairs_current.xlsx"
     XL_LINKS = "data/railway_links.xlsx"
     XL_PATHS = "data/railway_paths.xlsx"
 
     def __init__(self, xl_parameters=None, xl_od_pairs=None, xl_links=None,
-                 xl_paths=None):
+                 xl_paths=None, xl_od_pairs_current=None):
         """
         Args:
             xl_parameters: The path to excel file containing a list of general
@@ -22,6 +23,9 @@ class RailwayNetworkBuilder():
                 the nodes in the network, itd distance (km) and gauge.
             xl_paths: The path to excel file containing a list of paths
                 assigned to od_pairs and its gauge.
+            xl_od_pairs: The path to excel file containing a list of od_pairs
+                and tons of freight carried by them currently by railway network
+                network.
         """
 
         # loading parameters or defaults
@@ -43,8 +47,11 @@ class RailwayNetworkBuilder():
         # load parameters, od_pairs and links to the RailwayNetwork object
         print "Loading parameters..."
         self._load_from_xl(XlLoadParam, self.xl_parameters, rn.params)
-        print "Loading od pairs..."
+        print "Loading derived od pairs..."
         self._load_od_pairs_from_xl(XlLoadOD, self.xl_od_pairs, rn.od_pairs)
+        print "Loading current od pairs..."
+        self._load_od_pairs_from_xl(XlLoadOD, self.xl_od_pairs_current,
+                                    rn.od_pairs)
         print "Loading links..."
         self._load_links_from_xl(XlLoadLink, self.xl_links, rn.links)
         print "Loading paths..."

@@ -16,31 +16,31 @@ class NetworkCostTestCase(unittest.TestCase):
         self._load_from_xl(XlLoadParam, XL_PARAMETERS, params)
 
         # create link representing main network
-        link = Link("1-3", 7202.0, "ancha")
-        link.ton = 1200000
+        link = Link("1-3", 15121.0, "ancha")
+        link.ton = 728662.0
         links = {"1-3": {"ancha": link}}
 
         # create locomotives object
         locoms = RollingMaterial()
-        locoms.running = 137.91 * 1564.29
-        locoms.idle_heads = 137.91 * 30 * 125.14
-        locoms.idle_turnout = 137.91 * 1250.14
+        locoms.running = 215737.0
+        locoms.idle_heads = 517767.86
+        locoms.idle_turnout = 172589.29
         locoms.speed = 40  # (km/h)
         locoms.availability = 6570  # (hr/year)
-        locoms.capacity = 2400  # (ton)
+        locoms.capacity = 1276.8  # (ton)
         locoms.head_stops_time = 15  # (hr/head_stop)
         locoms.turnout_time = 4  # (hr/turnout_stop)
-        locoms.turnout_freq = 200  # (km between turnouts
+        locoms.turnout_freq = 200  # (km between turnouts)
 
         # create wagons object
         wagons = RollingMaterial()
-        wagons.running = 15313.81 * 535.33
-        wagons.idle_heads = 15313.81 * 180 * 42.83
-        wagons.idle_turnout = 15313.81 * 428.27
+        wagons.running = 8197991.0
+        wagons.idle_heads = 118051071.0
+        wagons.idle_turnout = 6558393.0
         wagons.speed = 40  # (km/h)
-        wagons.availability = 8672  # (hr/year)
-        wagons.capacity = 60  # (ton)
-        wagons.head_stops_time = 15  # (hr/head_stop)
+        wagons.availability = 8672.4  # (hr/year)
+        wagons.capacity = 33.6  # (ton)
+        wagons.head_stops_time = 90  # (hr/head_stop)
         wagons.turnout_time = 4  # (hr/turnout_stop)
         wagons.turnout_freq = 200  # (km between turnout_stop
 
@@ -49,36 +49,43 @@ class NetworkCostTestCase(unittest.TestCase):
                               wagons=wagons)
 
         # net ton-km to test
-        self.load_tk = 8642400000.0
+        self.load_tk = 11018100000.0
 
         # gross ton-km to test
-        self.gross_tk = 14463565413.5338
+        self.gross_tk = 18439439286.0
+        self.main_gross_tk = 14463565413.53
 
         # dist to test
-        self.dist = 7202.0
+        self.dist = 15121.0
+        self.main_dist = 7202.0
 
+    # GENERAL cost tests
+    def test_calc_total_ton_km(self):
+        self.assertAlmostEqual(self.nc._calc_total_ton_km(), self.load_tk,
+                               delta=2000)
+
+    # INFRASTRUCTURE cost tests
     def test_cost_infrast_maint(self):
         infrast_maint_cost = self.nc._cost_infrast_maint(self.gross_tk,
                                                          self.dist)
-        self.assertAlmostEqual(infrast_maint_cost,
-                               0.00314429044 * self.load_tk, delta=10)
+        self.assertAlmostEqual(infrast_maint_cost, 47989846.78, delta=2000000)
 
     def test_cost_eac_track(self):
-        track_eac = self.nc._cost_eac_track(self.gross_tk, self.dist)
-        self.assertAlmostEqual(track_eac,
-                               0.026890682715 * self.load_tk, delta=10)
+        track_eac = self.nc._cost_eac_track(self.main_gross_tk, self.main_dist)
+        self.assertAlmostEqual(track_eac, 232400036.0, delta=10)
 
     def test_cost_detour(self):
         detours_cost_tk = self.nc._cost_detour(self.gross_tk, self.dist)
-        self.assertAlmostEqual(detours_cost_tk,
-                               0.0004562500000 * self.load_tk, delta=10)
+        self.assertAlmostEqual(detours_cost_tk, 8278748.0, delta=10)
 
-    def test_calc_total_ton_km(self):
-        self.assertAlmostEqual(self.nc._calc_total_ton_km(), self.load_tk)
+    # MOBILITY cost tests
+    def test_cost_manpower(self):
+        manpower_cost_tk = self.nc.cost_mobility()["manpower"]
+        self.assertAlmostEqual(manpower_cost_tk, 0.00107202)
 
     def test_cost_mobility(self):
-        total_cost_mobility = self.nc.cost_mobility()["total_mobility"]
-        self.assertAlmostEqual(total_cost_mobility, 0.025247726649)
+        total_mobility_cost_tk = self.nc.cost_mobility()["total_mobility"]
+        self.assertAlmostEqual(total_mobility_cost_tk, 0.01837137, 5)
 
     # AUXILIAR METHODS
     def _load_from_xl(self, loader_class, xl_name, output_dict):

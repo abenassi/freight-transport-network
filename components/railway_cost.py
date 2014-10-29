@@ -165,9 +165,9 @@ class NetworkCost():
         cost_by_hour = self.params["manpower_cost_by_loc_hour"].value
 
         # calculate locomotive hours with manpower on the train
-        locomotive_hours = self.locoms.get_total_time()
+        operation_hours = self.locoms.get_operation_time()
 
-        return cost_by_hour * locomotive_hours / self.total_ton_km
+        return cost_by_hour * operation_hours / self.total_ton_km
 
     # *** cost INFRASTRUCTURE methods ***
     def _cost_detour(self, gross_tk, dist):
@@ -186,20 +186,29 @@ class NetworkCost():
         return total_wages_cost
 
     def _cost_eac_track(self, gross_tk, dist):
-        """Calculate equivalent annual cost of track."""
+        """Calculate equivalent annual cost of track.
 
-        # store parameters in short-name variables
-        a_eac = self.params["coef_a_track_cost"].value
-        b_eac = self.params["coef_b_track_cost"].value
-        crf = self.params["crf_track"].value
-        use_life = self.params["useful_life_track"].value
+        If its a main track, calculate EAC cost of track. If its a secondary
+        track, there is no eac cost of track."""
 
-        # calculate total cost of track by km bought
-        gross_tk_in_use_life = use_life * gross_tk / dist
-        cost_track = a_eac + b_eac * gross_tk_in_use_life
+        # check if is a main track
+        if self._is_main_track(gross_tk, dist):
 
-        # calculate eac by year
-        eac = cost_track * crf * dist
+            # store parameters in short-name variables
+            a_eac = self.params["coef_a_track_cost"].value
+            b_eac = self.params["coef_b_track_cost"].value
+            crf = self.params["crf_track"].value
+            use_life = self.params["useful_life_track"].value
+
+            # calculate total cost of track by km bought
+            gross_tk_in_use_life = use_life * gross_tk / dist
+            cost_track = a_eac + b_eac * gross_tk_in_use_life
+
+            # calculate eac by year
+            eac = cost_track * crf * dist
+
+        else:
+            eac = 0.0
 
         return eac
 
@@ -218,6 +227,25 @@ class NetworkCost():
             b_notrack * gross_tk
 
         return track_maint + no_track_maint
+
+    def _is_main_track(self, gross_tk, dist):
+        """Check if this is a main track.
+
+        If net tons density (ton-km/km) goes below a certain threshold, this is
+        a secondary track. If density goes above the threshold, is a main
+        track."""
+
+        # store parameters in short-name variables
+        net_to_gross = self.params["net_to_gross_factor"].value
+        main_min_density = self.params["main_min_density"].value
+
+        # calculate net ton-km
+        net_tk = gross_tk / net_to_gross
+
+        # calculate density
+        density = net_tk / dist
+
+        return density > main_min_density
 
 
 def test():

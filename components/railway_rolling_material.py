@@ -52,6 +52,8 @@ class RollingMaterial():
         return rep
 
     # PUBLIC
+
+    # SET methods
     def set_speed(self, speed):
         """Set the running speed of a unit of rolling material."""
         self.speed = speed
@@ -64,6 +66,7 @@ class RollingMaterial():
         """Set the amount of tons that a unit of rolling material can carry."""
         self.capacity = capacity
 
+    # GET methods
     def get_running_time(self):
         return self.running
 
@@ -75,6 +78,17 @@ class RollingMaterial():
 
     def get_total_time(self):
         return self.get_idle_time() + self.get_running_time()
+
+    def get_idle_turnout_time(self):
+        return self.idle_turnout
+
+    def get_idle_regroup_time(self):
+        return self.idle_regroup
+
+    def get_operation_time(self):
+        """Operation time is time rolling material is running or in turnout."""
+        return (self.get_running_time() + self.get_idle_turnout_time() +
+                self.get_idle_regroup_time())
 
     def get_units_needed_by_time(self):
         units_float = float(self.get_total_time()) / float(self.availability)
@@ -94,6 +108,7 @@ class RollingMaterial():
 
         return average_haul
 
+    # MAIN methods
     def add_freight_service(self, ton, distance):
         """Increase the service requirements of rolling material for a service.
 

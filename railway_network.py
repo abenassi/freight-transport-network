@@ -29,6 +29,7 @@ class RailwayNetwork():
 
         self.params = {}
         self.od_pairs = {}
+        self.od_pairs_current = {}
         self.od_pairs_rejected = {}
         self.links = {}
         self.paths = {}
@@ -64,6 +65,13 @@ class RailwayNetwork():
 
                 # delete it from od_pairs dictionary
                 del self.od_pairs[od.id]
+
+        # add all od pairs that are currently being carried by railway
+        for od_current in self.od_pairs_current.values():
+
+                # calculate mobility requirements to run rail service for od
+                self._calculate_mobility_od(od_current)
+
 
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
