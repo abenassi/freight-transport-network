@@ -9,12 +9,15 @@ class RailwayNetwork():
 
     """Represents a rail network with methods to cost it.
 
-    RailwayNetwork() starts an empty network. It needs to be fed with:
+    RailwayNetwork() starts an empty network. It needs to be fed with the
+    following data:
         1. parameters: used in calculations
-        2. od_pairs: od_pairs data
-        3. links: a list of links
-        4. paths: a list of paths assigned to each od_pair
-        5. results: a results object where global results will be stored
+        2. od_pairs: od_pairs data from road network to be derived
+        3. od_paris_current: od_pairs currently being transported by train
+        4. links: a list of links
+        5. paths: a list of paths assigned to each od_pair
+
+    It uses RailwayNetworkBuilder to build an instance.
     """
 
     def __init__(self):
