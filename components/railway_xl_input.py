@@ -94,8 +94,8 @@ class XlLoadPath(BaseXlLoad):
         # iterate trough rows creating and yielding od pairs
         for row in self.ws.iter_rows():
 
-            # skip first row
-            if not row[0].row == 1:
+            # skip first row and skip empty id cells
+            if row[0].value and not row[0].row == 1:
 
                 # take field values
                 id_path = row[0].value

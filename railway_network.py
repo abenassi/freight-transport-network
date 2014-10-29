@@ -72,7 +72,6 @@ class RailwayNetwork():
                 # calculate mobility requirements to run rail service for od
                 self._calculate_mobility_od(od_current)
 
-
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
 

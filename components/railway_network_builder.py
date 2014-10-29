@@ -18,19 +18,20 @@ class RailwayNetworkBuilder():
             xl_parameters: The path to excel file containing a list of general
                 parameters of the rail network model.
             xl_od_pairs: The path to excel file containing a list of od_pairs
-                and tons of freight carried by them.
+                and tons of freight carried in them.
             xl_links: The path to excel file containing a list of links between
                 the nodes in the network, itd distance (km) and gauge.
             xl_paths: The path to excel file containing a list of paths
                 assigned to od_pairs and its gauge.
-            xl_od_pairs: The path to excel file containing a list of od_pairs
-                and tons of freight carried by them currently by railway network
-                network.
+            xl_od_pairs_current: The path to excel file containing a list of
+                od_pairs and tons of freight carried in them currently by
+                railway.
         """
 
         # loading parameters or defaults
         self.xl_parameters = xl_parameters or self.XL_PARAMETERS
         self.xl_od_pairs = xl_od_pairs or self.XL_OD_PAIRS
+        self.xl_od_pairs_current = xl_od_pairs_current or self.XL_OD_PAIRS_CURRENT
         self.xl_links = xl_links or self.XL_LINKS
         self.xl_paths = xl_paths or self.XL_PATHS
 
@@ -51,7 +52,7 @@ class RailwayNetworkBuilder():
         self._load_od_pairs_from_xl(XlLoadOD, self.xl_od_pairs, rn.od_pairs)
         print "Loading current od pairs..."
         self._load_od_pairs_from_xl(XlLoadOD, self.xl_od_pairs_current,
-                                    rn.od_pairs)
+                                    rn.od_pairs_current)
         print "Loading links..."
         self._load_links_from_xl(XlLoadLink, self.xl_links, rn.links)
         print "Loading paths..."
@@ -141,7 +142,7 @@ class RailwayNetworkBuilder():
         """Iterate through od_pairs looking for path if not already passed."""
 
         # iterate all od_pairs
-        for od_pair in rn.od_pairs.values():
+        for od_pair in rn.od_pairs.values() + rn.od_pairs_current.values():
 
             # check if od_pair doesn't have a path and RailwayNetwork has one
             if (not od_pair.has_declared_path()) and (od_pair.id in rn.paths):
@@ -156,5 +157,5 @@ class RailwayNetworkBuilder():
         results in each od object."""
 
         # iterate through all od pairs
-        for od in rn.od_pairs.values():
+        for od in rn.od_pairs.values() + rn.od_pairs_current.values():
             od.calc_distance(rn.links)
