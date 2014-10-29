@@ -1,6 +1,3 @@
-from railway_link import Link
-
-
 class BasePath():
 
     def _create_links_list(self):
@@ -137,35 +134,3 @@ class OD(BasePath):
         # get path nodes from new path and create links dictionary
         self.path_nodes = self._get_path_nodes()
         self.links = self._create_links_list()
-
-
-def test():
-
-    print "\nTest Case 1: create OD pair"
-    print "-----------"
-    od = OD("70-68", 333906, "068-069-070", "ancha")
-
-    print od
-    print "nodes", od.nodes
-    print "path", od.path
-    print "path_nodes", od.path_nodes
-    print "links", od.links
-
-    print "\nTest Case 2: calculate distance"
-    print "-----------"
-    network_links = {"68-69": Link("68-69", 40, "ancha"),
-                     "69-70": Link("69-70", None, "ancha")}
-    od.calc_distance(network_links)
-    print "distance", od.dist
-
-    print "\nTest Case 3: create path"
-    print "-----------"
-    print Path("id", "path", "gauge")
-
-    od = OD("70-68", 333906, None, "No encontrado")
-
-    print "no path"
-    print str(od.has_declared_path())
-
-if __name__ == '__main__':
-    test()
