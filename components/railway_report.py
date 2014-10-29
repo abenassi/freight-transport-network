@@ -2,7 +2,7 @@ from openpyxl import Workbook
 from pprint import pprint
 
 
-class Report():
+class RailwayReport():
 
     XL_REPORT = "railway_results_report.xlsx"
 

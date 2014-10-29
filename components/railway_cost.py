@@ -1,4 +1,4 @@
-class NetworkCost():
+class RailwayNetworkCost():
 
     def __init__(self, params, locoms=None, wagons=None, links=None):
         self.params = params

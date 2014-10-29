@@ -134,7 +134,6 @@ def test():
         if i == 10:
             break
 
-
     print "______________________________________"
 
     print "\nTest Case 3"
@@ -161,4 +160,5 @@ def test():
         if i == 10:
             break
 
-# test()
+if __name__ == '__main__':
+    test()

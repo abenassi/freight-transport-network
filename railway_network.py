@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from components import RailwayNetworkBuilder, NetworkCost, Report
+from components import RailwayNetworkBuilder, RailwayNetworkCost, RailwayReport
 from pprint import pprint
 import math
 import numpy as np
@@ -149,7 +149,7 @@ class RailwayNetwork():
         """Make a report of RailwayNetwork results in excel."""
 
         # create report object
-        rep = Report(xl_report)
+        rep = RailwayReport(xl_report)
 
         # ask for excel report passing RailNetwork object itself
         rep.report_to_excel(self)
@@ -158,7 +158,7 @@ class RailwayNetwork():
         """Print report with examples of objects inside RailwayNetwork."""
 
         # create report object
-        rep = Report()
+        rep = RailwayReport()
 
         # ask for excel report passing RailNetwork object itself
         rep.print_objects_report(self)
@@ -181,8 +181,8 @@ class RailwayNetwork():
         links data."""
 
         # create a railway network cost object
-        network_cost = NetworkCost(self.params, self.locoms, self.wagons,
-                                   self.links)
+        network_cost = RailwayNetworkCost(self.params, self.locoms,
+                                          self.wagons, self.links)
 
         return network_cost.cost_infrast()
 
@@ -193,8 +193,8 @@ class RailwayNetwork():
         described by current parameters, locomotives, wagons and links data."""
 
         # create a railway network cost object
-        network_cost = NetworkCost(self.params, self.locoms, self.wagons,
-                                   self.links)
+        network_cost = RailwayNetworkCost(self.params, self.locoms,
+                                          self.wagons, self.links)
 
         return network_cost.cost_mobility()
 

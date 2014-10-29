@@ -1,12 +1,12 @@
 import unittest
-from railway_cost import NetworkCost
+from railway_cost import RailwayNetworkCost
 from railway_parameters import Parameter
 from railway_link import Link
 from railway_rolling_material import RollingMaterial
 from railway_xl_input import XlLoadParam
 
 
-class NetworkCostTestCase(unittest.TestCase):
+class RailwayNetworkCostTestCase(unittest.TestCase):
 
     def setUp(self):
 
@@ -45,8 +45,8 @@ class NetworkCostTestCase(unittest.TestCase):
         wagons.turnout_freq = 200  # (km between turnout_stop
 
         # init object enought fed to test infrastructure methods
-        self.nc = NetworkCost(params, links=links, locoms=locoms,
-                              wagons=wagons)
+        self.nc = RailwayNetworkCost(params, links=links, locoms=locoms,
+                                     wagons=wagons)
 
         # net ton-km to test
         self.load_tk = 11018100000.0
