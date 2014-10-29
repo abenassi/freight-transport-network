@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from components import RailwayNetworkBuilder, RailwayNetworkCost, RailwayReport
+from modules import RailwayNetworkBuilder, RailwayNetworkCost, RailwayReport
 from pprint import pprint
 import math
 import numpy as np

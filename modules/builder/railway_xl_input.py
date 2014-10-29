@@ -1,7 +1,5 @@
 from openpyxl import load_workbook
-from railway_od import OD, Path
-from railway_link import Link
-from railway_parameters import Parameter
+from components import Link, Parameter, OD, Path
 
 
 class BaseXlLoad():

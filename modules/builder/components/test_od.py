@@ -1,6 +1,6 @@
 import unittest
 from railway_link import Link
-from railway_od import OD
+from od import OD
 
 
 class ODTestCase(unittest.TestCase):

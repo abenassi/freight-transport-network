@@ -1,3 +1,6 @@
+"""Path and OD classes are used either by Railway or Roadway networks."""
+
+
 class BasePath():
 
     def _create_links_list(self):
@@ -48,6 +51,10 @@ class BasePath():
 
 class Path(BasePath):
 
+    """Represents a railway or roadway path.
+
+    Roadway paths are considered to have unique gauge."""
+
     def __init__(self, id, path, gauge):
         self.id = id
         self.path = path
@@ -66,9 +73,10 @@ class Path(BasePath):
 
 class OD(BasePath):
 
-    """Represents an od pair in a railway network.
+    """Represents an od pair in a railway or roadway network.
 
-    It carries tons of freight and has path, gauge and distance."""
+    It carries tons of freight and has path, gauge and distance. Roadway od
+    pairs are considered to have unique gauge."""
 
     NF = "{:,.1f}"
     FIELDS = ["id_od", "gauge", "distance", "ton", "path"]

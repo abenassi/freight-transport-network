@@ -1,6 +1,5 @@
 from railway_xl_input import XlLoadParam, XlLoadOD, XlLoadLink, XlLoadPath
-from railway_parameters import Parameter
-from railway_rolling_material import RollingMaterial
+from components import RollingMaterial
 
 
 class RailwayNetworkBuilder():
