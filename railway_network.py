@@ -4,14 +4,6 @@ from pprint import pprint
 import math
 import numpy as np
 
-"""TO DO LIST:
-    1. Modelar las tres redes ferroviarias ya con los datos reales, utilizando
-    las trochas.
-    2. Incorporar capacidad de rejectear los pares OD que no se pueden derivar.
-    3. Separar el path de los pares OD, que se tomen de una lista aparte no
-    guardada en memoria (itera el excel)
-"""
-
 
 class RailwayNetwork():
 
