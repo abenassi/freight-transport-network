@@ -1,9 +1,8 @@
 import unittest
+import os
 from railway_cost import RailwayNetworkCost
-from railway_parameters import Parameter
-from railway_link import Link
-from railway_rolling_material import RollingMaterial
-from railway_xl_input import XlLoadParam
+from builder.components import Parameter, RailwayLink, RollingMaterial
+from builder.railway_network_builder import XlLoadParam
 
 
 class RailwayNetworkCostTestCase(unittest.TestCase):
@@ -11,12 +10,13 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
     def setUp(self):
 
         # load parameters to test
-        XL_PARAMETERS = "test_data/test_railway_parameters.xlsx"
+        XL_PARAMETERS = os.path.join(os.path.dirname(__file__),
+                                     "test_data/test_railway_parameters.xlsx")
         params = {}
         self._load_from_xl(XlLoadParam, XL_PARAMETERS, params)
 
         # create link representing main network
-        link = Link("1-3", 15121.0, "ancha")
+        link = RailwayLink("1-3", 15121.0, "ancha")
         link.ton = 728662.0
         links = {"1-3": {"ancha": link}}
 

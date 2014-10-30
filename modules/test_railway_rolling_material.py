@@ -1,5 +1,5 @@
 import unittest
-from railway_rolling_material import RollingMaterial
+from builder.components import RollingMaterial
 
 
 class RollingMaterialTestCase(unittest.TestCase):

@@ -1,5 +1,5 @@
 from openpyxl import load_workbook
-from components import Link, Parameter, OD, Path
+from components import RailwayLink, Parameter, OD, Path
 
 
 class BaseXlLoad():
@@ -54,7 +54,7 @@ class XlLoadLink(BaseXlLoad):
 
                 # create link if all parameters are true
                 if id_link and distance and gauge:
-                    link = Link(id_link, distance, gauge)
+                    link = RailwayLink(id_link, distance, gauge)
 
                     yield link
 
@@ -126,7 +126,7 @@ def test():
     railway_xl_input = "railway_links.xlsx"
     print railway_xl_input, "\n"
     i = 0
-    for link in XlLoadLink(railway_xl_input):
+    for link in XlLoadRailwayLink(railway_xl_input):
         print link
         i += 1
         if i == 10:

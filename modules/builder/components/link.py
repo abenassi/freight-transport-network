@@ -1,12 +1,6 @@
 class Link():
 
-    """Represents a link in a railway network.
-
-    It keeps track of tons passing and idle capacity of tons that could be
-    supported with the same rolling material currently running."""
-
-    FIELDS = ["id_link", "gauge", "distance", "tons", "idle_capacity",
-              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km"]
+    """Base class for a link in a freight transport network."""
 
     def __init__(self, id, distance, gauge):
         # identification properties
@@ -18,16 +12,47 @@ class Link():
         self.dist = float(distance)  # Km
 
         # traffic parameters
-        self.ton = 0.0  # ton
-        self.idle_capacity = 0.0  # ton-km
+        self.ton = 0.0  # ton of freight
+        self.gross_tk = None  # gross ton-km
 
         # track costs
-        self.eac_detour = None
         self.eac_track = None
         self.maintenance = None
 
-        # gross ton-km
-        self.gross_tk = None
+    def __repr__(self):
+        return "Link: " + str(self.id).ljust(10) + \
+               "Distance: {:,.1f}".format(self.dist).ljust(18) + \
+               "Gauge: " + str(self.gauge).ljust(8) + \
+               "Ton: {:,.1f}".format(self.ton).ljust(15)
+
+    # PUBLIC
+    def add_ton(self, ton):
+        self.ton += ton
+
+    def get_ton(self):
+        return self.ton
+
+
+class RoadwayLink(Link):
+    """Represents a link in a roadway network."""
+    pass
+
+
+class RailwayLink(Link):
+
+    """Represents a link in a railway network.
+
+    It keeps track of tons passing and idle capacity of tons that could be
+    supported with the same rolling material currently running."""
+
+    FIELDS = ["id_link", "gauge", "distance", "tons", "idle_capacity",
+              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km"]
+
+    # traffic parameters
+    idle_capacity = 0.0  # ton-km
+
+    # track costs
+    eac_detour = None
 
     def __repr__(self):
         return "Link: " + str(self.id).ljust(10) + \
@@ -42,9 +67,6 @@ class Link():
                 self.eac_detour, self.eac_track, self.maintenance,
                 self.gross_tk]
 
-    def add_ton(self, ton):
-        self.ton += ton
-
     def add_idle_cap(self, idle_capacity_ton):
         """Add idle capacity passed in ton."""
         self.idle_capacity += idle_capacity_ton
@@ -58,8 +80,9 @@ class Link():
 
         # check if link has that idle capacity
         if self.idle_capacity - idle_capacity_ton < 0:
-            raise ValueError("{} has no {} idle capacity!".format(self.id,
-                                                                  idle_capacity))
+            msg = "{} has no {} idle capacity!".format(self.id, idle_capacity)
+            raise ValueError(msg)
+
         self.idle_capacity -= idle_capacity_ton
 
     def revert_regroup(self, idle_capacity_ton):
@@ -83,36 +106,11 @@ class Link():
 
 def test():
 
-    print "\nTest Case 1: create a link"
+    print "\nCreate a link"
     print "-----------"
-    link = Link("1009-1003", 150.4, "ancha")
+    link = RailwayLink("1009-1003", 150.4, "ancha")
 
     print link
-
-    print "\nTest Case 2: add tons and idle capacity"
-    print "-----------"
-
-    print "add 500 ton"
-    link.add_ton(500)
-    print "add 500 ton idle capacity"
-    link.add_idle_cap(500)
-    print link
-    print "get idle cap", link.get_idle_cap()
-
-    print "\nTest Case 3: regroup tons"
-    print "-----------"
-
-    print "regroup 250 ton of idle cap"
-    link.regroup(250)
-    print link
-    print "get idle cap", link.get_idle_cap()
-
-    print "\nTest Case 4: revert regroup"
-    print "-----------"
-    print "revert regroup 250 ton of idle cap"
-    link.revert_regroup(250)
-    print link
-    print "get idle cap", link.get_idle_cap()
 
 if __name__ == '__main__':
     test()

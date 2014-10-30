@@ -1,6 +1,6 @@
 import unittest
 from railway_network import RailwayNetwork
-from components.railway_od import OD
+from modules.builder.components import OD
 
 
 class RailwayNetworkTestCase(unittest.TestCase):

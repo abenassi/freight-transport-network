@@ -1,5 +1,5 @@
 import unittest
-from railway_link import Link
+from link import Link
 from od import OD
 
 
