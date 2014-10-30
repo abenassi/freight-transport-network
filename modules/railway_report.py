@@ -136,11 +136,12 @@ class RailwayReport():
         ws.title = ws_name
 
         # write fields
-        first_od = rn.od_pairs.values()[0]
+        all_od_pairs = rn.od_pairs.values() + rn.od_pairs_current.values()
+        first_od = all_od_pairs[0]
         ws.append(first_od.FIELDS)
 
         # iterate od pairs appending data attributes of each od pair
-        for od in rn.od_pairs.values():
+        for od in all_od_pairs:
             od_attributes = od.get_attributes()
             ws.append(od_attributes)
 

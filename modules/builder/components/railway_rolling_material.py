@@ -186,27 +186,21 @@ class RollingMaterial():
     def print_report(self):
 
         print ""
-        print "TOTAL TIME".center(20, "*")
+        print "TIMES".center(20, "*")
         print "Total time (units-hr): " + self.NF.format(self.get_total_time())
-        print ""
-
-        print "STATUS TIMES".center(20, "*")
         print "Running time (units-hr): " + self.NF.format(self.get_running_time())
         print "Idle time (units-hr): " + self.NF.format(self.get_idle_time())
         print "Saved time (units-hr): " + self.NF.format(self.get_saved_time())
+        print "Idle heads time (units-hr): " + self.NF.format(self.idle_heads)
+        print "Idle turnout time (units-hr): " + self.NF.format(self.idle_turnout)
+        print "Idle regroup time (units-hr): " + self.NF.format(self.idle_regroup)
         print ""
 
         print "OTHER".center(20, "*")
         print "Units needed (units): " + self.NF.format(self.get_units_needed_by_time())
         print "Anual average haul (km): " + self.NF.format(self.get_average_haul())
         print ""
-
-        print "IDLE TIMES".center(20, "*")
-        print "Idle heads time (units-hr): " + self.NF.format(self.idle_heads)
-        print "Idle turnout time (units-hr): " + self.NF.format(self.idle_turnout)
-        print "Idle regroup time (units-hr): " + self.NF.format(self.idle_regroup)
-        print ""
-
+        
         print "IDLE CAPACITY".center(20, "*")
         print "Idle capacity (ton): " + self.NF.format(self.idle_capacity)
         print ""

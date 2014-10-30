@@ -136,7 +136,7 @@ class RailwayNetwork():
         total_tons = 0.0
 
         # iterate through all od pairs adding its tons
-        for od in self.od_pairs.values():
+        for od in self.od_pairs.values() + self.od_pairs_current.values():
             total_tons += od.ton
 
         return total_tons
@@ -284,6 +284,8 @@ class RailwayNetwork():
         min_dist = od.dist > self.params["min_dist_to_derive"].value
 
         return min_ton and min_dist and has_railway_path
+        # TODO: implement a way to derive or not derive
+        # return False
 
     def _get_derivation_coefficient(self, od):
 

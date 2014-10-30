@@ -54,6 +54,29 @@ class BasePath():
         else:
             return None
 
+    def _get_safe_id(self, id):
+        """Return id properly built.
+
+        ODs ids must be always created with number of lowest numeration node
+        first and number of highest numeration node last.
+
+            Right: 10-25
+            Wrong: 25-10
+
+        This method assures proper identification of od pairs."""
+
+        nodes = [int(i) for i in id.split("-")]
+
+        # check if first node is less than second one
+        if nodes[0] < nodes[1]:
+            id_checked = str(nodes[0]) + "-" + str(nodes[1])
+
+        # change order of nodes in the id, if second node is less than first
+        else:
+            id_checked = str(nodes[1]) + "-" + str(nodes[0])
+
+        return id_checked
+
 
 class Path(BasePath):
 
@@ -62,10 +85,10 @@ class Path(BasePath):
     Roadway paths are considered to have unique gauge."""
 
     def __init__(self, id, path, gauge):
-        self.id = id
+        self.id = self._get_safe_id(id)
         self.path = path
         self.gauge = gauge
-        self.nodes = [int(i) for i in id.split("-")]
+        self.nodes = [int(i) for i in self.id.split("-")]
 
         # path properties
         self.path_nodes = self._get_path_nodes()
@@ -89,8 +112,8 @@ class OD(BasePath):
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None):
         # identification properties
-        self.id = id
-        self.nodes = [int(i) for i in id.split("-")]
+        self.id = self._get_safe_id(id)
+        self.nodes = [int(i) for i in self.id.split("-")]
 
         # path properties
         self.path = path
