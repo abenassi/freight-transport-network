@@ -4,7 +4,8 @@ from pprint import pprint
 
 class RailwayReport():
 
-    XL_REPORT = "railway_results_report.xlsx"
+    XL_REPORT = "reports/railway_results_report.xlsx"
+    XL_LINKS_BY_OD = "reports/railway_links_by_od.xlsx"
 
     def __init__(self, xl_report=None):
         """
@@ -57,6 +58,32 @@ class RailwayReport():
 
         # save excel report
         wb.save(self.xl_report)
+
+    def links_by_od_to_excel(self, paths, xl_links_by_od):
+        """Write table of links by od pair to excel."""
+
+        # create a workbook
+        wb = Workbook(write_only=True)
+
+        # create ws
+        ws = wb.create_sheet()
+        ws.title = "od_links"
+
+        # write fields
+        first_row = ["id_od", "id_link"]
+        ws.append(first_row)
+
+        # iterate paths
+        for path in paths.values():
+
+            # iterate links
+            for link in path.get_links():
+
+                row = [path.get_id(), link]
+                ws.append(row)
+
+        # save excel report
+        wb.save(xl_links_by_od or self.XL_LINKS_BY_OD)
 
     # PRIVATE
     def _report_global_results(self, rn, wb, ws_name):

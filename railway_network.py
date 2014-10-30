@@ -110,6 +110,15 @@ class RailwayNetwork():
         # calculate and store infrastructure costs
         self.costs["inf"] = self._calc_infrastructure_cost()
 
+    def links_by_od_to_excel(self, xl_links_by_od=None):
+        """Write table of links by possible od pair to excel."""
+
+        # create report object
+        rep = RailwayReport()
+
+        # ask for excel report passing RailNetwork object itself
+        rep.links_by_od_to_excel(self.paths, xl_links_by_od)
+
     # GET methods
     def get_rejected_tons(self):
         """Sum all rejected tons from od_pairs_rejected."""
@@ -339,6 +348,7 @@ def main():
 
     # initiate object
     rn = RailwayNetwork()
+    # rn.links_by_od_to_excel()
     rn.print_objects_report()
 
     # CALCULATE SIMPLE MOBILITY COSTS and its INFRASTRUCTURE COSTS

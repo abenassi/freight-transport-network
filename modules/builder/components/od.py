@@ -3,6 +3,12 @@
 
 class BasePath():
 
+    def get_links(self):
+        return self.links
+
+    def get_id(self):
+        return self.id
+
     def _create_links_list(self):
         """Create list with all links used by OD path."""
 
@@ -122,7 +128,8 @@ class OD(BasePath):
                 self.dist += network_links[od_link][self.gauge].dist
 
             except:
-                print od_link, "is missing in network links list!"
+                print od_link, self.gauge, "is missing in network links list!",
+                print "od pair: ", self.id
 
     def has_declared_path(self):
         """Has a path data member, even if its a "not found" one."""
