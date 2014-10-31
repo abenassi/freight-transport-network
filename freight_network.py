@@ -1,4 +1,9 @@
+from railway_network import RailwayNetwork
+from roadway_network import RoadwayNetwork
+
+
 class FreightNetwork():
+
     """Represents a freight network with rail and road modes of transport.
 
     FreightNetwork uses RailwayNetwork and RoadNetwork objects to represent a
@@ -51,3 +56,39 @@ class FreightNetwork():
         Derive traffic from one mode to the other looking for the minimum
         overall cost of freight transportation."""
         pass
+
+    def report_to_excel(self, add_tag=None):
+        """Make a report of RailwayNetwork and RoadNetwork results.
+
+        At any moment, freeze the status of RailwayNetwork and RoadNetwork
+        into excel reports.
+
+        Args:
+            add_tag: String to be added to name of excel report, to identify
+            the type of analysis being reported."""
+        pass
+
+
+def main():
+
+    # initialize freight transport networks
+    rail = RailwayNetwork()
+    road = RoadwayNetwork()
+    fn = FreightNetwork(rail, road)
+
+    # cost network at current situation
+    fn.cost_network()
+    fn.report_to_excel("current situation")
+
+    # cost network deriving all possible freight to railway
+    fn.derive_all_to_railway()
+    fn.cost_network()
+    fn.report_to_excel("derive all to railway")
+
+    # cost network deriving all freight to roadway
+    fn.derive_all_to_roadway()
+    fn.cost_network()
+    fn.report_to_excel("derive all to roadway")
+
+if __name__ == '__main__':
+    main()
