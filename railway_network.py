@@ -127,7 +127,7 @@ class RailwayNetwork():
 
         # iterate through all rejected od pairs adding its tons
         for od in self.od_pairs_rejected.values():
-            rejected_tons += od.ton
+            rejected_tons += od.get_ton()
 
         return rejected_tons
 
@@ -137,7 +137,7 @@ class RailwayNetwork():
 
         # iterate through all od pairs adding its tons
         for od in self.od_pairs.values() + self.od_pairs_current.values():
-            total_tons += od.ton
+            total_tons += od.get_ton()
 
         return total_tons
 
@@ -216,17 +216,19 @@ class RailwayNetwork():
         locomotives."""
 
         # wagons mobility
-        idle_capacity_w = self.wagons.add_freight_service(od.ton, od.dist)
+        idle_capacity_w = self.wagons.add_freight_service(od.get_ton(),
+                                                          od.get_dist())
 
         # locomotives mobility
-        idle_capacity_l = self.locoms.add_freight_service(od.ton, od.dist)
+        idle_capacity_l = self.locoms.add_freight_service(od.get_ton(),
+                                                          od.get_dist())
 
         # add idle capacity of locomotives along the route used by od pair
         for link in od.links:
 
             # try to update tons and idle capacity of link-gauge
             try:
-                self.links[link][od.gauge].add_ton(od.ton)
+                self.links[link][od.gauge].add_ton(od.get_ton())
                 self.links[link][od.gauge].add_idle_cap(idle_capacity_l)
 
             # if impossible, there is no link-gauge in the network for od_pair
@@ -280,8 +282,8 @@ class RailwayNetwork():
         has_railway_path = od.has_railway_path()
 
         # check if od pair meet minimum tons adn distance to be derivable
-        min_ton = od.ton > self.params["min_tons_to_derive"].value
-        min_dist = od.dist > self.params["min_dist_to_derive"].value
+        min_ton = od.get_ton() > self.params["min_tons_to_derive"].value
+        min_dist = od.get_dist() > self.params["min_dist_to_derive"].value
 
         return min_ton and min_dist and has_railway_path
         # TODO: implement a way to derive or not derive
@@ -297,11 +299,11 @@ class RailwayNetwork():
         max_deriv = float(self.params["max_derivation"].value)
 
         # assign max derivation if distance and tons are greater than max
-        if od.dist >= max_dist and od.ton >= max_tons:
+        if od.dist >= max_dist and od.get_ton() >= max_tons:
             deriv_coefficient = max_deriv
 
         # assign zero derivation if distance and tons are lower than min
-        elif od.dist <= min_dist and od.ton >= min_tons:
+        elif od.dist <= min_dist and od.get_ton() >= min_tons:
             deriv_coefficient = 0.0
 
         # interpolate derivation coefficient otherwise
@@ -343,7 +345,7 @@ class RailwayNetwork():
         coeff = self._get_derivation_coefficient(od)
 
         # modify od tons to be derived
-        od.ton = od.ton * coeff
+        od.original_ton = od.get_ton() * coeff
 
 
 def main():

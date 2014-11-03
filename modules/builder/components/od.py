@@ -128,7 +128,7 @@ class OD(BasePath):
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
-               "Ton: " + self.NF.format(self.ton).ljust(15) + \
+               "Ton: " + self.NF.format(self.get_ton()).ljust(15) + \
                "Path: " + str(self.path).ljust(60) + \
                "Gauge:" + str(self.gauge).ljust(15) + \
                "Distance:" + str(self.dist)
@@ -149,6 +149,9 @@ class OD(BasePath):
 
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_ton(), self.path]
+
+    def get_dist(self):
+        return self.dist
 
     # SET and ADD methods
     def add_original_ton(self, ton):
