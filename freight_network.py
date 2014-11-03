@@ -14,7 +14,7 @@ class FreightNetwork():
     def __init__(self, railway_network, roadway_network):
         self.rail = railway_network
         self.road = roadway_network
-        self.min_cost = sys.maxint
+        self.min_cost = sys.maxint  
         self.max_cost = 0.0
 
     # PUBLIC
