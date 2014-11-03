@@ -151,6 +151,10 @@ class OD(BasePath):
         return [self.id, self.gauge, self.dist, self.get_ton(), self.path]
 
     # SET and ADD methods
+    def add_original_ton(self, ton):
+        """Add original tons to OD pair."""
+        self.original_ton += ton
+
     def derive_ton(self, other, coeff=1.0):
         """Derive tons to another freight transport mode.
 

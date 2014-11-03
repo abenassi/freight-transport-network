@@ -94,7 +94,7 @@ class RailwayNetworkBuilder():
 
             # if it is, update the element tons rather than replace it
             else:
-                output_dict[element.id].ton += element.ton
+                output_dict[element.id].add_original_ton(element.get_ton())
 
     def _load_links_from_xl(self, loader_class, xl_name, output_dict):
         """Iterate an excel with data using a specific loader_class and storing

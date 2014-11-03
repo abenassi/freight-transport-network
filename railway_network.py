@@ -313,7 +313,7 @@ class RailwayNetwork():
             # get tons and distance relevant to interpolate
             # if one of the two dimensions exceeds maximum, maximum will be
             # used
-            tons = min(od.ton, max_tons)
+            tons = min(od.get_ton(), max_tons)
             dist = min(od.dist, max_dist)
 
             # transform dist in tons unit wiht substitution coefficient
