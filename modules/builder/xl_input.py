@@ -78,10 +78,11 @@ class XlLoadParam(BaseXlLoad):
                     value = row[1].value
                     desc = row[2].value
 
-                    # create variable
-                    parameter = Parameter(id_param, value, desc)
+                    # create variable if id is not none
+                    if id_param:
+                        parameter = Parameter(id_param, value, desc)
 
-                    yield parameter
+                        yield parameter
 
 
 class XlLoadPath(BaseXlLoad):

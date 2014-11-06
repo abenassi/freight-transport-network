@@ -12,7 +12,8 @@ class Link():
         self.dist = float(distance)  # Km
 
         # traffic parameters
-        self.ton = 0.0  # ton of freight
+        self.original_ton = 0.0  # original ton of freight
+        self.derived_ton = 0.0  # derived ton of freight
         self.gross_tk = None  # gross ton-km
 
         # track costs
@@ -20,17 +21,35 @@ class Link():
         self.maintenance = None
 
     def __repr__(self):
-        return "Link: " + str(self.id).ljust(10) + \
-               "Distance: {:,.1f}".format(self.dist).ljust(18) + \
-               "Gauge: " + str(self.gauge).ljust(8) + \
-               "Ton: {:,.1f}".format(self.ton).ljust(15)
+        return "Link: " + str(self.get_id()).ljust(10) + \
+               "Distance: {:,.1f}".format(self.get_dist()).ljust(18) + \
+               "Gauge: " + str(self.get_gauge()).ljust(8) + \
+               "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
 
     # PUBLIC
-    def add_ton(self, ton):
-        self.ton += ton
+    def add_original_ton(self, ton):
+        self.original_ton += ton
+
+    def remove_original_ton(self, ton):
+        self.original_ton -= ton
+
+    def add_derived_ton(self, ton):
+        self.derived_ton += ton
+
+    def remove_derived_ton(self, ton):
+        self.derived_ton -= ton
+
+    def get_original_ton(self):
+        return self.original_ton
+
+    def get_derived_ton(self):
+        return self.derived_ton
 
     def get_ton(self):
-        return self.ton
+        return self.get_original_ton() + self.get_derived_ton()
+
+    def get_dist(self):
+        return self.dist
 
 
 class RoadwayLink(Link):
@@ -45,8 +64,9 @@ class RailwayLink(Link):
     It keeps track of tons passing and idle capacity of tons that could be
     supported with the same rolling material currently running."""
 
-    FIELDS = ["id_link", "gauge", "distance", "tons", "idle_capacity",
-              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km"]
+    FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
+              "tons", "idle_capacity", "detour_cost", "track_cost",
+              "maintenance_cost", "gross ton-km"]
 
     # traffic parameters
     idle_capacity = 0.0  # ton-km
@@ -58,12 +78,13 @@ class RailwayLink(Link):
         return "Link: " + str(self.id).ljust(10) + \
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
-               "Ton: {:,.1f}".format(self.ton).ljust(15) + \
+               "Ton: {:,.1f}".format(self.get_ton()).ljust(20) + \
                "Idle capacity: {:,.1f}".format(self.idle_capacity)
 
     # PUBLIC
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.ton, self.idle_capacity,
+        return [self.id, self.gauge, self.dist, self.original_ton,
+                self.derived_ton, self.get_ton(), self.idle_capacity,
                 self.eac_detour, self.eac_track, self.maintenance,
                 self.gross_tk]
 
@@ -94,14 +115,14 @@ class RailwayLink(Link):
         """Take rolling material parameters and calculate gross ton_km."""
 
         # wagons weight
-        num_wagons = self.ton / wagon_capacity
+        num_wagons = self.get_ton() / wagon_capacity
         wagons_weight = num_wagons * wagon_weight
 
         # locomotives weight
-        num_locoms = (self.ton + self.idle_capacity) / locomotive_capacity
+        num_locoms = (self.get_ton() + self.idle_capacity) / locomotive_capacity
         locoms_weight = num_locoms * locomotive_weight
 
-        return (wagons_weight + locoms_weight + self.ton) * self.dist
+        return (wagons_weight + locoms_weight + self.get_ton()) * self.dist
 
 
 def test():

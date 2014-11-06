@@ -1,11 +1,116 @@
 # -*- coding: utf-8 -*-
-from modules import RailwayNetworkBuilder, RailwayNetworkCost, RailwayReport
+from modules import (RailwayNetworkBuilder, RoadwayNetworkBuilder,
+                     RailwayNetworkCost, RailwayReport, RoadwayReport)
 from pprint import pprint
 import math
-import numpy as np
 
 
-class RailwayNetwork():
+class BaseModalNetwork(object):
+
+    """Represents a generic modal network.
+
+    This class must be subclassed to represent a specific modal network.
+    Railway or Roadway are modal networks."""
+
+    def __init__(self):
+
+        self.params = {}
+        self.od_pairs = {}
+        self.links = {}
+        self.paths = {}
+        self.costs = {"mob": None, "inf": None}
+
+    def __iter__(self):
+
+        for link in self.links.values():
+            for link_gauge in link.values():
+                yield link_gauge
+
+    def get_links(self):
+        return self.links
+
+    def get_link(self, id_link):
+        return self.links[id_link]
+
+    def get_total_ton_km(self):
+        """Sum all ton_km from all od_pairs used in the model."""
+        total_tk_link = 0.0
+        total_tk_od = 0.0
+
+        # iterate through all links adding ton * dist
+        for link in self.links.values():
+            for link_gauge in link.values():
+                total_tk_link += link_gauge.get_ton() * link_gauge.get_dist()
+
+        # iterate throught all ods adding ton * dist
+        for od in self.od_pairs.values():
+            total_tk_od += od.get_ton() * od.get_dist()
+
+        # control that both ways of calculate total_ton_km are the same!
+        msg = "Link and OD based ways of total_ton_km calculation differ."
+        assert abs(total_tk_link / total_tk_od - 1) < 0.001, msg
+
+        return total_tk_link
+
+    def get_od(self, id_od):
+        """Returns existent od pair or create a new one if it doesn't exist."""
+        if not id_od in self.od_pairs:
+            self._create_od_pair(id_od)
+
+        return self.od_pairs[id_od]
+
+    def get_total_tons(self):
+        """Sum all tons from od_pairs used in the model."""
+        total_tons = 0.0
+
+        # iterate through all od pairs adding its tons
+        for od in self.od_pairs.values():
+            total_tons += od.get_ton()
+
+        return total_tons
+
+    def print_objects_report(self):
+        """Print report with examples of objects inside RailwayNetwork."""
+
+        # create report object
+        rep = self.REPORT_CLASS()
+
+        # ask for excel report passing RailNetwork object itself
+        rep.print_objects_report(self)
+
+    def report_to_excel(self, xl_report=None):
+        """Make a report of modal network results in excel."""
+
+        # create report object
+        rep = self.REPORT_CLASS(xl_report)
+
+        # ask for excel report passing RailNetwork object itself
+        rep.report_to_excel(self)
+
+
+class RoadwayNetwork(BaseModalNetwork):
+
+    """Represents a road network with methods to cost it."""
+
+    REPORT_CLASS = RoadwayReport
+
+    def __init__(self):
+
+        self.trucks = None
+        super(RoadwayNetwork, self).__init__()
+
+        # build network
+        rnb = RoadwayNetworkBuilder()
+        rnb.build_roadway_network(self)
+
+
+
+    def _create_od_pair(self, id_od):
+        rnb = RoadwayNetworkBuilder()
+        rnb.create_od_pair(self, id_od)
+
+
+class RailwayNetwork(BaseModalNetwork):
 
     """Represents a rail network with methods to cost it.
 
@@ -20,23 +125,35 @@ class RailwayNetwork():
     It uses RailwayNetworkBuilder to build an instance.
     """
 
+    REPORT_CLASS = RailwayReport
+
     def __init__(self):
 
-        self.params = {}
-        self.od_pairs = {}
-        self.od_pairs_current = {}
-        self.od_pairs_rejected = {}
-        self.links = {}
-        self.paths = {}
         self.wagons = None
         self.locoms = None
-        self.costs = {"mob": None, "inf": None}
+        super(RailwayNetwork, self).__init__()
 
-        # build railway network
+        # build network
         rnb = RailwayNetworkBuilder()
         rnb.build_railway_network(self)
 
     # PUBLIC
+    def has_railway_path(self, od):
+        """Check if an od pair has an operable railway path."""
+
+        # check if od is in paths
+        if not od.get_id() in self.paths:
+            return False
+
+        # check the path is operable by railway
+        path = self.paths[od.get_id()].get_path()
+        gauge = self.paths[od.get_id()].get_gauge()
+
+        has_path_and_gauge = bool(path and gauge)
+        has_links = "-" in path
+
+        return has_path_and_gauge and has_links
+
     def calc_simple_mobility_cost(self):
         """Calculates mobility cost of running each origin-destination rail
         service independently."""
@@ -44,28 +161,8 @@ class RailwayNetwork():
         # iterate through all od pairs
         for od in self.od_pairs.values():
 
-            # check if od_pair is derivable
-            if self._od_pair_is_derivable(od):
-
-                # calculate how much tons of od will be derived
-                self._calculate_derived_tons(od)
-
-                # calculate mobility requirements to run rail service for od
-                self._calculate_mobility_od(od)
-
-            # if its not derivable, go to rejected od dictionary
-            else:
-                # add it to od_paris rejected dictionary
-                self.od_pairs_rejected[od.id] = od
-
-                # delete it from od_pairs dictionary
-                del self.od_pairs[od.id]
-
-        # add all od pairs that are currently being carried by railway
-        for od_current in self.od_pairs_current.values():
-
-                # calculate mobility requirements to run rail service for od
-                self._calculate_mobility_od(od_current)
+            # calculate mobility requirements to run rail service for od
+            self._calculate_mobility_od(od)
 
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
@@ -119,64 +216,12 @@ class RailwayNetwork():
         # ask for excel report passing RailNetwork object itself
         rep.links_by_od_to_excel(self.paths, xl_links_by_od)
 
-    # GET methods
-    def get_rejected_tons(self):
-        """Sum all rejected tons from od_pairs_rejected."""
-
-        rejected_tons = 0.0
-
-        # iterate through all rejected od pairs adding its tons
-        for od in self.od_pairs_rejected.values():
-            rejected_tons += od.get_ton()
-
-        return rejected_tons
-
-    def get_total_tons(self):
-        """Sum all tons from od_pairs used in the model."""
-        total_tons = 0.0
-
-        # iterate through all od pairs adding its tons
-        for od in self.od_pairs.values() + self.od_pairs_current.values():
-            total_tons += od.get_ton()
-
-        return total_tons
-
-    def get_total_ton_km(self):
-        """Sum all ton_km from all od_pairs used in the model."""
-        total_ton_km = 0.0
-
-        # iterate through all links adding ton * dist
-        for link in self.links.values():
-            for link_gauge in link.values():
-
-                total_ton_km += link_gauge.ton * link_gauge.dist
-
-        return total_ton_km
-
     # REPORT methods
-    def report_to_excel(self, xl_report=None):
-        """Make a report of RailwayNetwork results in excel."""
-
-        # create report object
-        rep = RailwayReport(xl_report)
-
-        # ask for excel report passing RailNetwork object itself
-        rep.report_to_excel(self)
-
-    def print_objects_report(self):
-        """Print report with examples of objects inside RailwayNetwork."""
-
-        # create report object
-        rep = RailwayReport()
-
-        # ask for excel report passing RailNetwork object itself
-        rep.print_objects_report(self)
-
     def print_costs_report(self):
         """Print only costs report of RailwayNetwork."""
 
         # create report object
-        rep = Report()
+        rep = RailwayReport()
 
         # ask for excel report passing RailNetwork object itself
         rep.print_complete_report(self)
@@ -208,7 +253,7 @@ class RailwayNetwork():
         return network_cost.cost_mobility()
 
     def _calculate_mobility_od(self, od):
-        """Takes an OD object and calculate its mobility operating requirements.
+        """Takes an OD object and calculate its mobility requirements.
 
         Update the rolling material objects (wagons and locomotives) with the
         new freight service required (od pair) object and the links used by od
@@ -216,26 +261,29 @@ class RailwayNetwork():
         locomotives."""
 
         # wagons mobility
-        idle_capacity_w = self.wagons.add_freight_service(od.get_ton(),
-                                                          od.get_dist())
+        self.wagons.add_freight_service(od.get_ton(), od.get_dist())
 
         # locomotives mobility
         idle_capacity_l = self.locoms.add_freight_service(od.get_ton(),
                                                           od.get_dist())
 
         # add idle capacity of locomotives along the route used by od pair
+        exception_counter = 0
+        MAX_EXCEPTIONS = 50
         for link in od.links:
+
+            assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
             # try to update tons and idle capacity of link-gauge
             try:
-                self.links[link][od.gauge].add_ton(od.get_ton())
                 self.links[link][od.gauge].add_idle_cap(idle_capacity_l)
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:
+                exception_counter += 1
                 print "".join(("There is no link ", link, " and gauge ",
-                               od.gauge, " for od pair ", od.id, " with path: ",
-                               od.path))
+                               od.gauge, " for od pair ", od.id,
+                               " with path: ", od.path))
 
     def _regroup_link(self, link, idle_locs):
         """Takes freight idleness situation in a link (extra capacity to
@@ -275,77 +323,9 @@ class RailwayNetwork():
         self.locoms.revert_regroup(idle_locs, link.dist)
         self.wagons.subtract_regroup_time(wagons_regrouped)
 
-    def _od_pair_is_derivable(self, od):
-        """Indicate if od pair is derivable or not."""
-
-        # check if ther is an operable railway path for the od pair
-        has_railway_path = od.has_railway_path()
-
-        # check if od pair meet minimum tons adn distance to be derivable
-        min_ton = od.get_ton() > self.params["min_tons_to_derive"].value
-        min_dist = od.get_dist() > self.params["min_dist_to_derive"].value
-
-        return min_ton and min_dist and has_railway_path
-        # TODO: implement a way to derive or not derive
-        # return False
-
-    def _get_derivation_coefficient(self, od):
-
-        # assign parameters to short variables
-        max_dist = float(self.params["dist_of_max_derivation"].value)
-        min_dist = float(self.params["min_dist_to_derive"].value)
-        max_tons = float(self.params["tons_of_max_derivation"].value)
-        min_tons = float(self.params["min_tons_to_derive"].value)
-        max_deriv = float(self.params["max_derivation"].value)
-
-        # assign max derivation if distance and tons are greater than max
-        if od.dist >= max_dist and od.get_ton() >= max_tons:
-            deriv_coefficient = max_deriv
-
-        # assign zero derivation if distance and tons are lower than min
-        elif od.dist <= min_dist and od.get_ton() >= min_tons:
-            deriv_coefficient = 0.0
-
-        # interpolate derivation coefficient otherwise
-        else:
-
-            # calculate substitution coefficient for tons / dist
-            coef_ton_dist = (max_tons - min_tons) / (max_dist - min_dist)
-
-            # get tons and distance relevant to interpolate
-            # if one of the two dimensions exceeds maximum, maximum will be
-            # used
-            tons = min(od.get_ton(), max_tons)
-            dist = min(od.dist, max_dist)
-
-            # transform dist in tons unit wiht substitution coefficient
-            dist_in_tons = dist * coef_ton_dist
-            max_dist_in_tons = max_dist * coef_ton_dist
-            min_dist_in_tons = min_dist * coef_ton_dist
-
-            # create vectors
-            od_vector = (tons, dist_in_tons)
-            max_vector = (max_tons, max_dist_in_tons)
-            min_vector = (min_tons, min_dist_in_tons)
-
-            # calculate vectorial distances
-            dist_to_min = np.linalg.norm(np.subtract(od_vector, min_vector))
-            dist_to_max = np.linalg.norm(np.subtract(max_vector, od_vector))
-            total_dist = dist_to_min + dist_to_max
-
-            # calculate coefficient as % of total vectorial distance
-            deriv_coefficient = max_deriv * (dist_to_min / total_dist)
-
-        return deriv_coefficient
-
-    def _calculate_derived_tons(self, od):
-        """Calculate derivable tons and modify OD tons accordingly."""
-
-        # calculate coefficient of tons to be derived
-        coeff = self._get_derivation_coefficient(od)
-
-        # modify od tons to be derived
-        od.original_ton = od.get_ton() * coeff
+    def _create_od_pair(self, id_od):
+        rnb = RailwayNetworkBuilder()
+        rnb.create_od_pair(self, id_od)
 
 
 def main():
@@ -395,7 +375,6 @@ def main():
     # MAKE REPORT
     rn.report_to_excel("reports/report_simple_mobility.xlsx")
 
-
     # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
     print "\n***********************************"
     print "Calculate optimized mobility cost."
@@ -429,5 +408,13 @@ def main():
     rn.report_to_excel("reports/report_optimized_mobility.xlsx")
 
 
+def test():
+
+    road = RoadwayNetwork()
+    print road.get_total_tons()
+    print road.get_total_ton_km()
+    road.print_objects_report()
+
 if __name__ == '__main__':
-    main()
+    # main()
+    test()

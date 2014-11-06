@@ -9,6 +9,12 @@ class BasePath():
     def get_id(self):
         return self.id
 
+    def get_path(self):
+        return self.path
+
+    def get_gauge(self):
+        return self.gauge
+
     def _create_links_list(self):
         """Create list with all links used by OD path."""
 
@@ -108,7 +114,8 @@ class OD(BasePath):
     pairs are considered to have unique gauge."""
 
     NF = "{:,.1f}"
-    FIELDS = ["id_od", "gauge", "distance", "ton", "path"]
+    FIELDS = ["id_od", "gauge", "distance", "original ton", "derived ton",
+              "ton", "path"]
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None):
         # identification properties
@@ -148,7 +155,8 @@ class OD(BasePath):
         return self.get_original_ton() + self.get_derived_ton()
 
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.get_ton(), self.path]
+        return [self.id, self.gauge, self.dist, self.get_original_ton(),
+                self.get_derived_ton(), self.get_ton(), self.path]
 
     def get_dist(self):
         return self.dist
@@ -204,10 +212,6 @@ class OD(BasePath):
     def has_declared_path(self):
         """Has a path data member, even if its a "not found" one."""
         return bool(self.path and self.gauge)
-
-    def has_railway_path(self):
-        """Has an operable railway path."""
-        return bool(self.path and self.gauge) and "-" in self.path
 
     # OTHER methods
     def calc_distance(self, network_links):

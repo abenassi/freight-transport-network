@@ -44,7 +44,7 @@ class RailwayNetworkCost():
             for gauge in link.values():
 
                 # check if there is load on that link-gauge
-                if gauge.ton > 0:
+                if gauge.get_ton() > 0:
 
                     # calculate gross ton-km carried by the link-gauge
                     gross_tk = gauge.get_gross_ton_km(wagon_capacity,
@@ -89,7 +89,7 @@ class RailwayNetworkCost():
         # add ton_km passing on each link
         for link in self.links.values():
             for link_gauge in link.values():
-                ton_km = link_gauge.dist * link_gauge.ton
+                ton_km = link_gauge.get_dist() * link_gauge.get_ton()
                 total_ton_km += ton_km
 
         return total_ton_km
