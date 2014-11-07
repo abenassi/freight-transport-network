@@ -1,7 +1,7 @@
 import unittest
 import os
 from railway_cost import RailwayNetworkCost
-from builder.components import Parameter, RailwayLink, RollingMaterial
+from builder.components import RailwayLink, RollingMaterial
 from builder.railway_network_builder import XlLoadParam
 
 
@@ -17,7 +17,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
 
         # create link representing main network
         link = RailwayLink("1-3", 15121.0, "ancha")
-        link.ton = 728662.0
+        link.add_original_ton(728662.0)
         links = {"1-3": {"ancha": link}}
 
         # create locomotives object
@@ -69,6 +69,12 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         infrast_maint_cost = self.nc._cost_infrast_maint(self.gross_tk,
                                                          self.dist)
         self.assertAlmostEqual(infrast_maint_cost, 47989846.78, delta=2000000)
+
+    def test_capital_recovery_factor(self):
+        int_rate = 0.08
+        use_life = 30
+        crf = self.nc._capital_recovery_factor(int_rate, use_life)
+        self.assertAlmostEqual(crf, 0.08882743338727227)
 
     def test_cost_eac_track(self):
         track_eac = self.nc._cost_eac_track(self.main_gross_tk, self.main_dist)

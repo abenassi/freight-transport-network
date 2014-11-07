@@ -197,14 +197,25 @@ class RailwayNetworkCost():
             # store parameters in short-name variables
             a_eac = self.params["coef_a_track_cost"].value
             b_eac = self.params["coef_b_track_cost"].value
-            crf = self.params["crf_track"].value
             use_life = self.params["useful_life_track"].value
+            max_gross_tk = self.params["gross_tk_in_hq_track_lifetime"].value
+            int_rate = self.params["interest_rate"].value
+            max_cost_track = self.params["high_quality_track_price"].value
 
-            # calculate total cost of track by km bought
+            # calculate gross tk in max possible useful life years
             gross_tk_in_use_life = use_life * gross_tk / dist
-            cost_track = a_eac + b_eac * gross_tk_in_use_life
+
+            # use estimated function if gross_tk expected is less than maximum
+            if gross_tk_in_use_life < max_gross_tk:
+                cost_track = a_eac + b_eac * gross_tk_in_use_life
+
+            # otherwise, use high quality track price and recalculate use_life
+            else:
+                cost_track = max_cost_track
+                use_life = max_gross_tk / gross_tk
 
             # calculate eac by year
+            crf = self._capital_recovery_factor(int_rate, use_life)
             eac = cost_track * crf * dist
 
         else:
@@ -246,6 +257,14 @@ class RailwayNetworkCost():
         density = net_tk / dist
 
         return density > main_min_density
+
+    def _capital_recovery_factor(self, int_rate, use_life):
+        """Calculate capital recovery factor."""
+
+        a = int_rate * pow(1 + int_rate, use_life)
+        b = pow(1 + int_rate, use_life) - 1
+
+        return a / b
 
 
 def test():
