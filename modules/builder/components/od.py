@@ -1,7 +1,7 @@
 """Path and OD classes are used either by Railway or Roadway networks."""
 
 
-class BasePath():
+class BasePath(object):
 
     def get_links(self):
         return self.links
@@ -14,6 +14,25 @@ class BasePath():
 
     def get_gauge(self):
         return self.gauge
+
+    def calc_distance(self, network_links):
+        """Takes a dictionary with all network links and sum distance of od
+        links to calculate distance of od pair."""
+
+        # init distance with zero
+        dist = 0
+
+        # iterate through od used links adding its distance to od distance
+        for od_link in self.links:
+
+            try:
+                dist += network_links[od_link][self.gauge].get_dist()
+
+            except:
+                print od_link, self.gauge, "is missing in network links list!",
+                print "od pair: ", self.id
+
+        return dist
 
     def _create_links_list(self):
         """Create list with all links used by OD path."""
@@ -115,9 +134,10 @@ class OD(BasePath):
 
     NF = "{:,.1f}"
     FIELDS = ["id_od", "gauge", "distance", "original ton", "derived ton",
-              "ton", "path"]
+              "ton", "railway_category", "path"]
 
-    def __init__(self, id, ton, path=None, gauge=None, dist=None):
+    def __init__(self, id, ton, path=None, gauge=None, dist=None,
+                 rail_category=None):
         # identification properties
         self.id = self._get_safe_id(id)
         self.nodes = [int(i) for i in self.id.split("-")]
@@ -129,9 +149,10 @@ class OD(BasePath):
         self.dist = dist
         self.links = self._create_links_list()
 
-        # traffic carried
+        # traffic properties
         self.original_ton = ton
         self.derived_ton = 0.0
+        self.rail_category = rail_category
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
@@ -160,6 +181,12 @@ class OD(BasePath):
 
     def get_dist(self):
         return self.dist
+
+    def get_category(self):
+        return self.rail_category
+
+    def calc_distance(self, network_links):
+        self.dist = super(OD, self).calc_distance(network_links)
 
     # SET and ADD methods
     def add_original_ton(self, ton):
@@ -208,30 +235,14 @@ class OD(BasePath):
         self.path_nodes = self._get_path_nodes()
         self.links = self._create_links_list()
 
+    def set_category(self, category_od):
+        self.rail_category = category_od
+
     # BOOL methods
     def has_declared_path(self):
         """Has a path data member, even if its a "not found" one."""
         return bool(self.path and self.gauge)
 
-    # OTHER methods
-    def calc_distance(self, network_links):
-        """Takes a dictionary with all network links and sum distance of od
-        links to calculate distance of od pair."""
-
-        # init distance with zero
-        self.dist = 0
-
-        # iterate through od used links adding its distance to od distance
-        for od_link in self.links:
-
-            try:
-                # print network_links[od_link].dist
-                self.dist += network_links[od_link][self.gauge].dist
-
-            except:
-                print od_link, self.gauge, "is missing in network links list!",
-                print "od pair: ", self.id
-
-
-
-
+    def is_intrazone(self):
+        """Check if origin = destination."""
+        return len(self.nodes) == 2 and self.nodes[0] == self.nodes[1]

@@ -51,6 +51,9 @@ class Link():
     def get_dist(self):
         return self.dist
 
+    def get_id(self):
+        return self.id
+
 
 class RoadwayLink(Link):
     """Represents a link in a roadway network."""

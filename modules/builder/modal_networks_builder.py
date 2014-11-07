@@ -59,21 +59,26 @@ class BaseModalNetworkBuilder():
         # calculate tons carried by each link
         self._calculate_link_tons(mn)
 
-    def create_od_pair(self, mn, id_od):
+    def create_od_pair(self, mn, id_od, category_od):
 
         # create od pair object
         od_pair = OD(id_od, 0.0)
+        od_pair.set_category(category_od)
 
         # assign path
-        path = mn.paths[od_pair.id].path
-        gauge = mn.paths[od_pair.id].gauge
+        path = mn.paths[od_pair.get_id()].get_path()
+        gauge = mn.paths[od_pair.get_id()].get_gauge()
         od_pair.set_path(path, gauge)
 
         # calculate distance
         od_pair.calc_distance(mn.links)
 
+        # check od_pair id is in the network
+        if id_od not in mn.od_pairs:
+            mn.od_pairs[id_od] = {}
+
         # add new od pair
-        mn.od_pairs[id_od] = od_pair
+        mn.od_pairs[id_od][category_od] = od_pair
 
     # PRIVATE
     def _load_from_xl(self, loader_class, xl_name, output_dict):
@@ -105,12 +110,14 @@ class BaseModalNetworkBuilder():
         for element in loader_class(xl_name):
 
             # check that element id was not already in output_dict
-            if not element.id in output_dict:
-                output_dict[element.id] = element
+            if element.get_id() not in output_dict:
+                output_dict[element.get_id()] = {}
+                output_dict[element.get_id()][element.get_category()] = element
 
             # if it is, update the element tons rather than replace it
-            else:
-                output_dict[element.id].add_original_ton(element.get_ton())
+            elif element.get_category() not in output_dict[element.get_id()]:
+                od_pair = output_dict[element.get_id()][element.get_category()]
+                od_pair.add_original_ton(element.get_ton())
 
     def _load_links_from_xl(self, loader_class, xl_name, output_dict):
         """Iterate an excel with data using a specific loader_class and storing
@@ -119,8 +126,8 @@ class BaseModalNetworkBuilder():
         for element in loader_class(xl_name):
 
             # add element.id entry if not already in output dict
-            if not element.id in output_dict:
-                output_dict[element.id] = {}
+            if element.id not in output_dict:
+                output_dict[element.get_id()] = {}
 
             # add the element using id and gauge as keys
             output_dict[element.id][element.gauge] = element
@@ -129,7 +136,7 @@ class BaseModalNetworkBuilder():
         """Iterate through od_pairs looking for path if not already passed."""
 
         # iterate all od_pairs
-        for od_pair in mn.od_pairs.values():
+        for od_pair in mn.iter_od_pairs():
 
             # check if od_pair doesn't have a path and RailwayNetwork has one
             if (not od_pair.has_declared_path()) and (od_pair.get_id() in mn.paths):
@@ -144,14 +151,14 @@ class BaseModalNetworkBuilder():
         results in each od object."""
 
         # iterate through all od pairs
-        for od in mn.od_pairs.values():
+        for od in mn.iter_od_pairs():
             od.calc_distance(mn.links)
 
     def _calculate_link_tons(self, mn):
         """Load tons of all od pairs to its used links."""
 
         # iterate through all od pairs
-        for od in mn.od_pairs.values():
+        for od in mn.iter_od_pairs():
             self._load_od_ton_to_links(mn, od)
 
     def _load_od_ton_to_links(self, mn, od):
@@ -172,7 +179,7 @@ class BaseModalNetworkBuilder():
             # if impossible, there is no link-gauge in the network for od_pair
             except:
                 exception_counter += 1
-                print "".join(("There is no link ", link, " and gauge ",
+                print "".join(("There is no link ", id_link, " and gauge ",
                                od.get_gauge(), " for od pair ", od.get_id(),
                                " with path: ", od.get_path()))
 

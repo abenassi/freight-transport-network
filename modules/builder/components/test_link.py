@@ -8,13 +8,13 @@ class LinkTestCase(unittest.TestCase):
     def setUp(self):
         self.link = Link("1009-1003", 150.4, "ancha")
 
-    def test_add_ton(self):
+    def test_add_original_ton(self):
         """Test method to add tons to a link."""
 
-        self.link.add_ton(500)
+        self.link.add_original_ton(500)
         self.assertTrue(self.link.get_ton(), 500)
 
-        self.link.add_ton(500)
+        self.link.add_original_ton(500)
         self.assertTrue(self.link.get_ton(), 1000)
 
 

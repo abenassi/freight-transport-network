@@ -21,10 +21,44 @@ class BaseModalNetwork(object):
         self.costs = {"mob": None, "inf": None}
 
     def __iter__(self):
+        return self.iter_links()
 
+    def iter_od_pairs(self, limit=None):
+
+        counter = 0
+        for od_pair in self.od_pairs.values():
+            for od_pair_category in od_pair.values():
+
+                # check if limit is reached
+                if limit and counter >= limit:
+                    break
+                counter += 1
+
+                yield od_pair_category
+
+    def iter_links(self, limit=None):
+
+        counter = 0
         for link in self.links.values():
             for link_gauge in link.values():
+
+                # check if limit is reached
+                if limit and counter >= limit:
+                    break
+                counter += 1
+
                 yield link_gauge
+
+    def get_path(self, od):
+        return self.paths[od.get_id()]
+
+    def get_path_distance(self, od):
+        """Get distance of a path."""
+
+        if od.is_intrazone():
+            return 0.0
+        else:
+            return self.get_path(od).calc_distance(self.get_links())
 
     def get_links(self):
         return self.links
@@ -43,7 +77,7 @@ class BaseModalNetwork(object):
                 total_tk_link += link_gauge.get_ton() * link_gauge.get_dist()
 
         # iterate throught all ods adding ton * dist
-        for od in self.od_pairs.values():
+        for od in self.iter_od_pairs():
             total_tk_od += od.get_ton() * od.get_dist()
 
         # control that both ways of calculate total_ton_km are the same!
@@ -52,19 +86,25 @@ class BaseModalNetwork(object):
 
         return total_tk_link
 
-    def get_od(self, id_od):
+    def get_od(self, id_od, category_od):
         """Returns existent od pair or create a new one if it doesn't exist."""
-        if not id_od in self.od_pairs:
+
+        # check if od pair is in the network
+        if id_od not in self.od_pairs:
+            self._create_od_pair(id_od, category_od)
+
+        # check if od pair has the category asked
+        if category_od not in self.od_pairs[id_od]:
             self._create_od_pair(id_od)
 
-        return self.od_pairs[id_od]
+        return self.od_pairs[id_od][category_od]
 
     def get_total_tons(self):
         """Sum all tons from od_pairs used in the model."""
         total_tons = 0.0
 
         # iterate through all od pairs adding its tons
-        for od in self.od_pairs.values():
+        for od in self.iter_od_pairs():
             total_tons += od.get_ton()
 
         return total_tons
@@ -103,11 +143,9 @@ class RoadwayNetwork(BaseModalNetwork):
         rnb = RoadwayNetworkBuilder()
         rnb.build_roadway_network(self)
 
-
-
-    def _create_od_pair(self, id_od):
+    def _create_od_pair(self, id_od, category_od):
         rnb = RoadwayNetworkBuilder()
-        rnb.create_od_pair(self, id_od)
+        rnb.create_od_pair(self, id_od, category_od)
 
 
 class RailwayNetwork(BaseModalNetwork):
@@ -159,7 +197,7 @@ class RailwayNetwork(BaseModalNetwork):
         service independently."""
 
         # iterate through all od pairs
-        for od in self.od_pairs.values():
+        for od in self.iter_od_pairs():
 
             # calculate mobility requirements to run rail service for od
             self._calculate_mobility_od(od)
@@ -323,9 +361,9 @@ class RailwayNetwork(BaseModalNetwork):
         self.locoms.revert_regroup(idle_locs, link.dist)
         self.wagons.subtract_regroup_time(wagons_regrouped)
 
-    def _create_od_pair(self, id_od):
+    def _create_od_pair(self, id_od, category_od):
         rnb = RailwayNetworkBuilder()
-        rnb.create_od_pair(self, id_od)
+        rnb.create_od_pair(self, id_od, category_od)
 
 
 def main():
@@ -415,6 +453,12 @@ def test():
     print road.get_total_ton_km()
     road.print_objects_report()
 
+
+def test2():
+
+    rail = RailwayNetwork()
+    rail.print_objects_report()
+
 if __name__ == '__main__':
     # main()
-    test()
+    test2()

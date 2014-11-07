@@ -1,5 +1,6 @@
 from openpyxl import Workbook
 from pprint import pprint
+from itertools import islice
 
 
 class BaseReport():
@@ -21,10 +22,10 @@ class BaseReport():
 
         print "\nNumber of od_pairs:", len(rn.od_pairs)
         print "\nFirst 10 od_pairs"
-        pprint(rn.od_pairs.values()[:10])
+        pprint(rn.iter_od_pairs(10))
 
         print "\nFirst 10 od_pairs links"
-        pprint([od_pair.links for od_pair in rn.od_pairs.values()[:10]])
+        pprint([od_pair.get_links() for od_pair in rn.iter_od_pairs(10)])
 
         print "\nFirst 10 links ids"
         pprint(rn.links.keys()[:10])
@@ -85,12 +86,11 @@ class BaseReport():
         ws.title = ws_name
 
         # write fields
-        all_od_pairs = rn.od_pairs.values()
-        first_od = all_od_pairs[0]
+        first_od = rn.od_pairs.values()[0].values()[0]
         ws.append(first_od.FIELDS)
 
         # iterate od pairs appending data attributes of each od pair
-        for od in all_od_pairs:
+        for od in rn.iter_od_pairs():
             od_attributes = od.get_attributes()
             ws.append(od_attributes)
 
@@ -139,7 +139,7 @@ class RoadwayReport(BaseReport):
 
         # save excel report
         wb.save(self.xl_report)
-        
+
 
 class RailwayReport(BaseReport):
 

@@ -35,7 +35,7 @@ class FreightNetwork():
         derived_tons = od_road.get_ton() * coeff
 
         # derive tons from od_road pair to od_rail pair
-        od_rail = self.rail.get_od(od_road.get_id())
+        od_rail = self.rail.get_od(od_road.get_id(), od_road.get_category())
         od_road.derive_ton(od_rail, coeff)
 
         # remove tons from road links
@@ -60,7 +60,7 @@ class FreightNetwork():
         """Derive all possible od pairs from roadway mode to railway mode."""
 
         # iterate road od_pairs
-        for road_od in self.road.od_pairs.values():
+        for road_od in self.road.iter_od_pairs():
 
             # check if od_pair is derivable
             if self._od_pair_is_derivable(road_od):
@@ -101,18 +101,28 @@ class FreightNetwork():
     def _od_pair_is_derivable(self, od):
         """Indicate if od pair is derivable or not."""
 
+        # firts check origin != destination
+        if od.is_intrazone():
+            return False
+
         # check if there is an operable railway path for the od pair
         has_railway_path = self.rail.has_railway_path(od)
+        if not has_railway_path:
+            return False
 
         # check if od pair meet minimum tons adn distance to be derivable
         min_ton = od.get_ton() > self.rail.params["min_tons_to_derive"].value
         min_dist = od.get_dist() > self.rail.params["min_dist_to_derive"].value
 
-        is_derivable = min_ton and min_dist and has_railway_path
+        # check if railway path distance is not excesively longer than road
+        max_diff = self.rail.params["max_path_difference"].value
+        dist_rail = self.rail.get_path_distance(od)
+        dist_road = self.road.get_path_distance(od)
+        railway_path_is_plausible = abs(dist_rail / dist_road - 1) < max_diff
+
+        is_derivable = min_ton and min_dist and railway_path_is_plausible
 
         return is_derivable
-        # TODO: implement a way to derive or not derive
-        # return False
 
     def _get_derivation_coefficient(self, od):
 
@@ -269,7 +279,6 @@ def test():
 
     # MAKE REPORT
     rn.report_to_excel("reports/report_optimized_mobility.xlsx")
-
 
 
 if __name__ == '__main__':

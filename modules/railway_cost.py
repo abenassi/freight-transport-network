@@ -173,17 +173,36 @@ class RailwayNetworkCost():
     def _cost_detour(self, gross_tk, dist):
         """Calculate equivalent annual cost of detours."""
 
-        # store parameters in short-name variables
-        wages_by_detour = self.params["yearly_wages_by_turnout"].value
-        turnout_freq = self.params["turnout_freq"].value
-
         # calculate number of detours needed
-        num_detours = dist / turnout_freq
+        num_detours = self._calc_number_of_detours(gross_tk, dist)
 
-        # calculate total wages cost for maintaining detours
+        # calculate wages cost to maintain detours
+        wages_by_detour = self.params["yearly_wages_by_turnout"].value
         total_wages_cost = num_detours * wages_by_detour
 
-        return total_wages_cost
+        # calculate eac of detour tracks
+        density = gross_tk / dist
+        total_eac_cost = num_detours * self._cost_eac_track(density, 1.0)
+
+        return total_wages_cost + total_eac_cost
+
+    def _calc_number_of_detours(self, gross_tk, dist):
+        """Calculate number of detours needed in a certain track."""
+
+        # store parameters in short-name variables
+        max_turnout_distance = self.params["turnout_freq"].value
+        max_turnout_density = self.params["turnout_freq_max_density"].value
+        t_distance = max_turnout_distance
+
+        # calculate density
+        density = gross_tk / dist
+
+        if not density < max_turnout_density:
+            t_distance = max_turnout_distance / (density / max_turnout_density)
+
+        num_detours = dist / t_distance
+
+        return num_detours
 
     def _cost_eac_track(self, gross_tk, dist):
         """Calculate equivalent annual cost of track.
@@ -212,7 +231,7 @@ class RailwayNetworkCost():
             # otherwise, use high quality track price and recalculate use_life
             else:
                 cost_track = max_cost_track
-                use_life = max_gross_tk / gross_tk
+                use_life = max_gross_tk / (gross_tk / dist)
 
             # calculate eac by year
             crf = self._capital_recovery_factor(int_rate, use_life)

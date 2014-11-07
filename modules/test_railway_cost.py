@@ -11,7 +11,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
 
         # load parameters to test
         XL_PARAMETERS = os.path.join(os.path.dirname(__file__),
-                                     "test_data/test_railway_parameters.xlsx")
+                                     "test_data/railway_parameters.xlsx")
         params = {}
         self._load_from_xl(XlLoadParam, XL_PARAMETERS, params)
 
@@ -80,9 +80,22 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         track_eac = self.nc._cost_eac_track(self.main_gross_tk, self.main_dist)
         self.assertAlmostEqual(track_eac, 232400036.0, delta=10)
 
+        track_eac = self.nc._cost_eac_track(303670609022.56, self.dist)
+        self.assertAlmostEqual(track_eac, 1807731647, delta=10)
+
+    def test_calc_number_of_detours(self):
+        num_detours = self.nc._calc_number_of_detours(self.gross_tk, self.dist)
+        self.assertAlmostEqual(num_detours, 76.83, 2)
+
+    def test_cost_eac_track_with_detours(self):
+        density = 2008271.0
+        distance = 1.0
+        cost_eac_detour = self.nc._cost_eac_track(density, distance)
+        self.assertAlmostEqual(cost_eac_detour, 32268.82, 2)
+
     def test_cost_detour(self):
-        detours_cost_tk = self.nc._cost_detour(self.gross_tk, self.dist)
-        self.assertAlmostEqual(detours_cost_tk, 8278748.0, delta=10)
+        detours_cost = self.nc._cost_detour(self.gross_tk, self.dist)
+        self.assertAlmostEqual(detours_cost, 10357513.22, delta=100000)
 
     # MOBILITY cost tests
     def test_cost_manpower(self):

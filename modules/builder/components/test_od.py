@@ -1,6 +1,6 @@
 import unittest
 from link import Link
-from od import OD
+from od import OD, Path
 
 
 class ODTestCase(unittest.TestCase):
@@ -23,6 +23,19 @@ class ODTestCase(unittest.TestCase):
 
     def test_get_safe_id(self):
         self.assertEqual(self.od._get_safe_id("50-10"), "10-50")
+
+
+class PathTestCase(unittest.TestCase):
+    """Test construction path."""
+
+    def setUp(self):
+        self.path = Path("68-70", "068-069-070", "unica")
+        self.links = {"68-69": {"unica": Link("68-69", 100, "unica")},
+                      "69-70": {"unica": Link("68-69", 200, "unica")}}
+
+    def test_calc_distance(self):
+        distance = self.path.calc_distance(self.links)
+        self.assertEqual(distance, 300)
 
 
 def main():
