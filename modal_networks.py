@@ -4,13 +4,36 @@ from modules import (RailwayNetworkBuilder, RoadwayNetworkBuilder,
 from pprint import pprint
 import math
 
+"""
+    This module is used by freight_network. It exposes classes for the two
+    modal networks that compose a FreightNetwork class (RailwayNetwork and
+    RoadwayNetwork).
+"""
+
 
 class BaseModalNetwork(object):
 
     """Represents a generic modal network.
 
     This class must be subclassed to represent a specific modal network.
-    Railway or Roadway are modal networks."""
+    RailwayNetwork or RoadwayNetwork are modal networks.
+
+    A freight transport modal network has origin-destination pairs that
+    represent tons being carried from origin to destination. Each od pair uses
+    a path wich is a sequence of links.
+
+    The main costs of transport network are those of mobility and
+    infrastructure. Subclassed modal networks provide methods to cost mobility
+    (attached mainly to od pairs characteristics) and infrastructure
+    (attached mainly to links characteristics).
+
+    A modal network has 5 main data members:
+        1. params: parameters of the network used in calculations
+        2. od_pairs: od_pairs using the network
+        3. links: links available to od pair paths
+        4. paths: paths for all possible od pairs in the network
+        5. costs: mobility and infrastructure costs of the network
+    """
 
     def __init__(self):
 
@@ -23,7 +46,10 @@ class BaseModalNetwork(object):
     def __iter__(self):
         return self.iter_links()
 
+    # PUBLIC
+    # iters
     def iter_od_pairs(self, limit=None):
+        """Iterate od pairs with an optional limit in number of results."""
 
         counter = 0
         for od_pair in self.od_pairs.values():
@@ -37,6 +63,7 @@ class BaseModalNetwork(object):
                 yield od_pair_category
 
     def iter_links(self, limit=None):
+        """Iterate links with an optional limit in number of results."""
 
         counter = 0
         for link in self.links.values():
@@ -49,11 +76,16 @@ class BaseModalNetwork(object):
 
                 yield link_gauge
 
+    # getters
     def get_path(self, od):
         return self.paths[od.get_id()]
 
     def get_path_distance(self, od):
-        """Get distance of a path."""
+        """Get distance of a path.
+
+        Args:
+            od: od pair wich path we are looking its distance
+        """
 
         if od.is_intrazone():
             return 0.0
@@ -87,7 +119,12 @@ class BaseModalNetwork(object):
         return total_tk_link
 
     def get_od(self, id_od, category_od):
-        """Returns existent od pair or create a new one if it doesn't exist."""
+        """Returns existent od pair or create a new one if it doesn't exist.
+
+        Args:
+            id_od: the origin-destination id (eg. "1-3")
+            category_od: the railway category of the freight transported.
+        """
 
         # check if od pair is in the network
         if id_od not in self.od_pairs:
@@ -109,6 +146,7 @@ class BaseModalNetwork(object):
 
         return total_tons
 
+    # reports
     def print_objects_report(self):
         """Print report with examples of objects inside RailwayNetwork."""
 
@@ -127,12 +165,21 @@ class BaseModalNetwork(object):
         # ask for excel report passing RailNetwork object itself
         rep.report_to_excel(self)
 
+    # PRIVATE
+    def _create_od_pair(self, id_od, category_od):
+        network_builder = self.BUILDER_CLASS()
+        network_builder.create_od_pair(self, id_od, category_od)
+
 
 class RoadwayNetwork(BaseModalNetwork):
 
-    """Represents a road network with methods to cost it."""
+    """Represents a road network with methods to cost it.
+
+    RoadwayNetwork() starts an empty network and it uses RoadwayNetworkBuilder
+    to build an instance."""
 
     REPORT_CLASS = RoadwayReport
+    BUILDER_CLASS = RoadwayNetworkBuilder
 
     def __init__(self):
 
@@ -140,30 +187,20 @@ class RoadwayNetwork(BaseModalNetwork):
         super(RoadwayNetwork, self).__init__()
 
         # build network
-        rnb = RoadwayNetworkBuilder()
-        rnb.build_roadway_network(self)
-
-    def _create_od_pair(self, id_od, category_od):
-        rnb = RoadwayNetworkBuilder()
-        rnb.create_od_pair(self, id_od, category_od)
+        network_builder = self.BUILDER_CLASS()
+        network_builder.build(self)
 
 
 class RailwayNetwork(BaseModalNetwork):
 
     """Represents a rail network with methods to cost it.
 
-    RailwayNetwork() starts an empty network. It needs to be fed with the
-    following data:
-        1. parameters: used in calculations
-        2. od_pairs: od_pairs data from road network to be derived
-        3. od_paris_current: od_pairs currently being transported by train
-        4. links: a list of links
-        5. paths: a list of paths assigned to each od_pair
-
-    It uses RailwayNetworkBuilder to build an instance.
+    RailwayNetwork() starts an empty network and it uses RailwayNetworkBuilder
+    to build an instance.
     """
 
     REPORT_CLASS = RailwayReport
+    BUILDER_CLASS = RailwayNetworkBuilder
 
     def __init__(self):
 
@@ -172,12 +209,16 @@ class RailwayNetwork(BaseModalNetwork):
         super(RailwayNetwork, self).__init__()
 
         # build network
-        rnb = RailwayNetworkBuilder()
-        rnb.build_railway_network(self)
+        network_builder = self.BUILDER_CLASS()
+        network_builder.build(self)
 
     # PUBLIC
     def has_railway_path(self, od):
-        """Check if an od pair has an operable railway path."""
+        """Check if an od pair has an operable railway path.
+
+        Args:
+            od: od pair to be evaluated to has a railway path or not
+        """
 
         # check if od is in paths
         if not od.get_id() in self.paths:
@@ -296,7 +337,11 @@ class RailwayNetwork(BaseModalNetwork):
         Update the rolling material objects (wagons and locomotives) with the
         new freight service required (od pair) object and the links used by od
         pair route with the idle remaining freight transport capacity in
-        locomotives."""
+        locomotives.
+
+        Args:
+            od: OD pair with tons to be carried by rolling material
+        """
 
         # wagons mobility
         self.wagons.add_freight_service(od.get_ton(), od.get_dist())
@@ -324,9 +369,13 @@ class RailwayNetwork(BaseModalNetwork):
                                " with path: ", od.path))
 
     def _regroup_link(self, link, idle_locs):
-        """Takes freight idleness situation in a link (extra capacity to
-        transport freight in the link that is not being used) and test the
-        convenience of regroup trains to minimize idleness."""
+        """Eliminate some idleness in a link regrouping trains.
+
+        Args:
+            link: a link width idle capacity in trains to be regrouped to save
+                locomotives
+            idle_locs: number of idle locomotives
+        """
 
         # store parameters to be used in short variables
         loc_capacity = self.params["locomotive_capacity"].value
@@ -339,13 +388,16 @@ class RailwayNetwork(BaseModalNetwork):
         link.regroup(idle_locs * loc_capacity)
 
         # update rolling material time requirements
-        self.locoms.regroup(idle_locs, link.dist)
+        self.locoms.regroup(idle_locs, link.get_dist())
         self.wagons.add_regroup_time(wagons_regrouped)
 
     def _revert_regroup_link(self, link, idle_locs):
-        """Takes freight idleness situation in a link (extra capacity to
-        transport freight in the link that is not being used) and test the
-        convenience of regroup trains to minimize idleness."""
+        """Revert previously regrouping of trains restoring idleness.
+
+        Args:
+            link: a previously regrouped link that has eliminated some idleness
+            idle_locs: number of idle locomotives
+        """
 
         # store parameters to be used in short variables
         loc_capacity = self.params["locomotive_capacity"].value
@@ -361,12 +413,8 @@ class RailwayNetwork(BaseModalNetwork):
         self.locoms.revert_regroup(idle_locs, link.dist)
         self.wagons.subtract_regroup_time(wagons_regrouped)
 
-    def _create_od_pair(self, id_od, category_od):
-        rnb = RailwayNetworkBuilder()
-        rnb.create_od_pair(self, id_od, category_od)
 
-
-def main():
+def test_railway_network():
 
     # initiate object
     rn = RailwayNetwork()
@@ -446,7 +494,7 @@ def main():
     rn.report_to_excel("reports/report_optimized_mobility.xlsx")
 
 
-def test():
+def test_roadway_network():
 
     road = RoadwayNetwork()
     print road.get_total_tons()
@@ -454,11 +502,10 @@ def test():
     road.print_objects_report()
 
 
-def test2():
-
-    rail = RailwayNetwork()
-    rail.print_objects_report()
-
 if __name__ == '__main__':
-    # main()
-    test2()
+
+    print "\n*****MANUAL TEST OF RAILWAY NETWORK*****\n"
+    test_railway_network()
+
+    print "\n*****MANUAL TEST OF ROADWAY NETWORK*****\n"
+    test_roadway_network()

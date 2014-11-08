@@ -31,7 +31,7 @@ class BaseModalNetworkBuilder():
         self.xl_paths = xl_paths or self.XL_PATHS
 
     # PUBLIC
-    def build_modal_network(self, mn):
+    def build(self, mn):
         """Builds a modal network object.
 
         Take data from excel files to build up a model of a modal network.
@@ -191,14 +191,14 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
     XL_LINKS = "data/roadway_links.xlsx"
     XL_PATHS = "data/roadway_paths.xlsx"
 
-    def build_roadway_network(self, rn):
+    def build(self, rn):
         """Builds a RoadwayNetwork object.
 
         Args:
             rn: a RoadwayNetwork object to be built.
         """
 
-        self.build_modal_network(rn)
+        super(RoadwayNetworkBuilder, self).build(rn)
 
         print "RoadwayNetwork object has been succesfully built.\n"
 
@@ -212,14 +212,14 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
     XL_PATHS = "data/railway_paths.xlsx"
 
     # PUBLIC
-    def build_railway_network(self, rn):
+    def build(self, rn):
         """Builds a RailwayNetwork object.
 
         Args:
             rn: a RailwayNetwork object to be built.
         """
 
-        self.build_modal_network(rn)
+        super(RailwayNetworkBuilder, self).build(rn)
 
         # set rolling material parameters
         self._set_rolling_material_parameters(rn)

@@ -3,6 +3,14 @@ import sys
 import numpy as np
 from pprint import pprint
 
+"""
+    This is the main module that will be visible to the user. Exposes
+    FreightNetwork class with methods to derive traffic between freight
+    transport modal networks and to cost the overall network. It will be able
+    to try different traffic configurations to find the one with lowest
+    overall cost.
+"""
+
 
 class FreightNetwork():
 
@@ -11,7 +19,8 @@ class FreightNetwork():
     FreightNetwork uses RailwayNetwork and RoadNetwork objects to represent a
     bimodal freight transport network. It uses those classes to cost all
     freight network and can derive traffic from one mode of transport to the
-    other."""
+    other, exploring changes in overall cost of different traffic
+    configurations."""
 
     def __init__(self, railway_network, roadway_network):
         self.rail = railway_network
@@ -28,8 +37,9 @@ class FreightNetwork():
         """Derive a road od pair to railway mode.
 
         Args:
-            od: Road OD pair to be derived.
-            coeff: Percentage of tons to be derived."""
+            od_road: Road OD pair to be derived.
+            coeff: Percentage of tons to be derived.
+        """
 
         # first, calculate tons to be derived
         derived_tons = od_road.get_ton() * coeff
@@ -38,26 +48,27 @@ class FreightNetwork():
         od_rail = self.rail.get_od(od_road.get_id(), od_road.get_category())
         od_road.derive_ton(od_rail, coeff)
 
-        # remove tons from road links
+        # remove tons from road links used by road od_pair
         for id_road_link in od_road.get_links():
             road_link = self.road.get_link(id_road_link)[od_road.get_gauge()]
             road_link.remove_original_ton(derived_tons)
 
-        # add derived tons to rail links
+        # add derived tons to rail links, used by rail od_pair
         for id_rail_link in od_rail.get_links():
             rail_link = self.rail.get_link(id_rail_link)[od_rail.get_gauge()]
             rail_link.add_derived_ton(derived_tons)
 
-    def derive_to_roadway(self, od, coeff):
+    def derive_to_roadway(self, od_rail, coeff):
         """Derive a rail od pair to roadway mode.
 
         Args:
-            od: Rail OD pair to be derived.
-            coeff: Percentage of tons to be derived."""
+            od_rail: Rail OD pair to be derived.
+            coeff: Percentage of tons to be derived.
+        """
         pass
 
     def derive_all_to_railway(self):
-        """Derive all possible od pairs from roadway mode to railway mode."""
+        """Derive all possible road od_pairs from road mode to rail mode."""
 
         # iterate road od_pairs
         for road_od in self.road.iter_od_pairs():
@@ -72,7 +83,7 @@ class FreightNetwork():
                 self.derive_to_railway(road_od, coeff)
 
     def derive_all_to_roadway(self):
-        """Derive all possible od pairs from railway mode to roadway mode."""
+        """Derive all possible rail od pairs from rail mode to road mode."""
         pass
 
     def free_railway_link(self, link):
@@ -94,12 +105,17 @@ class FreightNetwork():
 
         Args:
             add_tag: String to be added to name of excel report, to identify
-            the type of analysis being reported."""
+            the type of analysis being reported.
+        """
         pass
 
     # PRIVATE
     def _od_pair_is_derivable(self, od):
-        """Indicate if od pair is derivable or not."""
+        """Indicate if an od pair is derivable or not.
+
+        Args:
+            od: OD pair that will be checked to be derivable to railway.
+        """
 
         # firts check origin != destination
         if od.is_intrazone():
@@ -125,6 +141,17 @@ class FreightNetwork():
         return is_derivable
 
     def _get_derivation_coefficient(self, od):
+        """Calculate the proportion of an od pair that will be derived.
+
+        The proportion is the vectorial distance an od_pair has from minimum
+        derivation conditions (minimum distance and tons in wich derivation is
+        zero) over total vectorial distance from minimum to maximum conditions
+        (in wich derivation is maximum) passing throug the point represented
+        by distance and tons of od pair passed as argument.
+
+        Args:
+            od: Roadway od pair that will be derived to Railway mode.
+        """
 
         # assign parameters to short variables
         max_dist = float(self.rail.params["dist_of_max_derivation"].value)
@@ -175,6 +202,9 @@ class FreightNetwork():
 
 
 def main():
+    """Some methods used here still does not work. Further design and
+    implementation points to support this main method wich represent the user
+    case."""
 
     # initialize freight transport networks
     rail = RailwayNetwork()
@@ -197,6 +227,8 @@ def main():
 
 
 def test():
+    """Gets all the reports from RailwayNetwork, in the future this will be
+    addressed by methods of FreightNetwork class."""
 
     # initiate object
     rn = RailwayNetwork()
