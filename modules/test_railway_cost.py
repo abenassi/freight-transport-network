@@ -2,7 +2,7 @@ import unittest
 import os
 from railway_cost import RailwayNetworkCost
 from builder.components import RailwayLink, RollingMaterial
-from builder.railway_network_builder import XlLoadParam
+from builder.modal_networks_builder import XlLoadParam
 
 
 class RailwayNetworkCostTestCase(unittest.TestCase):

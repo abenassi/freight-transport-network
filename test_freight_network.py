@@ -31,7 +31,7 @@ class FreightNetworkTestCase(unittest.TestCase):
         self.fn.derive_to_railway(od_road, coeff)
 
         # check out tons left in road and increased in rail
-        final_ton = self.rail.od_pairs["1-3"].get_ton()
+        final_ton = self.rail.od_pairs["1-3"].values()[0].get_ton()
         self.assertEqual(start_ton + coeff * road_ton, final_ton)
         self.assertEqual(coeff * road_ton, od_road.get_ton())
 
