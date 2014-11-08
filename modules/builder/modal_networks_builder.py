@@ -2,7 +2,7 @@ from xl_input import XlLoadParam, XlLoadOD, XlLoadLink, XlLoadPath
 from components import RollingMaterial, OD
 
 
-class BaseModalNetworkBuilder():
+class BaseModalNetworkBuilder(object):
     """Base builder of a modal network.
 
     It must be subclassed to build up a RailwayNetwork or a RoadwayNetwork."""
