@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from modules import (RailwayNetworkBuilder, RoadwayNetworkBuilder,
                      RailwayNetworkCost, RailwayReport, RoadwayReport)
-from pprint import pprint
 import math
 
 """
@@ -150,11 +149,20 @@ class BaseModalNetwork(object):
     def print_objects_report(self):
         """Print report with examples of objects inside RailwayNetwork."""
 
-        # create report object
         rep = self.REPORT_CLASS()
-
-        # ask for excel report passing RailNetwork object itself
         rep.print_objects_report(self)
+
+    def print_global_results_report(self):
+        """Print report with only global results."""
+
+        rep = self.REPORT_CLASS()
+        rep.print_global_results_report(self)
+
+    def print_costs_report(self):
+        """Print report with mobility and infrastructure costs report."""
+
+        rep = self.REPORT_CLASS()
+        rep.print_costs_report(self)
 
     def report_to_excel(self, xl_report=None):
         """Make a report of modal network results in excel."""
@@ -295,15 +303,11 @@ class RailwayNetwork(BaseModalNetwork):
         # ask for excel report passing RailNetwork object itself
         rep.links_by_od_to_excel(self.paths, xl_links_by_od)
 
-    # REPORT methods
-    def print_costs_report(self):
-        """Print only costs report of RailwayNetwork."""
+    def print_rolling_material_report(self):
+        """Print report with rolling material results."""
 
-        # create report object
-        rep = RailwayReport()
-
-        # ask for excel report passing RailNetwork object itself
-        rep.print_complete_report(self)
+        rep = self.REPORT_CLASS()
+        rep.print_rolling_material_report(self)
 
     # PRIVATE
     def _calc_infrastructure_cost(self):
@@ -417,89 +421,54 @@ class RailwayNetwork(BaseModalNetwork):
 def test_railway_network():
 
     # initiate object
-    rn = RailwayNetwork()
-    # rn.links_by_od_to_excel()
-    rn.print_objects_report()
+    rail_network = RailwayNetwork()
+
+    # print firsts reports, without costs calculations
+    # rail_network.links_by_od_to_excel()
+    rail_network.print_objects_report()
+
 
     # CALCULATE SIMPLE MOBILITY COSTS and its INFRASTRUCTURE COSTS
     print "\n***********************************"
     print "Calculate simple mobility cost."
     print "***********************************"
-    rn.calc_simple_mobility_cost()
-
-    print "\n***Mobility cost results***\n"
-    pprint(rn.costs["mob"])
-
-    print "\n***Wagons results***"
-    print rn.wagons
-
-    print "\n***Locomotives results***"
-    print rn.locoms
-
-    print "\n***Global results***\n"
-    print "total tons", "{:,.2f}".format(rn.get_total_tons())
-    print "total ton-km", "{:,.2f}".format(rn.get_total_ton_km())
-    print "average distance", rn.get_total_ton_km() / rn.get_total_tons()
-    print "rejected tons", "{:,.2f}".format(rn.get_rejected_tons())
-
-    # print "\n***Idle capacity by link***"
-    # for gauge in rn.links.values():
-    #     for link in gauge.values():
-    #         print str(link.id).ljust(10), \
-    #               "{:,.1f}".format(link.idle_capacity).ljust(15), link.gauge
-
-    # print rn.od_pairs["41-84"].has_path()
+    rail_network.calc_simple_mobility_cost()
+    rail_network.print_rolling_material_report()
+    rail_network.print_global_results_report()
 
     print "\n***********************************"
     print "Calculate infrastructure cost."
     print "***********************************"
-    rn.calc_infrastructure_cost()
+    rail_network.calc_infrastructure_cost()
+    rail_network.print_costs_report()
 
-    print "\n***infrastructure cost results***\n"
-    pprint(rn.costs["inf"])
+    # MAKE EXCEL COMPLETE REPORT
+    rail_network.report_to_excel("reports/report_simple_mobility.xlsx")
 
-    # MAKE REPORT
-    rn.report_to_excel("reports/report_simple_mobility.xlsx")
 
     # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
     print "\n***********************************"
     print "Calculate optimized mobility cost."
     print "***********************************"
-    rn.calc_optimized_mobility_cost()
-
-    print "\n***Mobility cost results***\n"
-    pprint(rn.costs["mob"])
-
-    print "\n***Wagons results***"
-    print rn.wagons
-
-    print "\n***Locomotives results***"
-    print rn.locoms
-
-    print "\n***Global results***\n"
-    print "total tons", "{:,.2f}".format(rn.get_total_tons())
-    print "total ton-km", "{:,.2f}".format(rn.get_total_ton_km())
-    print "average distance", rn.get_total_ton_km() / rn.get_total_tons()
-    print "rejected tons", "{:,.2f}".format(rn.get_rejected_tons())
+    rail_network.calc_optimized_mobility_cost()
+    rail_network.print_rolling_material_report()
+    rail_network.print_global_results_report()
 
     print "\n***********************************"
     print "Calculate infrastructure cost."
     print "***********************************"
-    rn.calc_infrastructure_cost()
+    rail_network.calc_infrastructure_cost()
+    rail_network.print_costs_report()
 
-    print "\n***infrastructure cost results***\n"
-    pprint(rn.costs["inf"])
-
-    # MAKE REPORT
-    rn.report_to_excel("reports/report_optimized_mobility.xlsx")
+    # MAKE EXCEL COMPLETE REPORT
+    rail_network.report_to_excel("reports/report_optimized_mobility.xlsx")
 
 
 def test_roadway_network():
 
-    road = RoadwayNetwork()
-    print road.get_total_tons()
-    print road.get_total_ton_km()
-    road.print_objects_report()
+    roadway_network = RoadwayNetwork()
+    roadway_network.print_objects_report()
+    roadway_network.print_global_results_report()
 
 
 if __name__ == '__main__':

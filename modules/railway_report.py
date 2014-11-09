@@ -1,6 +1,5 @@
 from openpyxl import Workbook
 from pprint import pprint
-from itertools import islice
 
 
 class BaseReport():
@@ -22,7 +21,7 @@ class BaseReport():
 
         print "\nNumber of od_pairs:", len(rn.od_pairs)
         print "\nFirst 10 od_pairs"
-        pprint(rn.iter_od_pairs(10))
+        pprint(list(rn.iter_od_pairs(10)))
 
         print "\nFirst 10 od_pairs links"
         pprint([od_pair.get_links() for od_pair in rn.iter_od_pairs(10)])
@@ -35,6 +34,23 @@ class BaseReport():
 
         print "\nFirst 10 path values"
         pprint(rn.paths.values()[:10])
+
+    def print_global_results_report(self, rn):
+        """Print report only with global results of network."""
+
+        print "\n***Global results***\n"
+        print "total tons", "{:,.2f}".format(rn.get_total_tons())
+        print "total ton-km", "{:,.2f}".format(rn.get_total_ton_km())
+        print "average distance", rn.get_total_ton_km() / rn.get_total_tons()
+
+    def print_costs_report(self, rn):
+        """Print only costs report of RailwayNetwork."""
+
+        print "\n***Mobility cost results***\n"
+        pprint(rn.costs["mob"])
+
+        print "\n***infrastructure cost results***\n"
+        pprint(rn.costs["inf"])
 
     def links_by_od_to_excel(self, paths, xl_links_by_od):
         """Write table of links by od pair to excel."""
@@ -147,9 +163,14 @@ class RailwayReport(BaseReport):
     XL_LINKS_BY_OD = "reports/railway_links_by_od.xlsx"
 
     # PUBLIC
-    def print_costs_report(self, rn):
-        """Print only costs report of RailwayNetwork."""
-        pass
+    def print_rolling_material_report(self, rn):
+        """Print rolling material results."""
+
+        print "\n***Wagons results***"
+        print rn.wagons
+
+        print "\n***Locomotives results***"
+        print rn.locoms
 
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
