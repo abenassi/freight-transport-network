@@ -35,3 +35,11 @@ The output is stored in "reports" directory as excel files:
 You can see in main() method inside freight_network module how user interface and most common usage of the model is going to be. It is not the method triggered when you run freight_network.py, that is replaced by a test method for the moment.
 
 
+## Test
+
+Existing unit tests can be run all at once just by running run_tests.py
+
+```cmd
+python run_tests.py
+```
+
