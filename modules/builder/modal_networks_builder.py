@@ -44,9 +44,9 @@ class BaseModalNetworkBuilder(object):
         print "Loading parameters..."
         self._load_from_xl(XlLoadParam, self.xl_parameters, mn.params)
         print "Loading od pairs..."
-        self._load_od_pairs_from_xl(XlLoadOD, self.xl_od_pairs, mn.od_pairs)
+        self._load_od_pairs_from_xl(mn.od_pairs)
         print "Loading links..."
-        self._load_links_from_xl(XlLoadLink, self.xl_links, mn.links)
+        self._load_links_from_xl(mn.links)
         print "Loading paths..."
         self._load_from_xl(XlLoadPath, self.xl_paths, mn.paths)
 
@@ -96,45 +96,44 @@ class BaseModalNetworkBuilder(object):
             assert repeated_counter < max_repeated, msg
 
             # check if element id was already in output_dict
-            if not element.id in output_dict:
+            if element.id not in output_dict:
                 output_dict[element.id] = element
 
             else:
                 repeated_counter += 1
                 print "Warning", element.id, "is repeated in", xl_name
 
-    def _load_od_pairs_from_xl(self, loader_class, xl_name, output_dict):
+    def _load_od_pairs_from_xl(self, od_pairs):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
-        for element in loader_class(xl_name):
+        for od_pair in XlLoadOD(self.xl_od_pairs):
 
             # add id if its not in output_dict
-            if element.get_id() not in output_dict:
-                output_dict[element.get_id()] = {}
+            if od_pair.get_id() not in od_pairs:
+                od_pairs[od_pair.get_id()] = {}
 
-            # if category doesn't exist, add the element
-            if element.get_category() not in output_dict[element.get_id()]:
-                output_dict[element.get_id()][element.get_category()] = element
+            # if category doesn't exist, add the od_pair
+            if od_pair.get_category() not in od_pairs[od_pair.get_id()]:
+                od_pairs[od_pair.get_id()][od_pair.get_category()] = od_pair
 
             # if category already exist, udpate tons rather than replace elemen
             else:
-                curr_elem = output_dict[element.get_id()][element.get_category()]
-                curr_elem.add_original_ton(element.get_ton())
+                curr_od = od_pairs[od_pair.get_id()][od_pair.get_category()]
+                curr_od.add_original_ton(od_pair.get_ton())
 
-
-    def _load_links_from_xl(self, loader_class, xl_name, output_dict):
+    def _load_links_from_xl(self, links):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
-        for element in loader_class(xl_name):
+        for link in XlLoadLink(self.xl_links):
 
-            # add element.id entry if not already in output dict
-            if element.id not in output_dict:
-                output_dict[element.get_id()] = {}
+            # add link.id entry if not already in output dict
+            if link.id not in links:
+                links[link.get_id()] = {}
 
-            # add the element using id and gauge as keys
-            output_dict[element.id][element.gauge] = element
+            # add the link using id and gauge as keys
+            links[link.id][link.gauge] = link
 
     def _find_paths(self, mn):
         """Iterate through od_pairs looking for path if not already passed."""
