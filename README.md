@@ -71,9 +71,9 @@ Also, from the main folder of the package, you could import find_paths module in
 ```python
 from dijkstra import find_paths
 
-xl_input = xl_input.xlsx
+xl_input = "xl_input.xlsx"
 network_names = ["gauge1", "gauge2", "gauge3"]
-xl_output = xl_output.xlsx
+xl_output = "xl_output.xlsx"
 
 find_paths.main(xl_input, network_names, xl_output)
 ```
