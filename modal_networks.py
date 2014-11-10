@@ -131,7 +131,7 @@ class BaseModalNetwork(object):
 
         # check if od pair has the category asked
         if category_od not in self.od_pairs[id_od]:
-            self._create_od_pair(id_od)
+            self._create_od_pair(id_od, category_od)
 
         return self.od_pairs[id_od][category_od]
 
@@ -476,5 +476,5 @@ if __name__ == '__main__':
     print "\n*****MANUAL TEST OF RAILWAY NETWORK*****\n"
     test_railway_network()
 
-    print "\n*****MANUAL TEST OF ROADWAY NETWORK*****\n"
-    test_roadway_network()
+    # print "\n*****MANUAL TEST OF ROADWAY NETWORK*****\n"
+    # test_roadway_network()

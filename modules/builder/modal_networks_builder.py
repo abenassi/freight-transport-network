@@ -109,15 +109,19 @@ class BaseModalNetworkBuilder(object):
 
         for element in loader_class(xl_name):
 
-            # check that element id was not already in output_dict
+            # add id if its not in output_dict
             if element.get_id() not in output_dict:
                 output_dict[element.get_id()] = {}
+
+            # if category doesn't exist, add the element
+            if element.get_category() not in output_dict[element.get_id()]:
                 output_dict[element.get_id()][element.get_category()] = element
 
-            # if it is, update the element tons rather than replace it
-            elif element.get_category() not in output_dict[element.get_id()]:
-                od_pair = output_dict[element.get_id()][element.get_category()]
-                od_pair.add_original_ton(element.get_ton())
+            # if category already exist, udpate tons rather than replace elemen
+            else:
+                curr_elem = output_dict[element.get_id()][element.get_category()]
+                curr_elem.add_original_ton(element.get_ton())
+
 
     def _load_links_from_xl(self, loader_class, xl_name, output_dict):
         """Iterate an excel with data using a specific loader_class and storing

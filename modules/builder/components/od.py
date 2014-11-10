@@ -159,7 +159,8 @@ class OD(BasePath):
                "Ton: " + self.NF.format(self.get_ton()).ljust(15) + \
                "Path: " + str(self.path).ljust(60) + \
                "Gauge:" + str(self.gauge).ljust(15) + \
-               "Distance:" + str(self.dist)
+               "Distance:" + str(self.dist).ljust(15) + \
+               "Category:" + str(self.rail_category)
 
     # PUBLIC
     # GET methods

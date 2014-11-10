@@ -27,10 +27,10 @@ class XlLoadOD(BaseXlLoad):
                 # take field values
                 id_od = row[0].value
                 ton = row[1].value
-                path = row[2].value
+                path = None
                 gauge = None
                 distance = None
-                rail_category = row[3].value
+                rail_category = row[2].value
 
                 # create od pair
                 od_pair = OD(id_od, ton, path, gauge, distance, rail_category)

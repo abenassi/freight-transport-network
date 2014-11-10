@@ -146,7 +146,7 @@ class RoadwayReport(BaseReport):
         """Make a report of RailwayNetwork results in excel."""
 
         # create a workbook
-        wb = Workbook()
+        wb = Workbook(write_only=True)
 
         # network reports
         self._report_links_to_xl(rn, wb, "links")
@@ -176,7 +176,7 @@ class RailwayReport(BaseReport):
         """Make a report of RailwayNetwork results in excel."""
 
         # create a workbook
-        wb = Workbook()
+        wb = Workbook(write_only=True)
 
         # rolling material reports
         rn.locoms.report_to_excel(wb, "locoms")
