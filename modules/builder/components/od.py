@@ -178,7 +178,8 @@ class OD(BasePath):
 
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
-                self.get_derived_ton(), self.get_ton(), self.path]
+                self.get_derived_ton(), self.get_ton(), self.get_category(),
+                self.path]
 
     def get_dist(self):
         return self.dist

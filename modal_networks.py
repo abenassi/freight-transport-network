@@ -269,9 +269,9 @@ class RailwayNetwork(BaseModalNetwork):
                 current_cost = self._calc_mobility_cost()["total_mobility"]
 
                 # calculate locomotives that can be eliminated
-                idle_capacity = link_gauge.idle_capacity
+                idle_capacity_regroup = link_gauge.get_idle_cap_regroup()
                 loc_capacity = self.params["locomotive_capacity"].value
-                idle_locs = math.floor(float(idle_capacity) /
+                idle_locs = math.floor(float(idle_capacity_regroup) /
                                        float(loc_capacity))
 
                 # regroup link
@@ -354,6 +354,14 @@ class RailwayNetwork(BaseModalNetwork):
         idle_capacity_l = self.locoms.add_freight_service(od.get_ton(),
                                                           od.get_dist())
 
+        # check if od can be regroup or not (to remove idle capacity)
+        od_category = od.get_category()
+        param_name = "regroup_" + str(od_category)
+        if param_name in self.params:
+            can_be_regrouped = bool(self.params[param_name].value)
+        else:
+            can_be_regrouped = True
+
         # add idle capacity of locomotives along the route used by od pair
         exception_counter = 0
         MAX_EXCEPTIONS = 50
@@ -361,9 +369,14 @@ class RailwayNetwork(BaseModalNetwork):
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
+            link_gauge = self.links[link][od.gauge]
+
             # try to update tons and idle capacity of link-gauge
             try:
-                self.links[link][od.gauge].add_idle_cap(idle_capacity_l)
+                if can_be_regrouped:
+                    link_gauge.add_idle_cap_regroup(idle_capacity_l)
+                else:
+                    link_gauge.add_idle_cap_no_regroup(idle_capacity_l)
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:

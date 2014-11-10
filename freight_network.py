@@ -116,8 +116,8 @@ class FreightNetwork():
             od: OD pair that will be checked to be derivable to railway.
         """
 
-        # firts check origin != destination
-        if od.is_intrazone():
+        # firts check origin != destination and product category derivable
+        if od.is_intrazone() or od.get_category() == 0:
             return False
 
         # check if there is an operable railway path for the od pair
@@ -157,7 +157,14 @@ class FreightNetwork():
         min_dist = float(self.rail.params["min_dist_to_derive"].value)
         max_tons = float(self.rail.params["tons_of_max_derivation"].value)
         min_tons = float(self.rail.params["min_tons_to_derive"].value)
-        max_deriv = float(self.rail.params["max_derivation"].value)
+
+        # get maximum derivation depending on od product category
+        od_category = od.get_category()
+        param_name = "max_derivation_" + str(od_category)
+        if param_name in self.rail.params:
+            max_deriv = float(self.rail.params[param_name].value)
+        else:
+            max_deriv = float(self.rail.params["max_derivation"].value)
 
         # assign max derivation if distance and tons are greater than max
         if od.get_dist() >= max_dist and od.get_ton() >= max_tons:

@@ -68,11 +68,12 @@ class RailwayLink(Link):
     supported with the same rolling material currently running."""
 
     FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
-              "tons", "idle_capacity", "detour_cost", "track_cost",
-              "maintenance_cost", "gross ton-km"]
+              "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
+              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km"]
 
     # traffic parameters
-    idle_capacity = 0.0  # ton-km
+    idle_capacity_regroup = 0.0  # ton-km
+    idle_capacity_no_regroup = 0.0  # ton-km
 
     # track costs
     eac_detour = None
@@ -82,36 +83,55 @@ class RailwayLink(Link):
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20) + \
-               "Idle capacity: {:,.1f}".format(self.idle_capacity)
+               "Idle capacity: {:,.1f}".format(self.get_idle_cap_in_tons())
 
     # PUBLIC
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.original_ton,
-                self.derived_ton, self.get_ton(), self.idle_capacity,
-                self.eac_detour, self.eac_track, self.maintenance,
-                self.gross_tk]
+                self.derived_ton, self.get_ton(), self.idle_capacity_regroup,
+                self.idle_capacity_no_regroup, self.eac_detour,
+                self.eac_track, self.maintenance, self.gross_tk]
 
-    def add_idle_cap(self, idle_capacity_ton):
-        """Add idle capacity passed in ton."""
-        self.idle_capacity += idle_capacity_ton
+    def add_idle_cap_regroup(self, idle_capacity_ton):
+        """Add idle capacity passed in ton, that can be removed."""
+        self.idle_capacity_regroup += idle_capacity_ton
 
-    def get_idle_cap(self):
+    def add_idle_cap_no_regroup(self, idle_capacity_ton):
+        """Add idle capacity passed in ton, that can not be removed."""
+        self.idle_capacity_no_regroup += idle_capacity_ton
+
+    def get_idle_cap_in_ton_km(self):
         """Returns idle capacity in ton-km."""
-        return self.idle_capacity * self.dist
+        return (self.idle_capacity_regroup +
+                self.idle_capacity_no_regroup) * self.dist
+
+    def get_idle_cap_in_tons(self):
+        """Returns idle capacity in ton-km."""
+        return self.idle_capacity_regroup + self.idle_capacity_no_regroup
+
+    def get_idle_cap_regroup(self):
+        """Returns idle capacity in ton-km, that can be removed."""
+        return self.idle_capacity_regroup
+
+    def get_idle_cap_no_regroup(self):
+        """Returns idle capacity in ton-km, that can not be removed."""
+        return self.idle_capacity_no_regroup
 
     def regroup(self, idle_capacity_ton):
         """Eliminate idle capacity passed in ton."""
 
         # check if link has that idle capacity
-        if self.idle_capacity - idle_capacity_ton < 0:
-            msg = "{} has no {} idle capacity!".format(self.id, idle_capacity)
+        if self.idle_capacity_regroup - idle_capacity_ton < 0:
+            msg = "{} has no {} idle capacity!".format(self.id,
+                                                       idle_capacity_ton)
+
             raise ValueError(msg)
 
-        self.idle_capacity -= idle_capacity_ton
+        self.idle_capacity_regroup -= idle_capacity_ton
 
     def revert_regroup(self, idle_capacity_ton):
         """Regain idle capacity passed in ton."""
-        self.idle_capacity += idle_capacity_ton
+        self.idle_capacity_regroup += idle_capacity_ton
 
     def get_gross_ton_km(self, wagon_capacity, wagon_weight,
                          locomotive_capacity, locomotive_weight):
@@ -122,7 +142,8 @@ class RailwayLink(Link):
         wagons_weight = num_wagons * wagon_weight
 
         # locomotives weight
-        num_locoms = (self.get_ton() + self.idle_capacity) / locomotive_capacity
+        num_locoms = (self.get_ton() +
+                      self.get_idle_cap_in_tons()) / locomotive_capacity
         locoms_weight = num_locoms * locomotive_weight
 
         return (wagons_weight + locoms_weight + self.get_ton()) * self.dist
