@@ -1,4 +1,5 @@
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
+from openpyxl.styles import Style, Alignment, Font
 from pprint import pprint
 
 
@@ -8,13 +9,22 @@ class BaseReport():
 
     It must be subclassed for RoadwayReport or RailwayReport to be used."""
 
-    def __init__(self, xl_report=None):
+    ALIGN = Alignment(vertical='center')
+    ALIGN_HEADER = Alignment(horizontal='center', vertical='center',
+                             wrap_text=True)
+    CELL_STYLE = Style(alignment=ALIGN, number_format="#,##0.0")
+    FONT = Font(bold=True)
+    HEADER_STYLE = Style(alignment=ALIGN_HEADER, font=FONT)
+
+    def __init__(self, xl_report=None, description=None, append_report=True):
         """
         Args:
             xl_report: The path to excel file where results report will be
                 stored.
         """
         self.xl_report = xl_report or self.XL_REPORT
+        self.description = description
+        self.append_report = append_report
 
     def print_objects_report(self, rn):
         """Print report with examples of objects inside RailwayNetwork."""
@@ -112,29 +122,105 @@ class BaseReport():
 
     def _report_global_results(self, rn, wb, ws_name):
 
-        # create ws
-        ws = wb.create_sheet()
-        ws.title = ws_name
+        # append results to an existing report
+        if self.append_report:
 
-        # copy function calls
-        ws.append(["total tons", rn.get_total_tons()])
-        ws.append(["total ton-km", rn.get_total_ton_km()])
-        ws.append(["average distance",
-                  rn.get_total_ton_km() / rn.get_total_tons()])
+            # get ws
+            ws = wb.get_sheet_by_name(ws_name)
+
+            # get row and column to copy values
+            i_col = ws.max_column + 1
+            i_row = 2
+
+            # write report description
+            ws.cell(row=1, column=i_col).value = self.description
+
+            # copy function calls
+            dimensions = rn.get_dimensions()
+            values = [rn.get_total_tons(),
+                      rn.get_total_ton_km(),
+                      rn.get_total_ton_km() / rn.get_total_tons(),
+                      dimensions["total"],
+                      dimensions["high"],
+                      dimensions["low"]]
+
+            for value in values:
+                ws.cell(row=i_row, column=i_col).value = value
+                i_row += 1
+
+        else:
+            # create ws
+            ws = wb.create_sheet()
+            ws.title = ws_name
+            ws.append(["variable", self.description])
+
+            # copy function calls
+            ws.append(["total tons", rn.get_total_tons()])
+            ws.append(["total ton-km", rn.get_total_ton_km()])
+            ws.append(["average distance",
+                      rn.get_total_ton_km() / rn.get_total_tons()])
+
+            # copy dimensions
+            dimensions = rn.get_dimensions()
+            ws.append(["total dimension", dimensions["total"]])
+            ws.append(["high density dimension", dimensions["high"]])
+            ws.append(["low density dimension", dimensions["low"]])
 
     def _report_costs(self, rn, wb, ws_name):
 
-        # create ws
-        ws = wb.create_sheet()
-        ws.title = ws_name
+        # append results to an existing report
+        if self.append_report:
 
-        # add mobility costs to the costs sheet of report
-        for key, value in rn.costs["mob"].items():
-            ws.append([key, value])
+            # get ws
+            ws = wb.get_sheet_by_name(ws_name)
 
-        # add infrastructure costs to the costs sheet of report
-        for key, value in rn.costs["inf"].items():
-            ws.append([key, value])
+            # get row and column to copy values
+            i_col = ws.max_column + 1
+            i_row = 2
+
+            # write report description
+            ws.cell(row=1, column=i_col).value = self.description
+
+            # add mobility costs to the costs sheet of report
+            for key, value in rn.costs["mob"].items():
+                ws.cell(row=i_row, column=i_col).value = value
+                i_row += 1
+
+            # add infrastructure costs to the costs sheet of report
+            for key, value in rn.costs["inf"].items():
+                ws.cell(row=i_row, column=i_col).value = value
+                i_row += 1
+
+        else:
+            # create ws
+            ws = wb.create_sheet()
+            ws.title = ws_name
+            ws.append(["variable", self.description])
+
+            # add mobility costs to the costs sheet of report
+            for key, value in rn.costs["mob"].items():
+                ws.append([key, value])
+
+            # add infrastructure costs to the costs sheet of report
+            for key, value in rn.costs["inf"].items():
+                ws.append([key, value])
+
+    def _style_ws(self, ws):
+
+        # style cells with values
+        for col in ws.columns[1:]:
+            for cell in col[1:]:
+                cell.style = self.CELL_STYLE
+
+        # styling first column
+        for i_col in ws.column_dimensions:
+            ws.column_dimensions[i_col].width = 15.0
+        ws.column_dimensions["A"].width = 25.0
+
+        # styling first row
+        ws.row_dimensions[1].height = 60.0
+        for cell in ws.rows[0]:
+            cell.style = self.HEADER_STYLE
 
 
 class RoadwayReport(BaseReport):
@@ -175,18 +261,34 @@ class RailwayReport(BaseReport):
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
 
-        # create a workbook
-        wb = Workbook(write_only=True)
+        if self.append_report:
+            try:
+                # open the last report
+                wb = load_workbook(self.xl_report)
+            except:
+                # create a new report
+                wb = Workbook(write_only=True)
+                self.append_report = False
+        else:
+            # create a new report
+            wb = Workbook(write_only=True)
 
         # rolling material reports
-        rn.locoms.report_to_excel(wb, "locoms")
-        rn.wagons.report_to_excel(wb, "wagons")
+        rn.locoms.report_to_excel(wb, "locoms", self.description,
+                                  self.append_report)
+        rn.wagons.report_to_excel(wb, "wagons", self.description,
+                                  self.append_report)
 
         # network reports
-        self._report_links_to_xl(rn, wb, "links")
-        self._report_od_pairs_to_xl(rn, wb, "od_pairs")
         self._report_global_results(rn, wb, "global_results")
         self._report_costs(rn, wb, "costs")
+        self._report_links_to_xl(rn, wb, "links")
+        self._report_od_pairs_to_xl(rn, wb, "od_pairs")
+
+        # styling all the report if its in appending mode
+        if self.append_report:
+            for ws in wb:
+                self._style_ws(ws)
 
         # save excel report
         wb.save(self.xl_report)

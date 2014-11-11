@@ -28,16 +28,15 @@ class RollingMaterial():
         self.saved_idle_turnout = 0
         self.saved_running = 0
 
-        # parameters (they are set up from RailNetwork class, could be  alse
-        # more directly taken from Parametrs...)
-        self.minimum_units = 104
-        self.speed = 40  # (km/h)
-        self.availability = 6570  # (hr/year)
-        self.capacity = 2400  # (ton)
-        self.head_stops_time = 15  # (hr/head_stop)
-        self.turnout_time = 2  # (hr/turnout_stop)
-        self.turnout_freq = 200  # (km between turnouts)
-        self.regroup_time = 6
+        # parameters
+        self.minimum_units = None
+        self.speed = None  # (km/h)
+        self.availability = None  # (hr/year)
+        self.capacity = None  # (ton)
+        self.head_stops_time = None  # (hr/head_stop)
+        self.turnout_time = None  # (hr/turnout_stop)
+        self.turnout_freq = None  # (km between turnouts)
+        self.regroup_time = None
 
     def __repr__(self):
 
@@ -52,6 +51,21 @@ class RollingMaterial():
         return rep
 
     # PUBLIC
+    def reset(self):
+        # running time (hours * units)
+        self.running = 0
+
+        # idle time (hours * units)
+        self.idle_heads = 0
+        self.idle_turnout = 0
+        self.idle_regroup = 0
+
+        # idle capacity (ton)
+        self.idle_capacity = 0
+
+        # regroup saved time (hours * units)
+        self.saved_idle_turnout = 0
+        self.saved_running = 0
 
     # SET methods
     def set_speed(self, speed):
@@ -200,7 +214,7 @@ class RollingMaterial():
         print "Units needed (units): " + self.NF.format(self.get_units_needed_by_time())
         print "Anual average haul (km): " + self.NF.format(self.get_average_haul())
         print ""
-        
+
         print "IDLE CAPACITY".center(20, "*")
         print "Idle capacity (ton): " + self.NF.format(self.idle_capacity)
         print ""
@@ -210,22 +224,53 @@ class RollingMaterial():
         print "Running saved time (units-hr): " + self.NF.format(self.saved_running)
         print ""
 
-    def report_to_excel(self, wb, ws_name):
+    def report_to_excel(self, wb, ws_name, description, append_report):
 
-        # create ws
-        ws = wb.create_sheet()
-        ws.title = ws_name
+        # append results to an existing report
+        if append_report:
 
-        # iterate through data memebers, copying the values
-        data_members = self._get_data_members_list()
-        for data_member in data_members:
-            ws.append([data_member[0], data_member[1]])
+            # get ws
+            ws = wb.get_sheet_by_name(ws_name)
 
-        # copy function calls
-        ws.append(["get_units_needed_by_time",
-                   self.get_units_needed_by_time()])
-        ws.append(["get_average_haul",
-                   self.get_average_haul()])
+            # get row and column to copy values
+            i_col = ws.max_column + 1
+            i_row = 2
+
+            # write report description
+            ws.cell(row=1, column=i_col).value = description
+
+            # iterate through data memebers, copying the values
+            data_members = self._get_data_members_list()
+            for data_member in data_members:
+                ws.cell(row=i_row, column=i_col).value = data_member[1]
+                i_row += 1
+
+            # copy function calls
+            units_needed = self.get_units_needed_by_time()
+            ws.cell(row=i_row, column=i_col).value = units_needed
+
+            i_row += 1
+            average_haul = self.get_average_haul()
+            ws.cell(row=i_row, column=i_col).value = average_haul
+
+        # create new worksheet in the new report
+        else:
+
+            # create ws and append empty row
+            ws = wb.create_sheet()
+            ws.title = ws_name
+            ws.append(["variable", description])
+
+            # iterate through data memebers, copying the values
+            data_members = self._get_data_members_list()
+            for data_member in data_members:
+                ws.append([data_member[0], data_member[1]])
+
+            # copy function calls
+            ws.append(["get_units_needed_by_time",
+                       self.get_units_needed_by_time()])
+            ws.append(["get_average_haul",
+                       self.get_average_haul()])
 
     # PRIVATE
     def _get_data_members_list(self):

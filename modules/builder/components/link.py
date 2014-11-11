@@ -27,6 +27,10 @@ class Link():
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
 
     # PUBLIC
+    def reset(self):
+        self.eac_track = None
+        self.maintenance = None
+
     def add_original_ton(self, ton):
         self.original_ton += ton
 
@@ -83,7 +87,7 @@ class RailwayLink(Link):
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20) + \
-               "Idle capacity: {:,.1f}".format(self.get_idle_cap_in_tons())
+               "Idle capacity: {:,.1f}".format(self.get_idle_cap())
 
     # PUBLIC
     def get_attributes(self):
@@ -93,21 +97,28 @@ class RailwayLink(Link):
                 self.eac_track, self.maintenance, self.gross_tk]
 
     def add_idle_cap_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton, that can be removed."""
+        """Add idle capacity passed in ton-km, that can be removed."""
         self.idle_capacity_regroup += idle_capacity_ton
 
     def add_idle_cap_no_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton, that can not be removed."""
+        """Add idle capacity passed in ton-km, that can not be removed."""
         self.idle_capacity_no_regroup += idle_capacity_ton
 
-    def get_idle_cap_in_ton_km(self):
-        """Returns idle capacity in ton-km."""
-        return (self.idle_capacity_regroup +
-                self.idle_capacity_no_regroup) * self.dist
-
-    def get_idle_cap_in_tons(self):
-        """Returns idle capacity in ton-km."""
+    def get_idle_cap(self):
+        """Returns idle capacity in tons."""
         return self.idle_capacity_regroup + self.idle_capacity_no_regroup
+
+    def get_idle_cap_tk(self):
+        """Returns idle capacity in ton-km."""
+        return self.get_idle_cap() * self.dist
+
+    def get_idle_cap_regroup_tk(self):
+        """Returns idle capacity in ton-km, that can be removed."""
+        return self.idle_capacity_regroup * self.dist
+
+    def get_idle_cap_no_regroup_tk(self):
+        """Returns idle capacity in ton-km, that can not be removed."""
+        return self.idle_capacity_no_regroup * self.dist
 
     def get_idle_cap_regroup(self):
         """Returns idle capacity in ton-km, that can be removed."""
@@ -143,7 +154,7 @@ class RailwayLink(Link):
 
         # locomotives weight
         num_locoms = (self.get_ton() +
-                      self.get_idle_cap_in_tons()) / locomotive_capacity
+                      self.get_idle_cap()) / locomotive_capacity
         locoms_weight = num_locoms * locomotive_weight
 
         return (wagons_weight + locoms_weight + self.get_ton()) * self.dist

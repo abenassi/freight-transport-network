@@ -239,21 +239,21 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         rn.locoms = RollingMaterial()
 
         # wagons
+        rn.wagons.minimum_units = rn.params["wagon_min_units"].value
         rn.wagons.speed = rn.params["speed"].value
         rn.wagons.availability = rn.params["wagon_availability"].value
         rn.wagons.capacity = rn.params["wagon_capacity"].value
-        rn.wagons.head_stops_time = rn.params[
-            "wagon_head_stops_time"].value
+        rn.wagons.head_stops_time = rn.params["wagon_head_stops_time"].value
         rn.wagons.turnout_time = rn.params["turnout_time"].value
         rn.wagons.turnout_freq = rn.params["turnout_freq"].value
         rn.wagons.regroup_time = rn.params["regroup_time"].value
 
         # locomotives
+        rn.locoms.minimum_units = rn.params["locomotive_min_units"].value
         rn.locoms.speed = rn.params["speed"].value
         rn.locoms.availability = rn.params["locomotive_availability"].value
         rn.locoms.capacity = rn.params["locomotive_capacity"].value
-        rn.locoms.head_stops_time = rn.params[
-            "locom_head_stops_time"].value
+        rn.locoms.head_stops_time = rn.params["locom_head_stops_time"].value
         rn.locoms.turnout_time = rn.params["turnout_time"].value
         rn.locoms.turnout_freq = rn.params["turnout_freq"].value
         rn.locoms.regroup_time = rn.params["regroup_time"].value

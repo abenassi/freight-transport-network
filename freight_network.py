@@ -96,7 +96,7 @@ class FreightNetwork():
         overall cost of freight transportation."""
         pass
 
-    def report_to_excel(self, add_tag=None):
+    def report_to_excel(self, description=None):
         """Make a report of RailwayNetwork and RoadNetwork results.
 
         At any moment, freeze the status of RailwayNetwork and RoadNetwork
@@ -241,6 +241,21 @@ def test():
     road_network = RoadwayNetwork()
     freight_network = FreightNetwork(rail_network, road_network)
 
+    # calculate costs without derivation
+    description = "situacion base"
+
+    rail_network.calc_simple_mobility_cost()
+    rail_network.calc_infrastructure_cost()
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - sin reagrupamiento",
+                                 append_report=False)
+
+    rail_network.calc_optimized_mobility_cost()
+    rail_network.calc_infrastructure_cost()
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - con reagrupamiento",
+                                 append_report=True)
+
     # derive all road od_pairs
     freight_network.derive_all_to_railway()
 
@@ -248,6 +263,9 @@ def test():
     # rail_network.links_by_od_to_excel()
     rail_network.print_objects_report()
     road_network.report_to_excel()
+
+    # calculate costs with complete derivation to railway
+    description = "derivacion"
 
 
     # CALCULATE SIMPLE MOBILITY COSTS and its INFRASTRUCTURE COSTS
@@ -262,7 +280,9 @@ def test():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/report_simple_mobility.xlsx")
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - sin reagrupamiento",
+                                 append_report=True)
 
 
     # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
@@ -277,7 +297,9 @@ def test():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/report_optimized_mobility.xlsx")
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - con reagrupamiento",
+                                 append_report=True)
 
 
 if __name__ == '__main__':

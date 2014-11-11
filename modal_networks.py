@@ -41,6 +41,7 @@ class BaseModalNetwork(object):
         self.links = {}
         self.paths = {}
         self.costs = {"mob": None, "inf": None}
+        self.is_costed = False
 
     def __iter__(self):
         return self.iter_links()
@@ -145,6 +146,37 @@ class BaseModalNetwork(object):
 
         return total_tons
 
+    def get_dimensions(self):
+        """Calculate network dimensions in km.
+
+        Returns:
+            dimensions = {"total": total dimension,
+                          "high": high_density dimension,
+                          "low": low_density dimension}
+        """
+        # calculate total dimension
+        total_dimension = sum([link.get_dist() for link in self.iter_links()
+                               if link.get_ton() > 0.0])
+
+        # calculate average density
+        average_density = self.get_total_ton_km() / total_dimension
+
+        # calculate high density dimension
+        high_density = average_density * 2
+        high_dimension = sum([link.get_dist() for link in self.iter_links()
+                              if link.get_ton() > high_density])
+
+        # calculate low density dimension
+        low_density = average_density * 2
+        low_dimension = sum([link.get_dist() for link in self.iter_links()
+                             if link.get_ton() < low_density])
+
+        dimensions = {"total": total_dimension,
+                      "high": high_dimension,
+                      "low": low_dimension}
+
+        return dimensions
+
     # reports
     def print_objects_report(self):
         """Print report with examples of objects inside RailwayNetwork."""
@@ -164,11 +196,12 @@ class BaseModalNetwork(object):
         rep = self.REPORT_CLASS()
         rep.print_costs_report(self)
 
-    def report_to_excel(self, xl_report=None):
+    def report_to_excel(self, xl_report=None, description=None,
+                        append_report=None):
         """Make a report of modal network results in excel."""
 
         # create report object
-        rep = self.REPORT_CLASS(xl_report)
+        rep = self.REPORT_CLASS(xl_report, description, append_report)
 
         # ask for excel report passing RailNetwork object itself
         rep.report_to_excel(self)
@@ -245,6 +278,10 @@ class RailwayNetwork(BaseModalNetwork):
         """Calculates mobility cost of running each origin-destination rail
         service independently."""
 
+        # reset network before calculate costs
+        if self.is_costed:
+            self._reset_network()
+
         # iterate through all od pairs
         for od in self.iter_od_pairs():
 
@@ -254,6 +291,8 @@ class RailwayNetwork(BaseModalNetwork):
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
 
+        self.is_costed = True
+
     def calc_optimized_mobility_cost(self):
         """Regroup trains operating below maximum capacity.
 
@@ -262,28 +301,29 @@ class RailwayNetwork(BaseModalNetwork):
         maximum capacity. If its not the case, revert regrouping."""
 
         # iterate through all links
-        for link in self.links.values():
-            for link_gauge in link.values():
+        for link in self.iter_links():
 
-                # store current cost of network
-                current_cost = self._calc_mobility_cost()["total_mobility"]
+            # store current cost of network
+            current_cost = self._calc_mobility_cost()["total_mobility"]
 
-                # calculate locomotives that can be eliminated
-                idle_capacity_regroup = link_gauge.get_idle_cap_regroup()
-                loc_capacity = self.params["locomotive_capacity"].value
-                idle_locs = math.floor(float(idle_capacity_regroup) /
-                                       float(loc_capacity))
+            # calculate locomotives that can be eliminated
+            idle_cap_regroup = link.get_idle_cap_regroup()
+            loc_cap = self.params["locomotive_capacity"].value
+            idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
 
-                # regroup link
-                self._regroup_link(link_gauge, idle_locs)
+            # regroup link
+            # print "regroup ", link.get_id()
+            self._regroup_link(link, idle_locs)
 
-                # calculate new cost with link regrouped
-                new_cost = self._calc_mobility_cost()["total_mobility"]
+            # calculate new cost with link regrouped
+            new_cost = self._calc_mobility_cost()["total_mobility"]
 
-                # if new cost is not lower, revert regroup of link
-                # if False:
-                if new_cost >= current_cost:
-                    self._revert_regroup_link(link_gauge, idle_locs)
+            # if new cost is not lower, revert regroup of link
+            # if False:
+            if new_cost >= current_cost:
+                # print "new cost:", new_cost, "current cost:", current_cost
+                # print "revert ", link.get_id()
+                self._revert_regroup_link(link, idle_locs)
 
         # calculate and store mobility costs
         self.costs["mob"] = self._calc_mobility_cost()
@@ -365,11 +405,11 @@ class RailwayNetwork(BaseModalNetwork):
         # add idle capacity of locomotives along the route used by od pair
         exception_counter = 0
         MAX_EXCEPTIONS = 50
-        for link in od.links:
+        for id_link in od.get_links():
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
-            link_gauge = self.links[link][od.gauge]
+            link_gauge = self.links[id_link][od.gauge]
 
             # try to update tons and idle capacity of link-gauge
             try:
@@ -381,9 +421,9 @@ class RailwayNetwork(BaseModalNetwork):
             # if impossible, there is no link-gauge in the network for od_pair
             except:
                 exception_counter += 1
-                print "".join(("There is no link ", link, " and gauge ",
-                               od.gauge, " for od pair ", od.id,
-                               " with path: ", od.path))
+                print "".join(("There is no link ", id_link, " and gauge ",
+                               od.get_gauge(), " for od pair ", od.get_id(),
+                               " with path: ", od.get_path()))
 
     def _regroup_link(self, link, idle_locs):
         """Eliminate some idleness in a link regrouping trains.
@@ -430,11 +470,22 @@ class RailwayNetwork(BaseModalNetwork):
         self.locoms.revert_regroup(idle_locs, link.dist)
         self.wagons.subtract_regroup_time(wagons_regrouped)
 
+    def _reset_network(self):
+        self.wagons.reset()
+        self.locoms.reset()
+        self._reset_links()
+        self.is_costed = False
+
+    def _reset_links(self):
+        for link in self.iter_links():
+            link.reset()
+
 
 def test_railway_network():
 
     # initiate object
     rail_network = RailwayNetwork()
+    description = "situacion base"
 
     # print firsts reports, without costs calculations
     # rail_network.links_by_od_to_excel()
@@ -456,7 +507,9 @@ def test_railway_network():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/report_simple_mobility.xlsx")
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - sin reagrupamiento",
+                                 append_report=False)
 
 
     # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
@@ -474,7 +527,9 @@ def test_railway_network():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/report_optimized_mobility.xlsx")
+    rail_network.report_to_excel("reports/railway_report.xlsx",
+                                 description + " - con reagrupamiento",
+                                 append_report=True)
 
 
 def test_roadway_network():
