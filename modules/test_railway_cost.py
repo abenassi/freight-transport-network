@@ -9,9 +9,10 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        # load parameters to test
+        # locations to excel files test data
         XL_PARAMETERS = os.path.join(os.path.dirname(__file__),
                                      "test_data/railway_parameters.xlsx")
+
         params = {}
         self._load_from_xl(XlLoadParam, XL_PARAMETERS, params)
 
@@ -58,6 +59,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         # dist to test
         self.dist = 15121.0
         self.main_dist = 7202.0
+        self.secondary_dist = 7919.0
 
     # GENERAL cost tests
     def test_calc_total_ton_km(self):
@@ -77,8 +79,17 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         self.assertAlmostEqual(crf, 0.08882743338727227)
 
     def test_cost_eac_track(self):
+        # FAINTERU base case with main track parameters
         track_eac = self.nc._cost_eac_track(self.main_gross_tk, self.main_dist)
         self.assertAlmostEqual(track_eac, 232400036.0, delta=10)
+
+        # FAINTERU density * 3.16 with main track parameters
+        track_eac = self.nc._cost_eac_track(45704866707, self.main_dist)
+        self.assertAlmostEqual(track_eac, 492564218, delta=10)
+
+        # FAINTERU density * 3.16 with secondary track parameters
+        track_eac = self.nc._cost_eac_track(12563761436, self.secondary_dist)
+        self.assertAlmostEqual(track_eac, 227724904, delta=10)
 
         track_eac = self.nc._cost_eac_track(303670609022.56, self.dist)
         self.assertAlmostEqual(track_eac, 1807731647, delta=10)
@@ -114,7 +125,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         for element in loader_class(xl_name):
 
             # check if element id was already in output_dict
-            if not element.id in output_dict:
+            if element.id not in output_dict:
                 output_dict[element.id] = element
 
             else:

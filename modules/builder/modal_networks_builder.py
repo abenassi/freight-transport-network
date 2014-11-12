@@ -210,7 +210,6 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
 
     XL_PARAMETERS = "data/railway_parameters.xlsx"
     XL_OD_PAIRS = "data/railway_od_pairs.xlsx"
-    XL_OD_PAIRS_CURRENT = "data/railway_od_pairs_current.xlsx"
     XL_LINKS = "data/railway_links.xlsx"
     XL_PATHS = "data/railway_paths.xlsx"
 

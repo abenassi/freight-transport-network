@@ -98,6 +98,24 @@ class BaseModalNetwork(object):
     def get_link(self, id_link):
         return self.links[id_link]
 
+    def get_od(self, id_od, category_od):
+        """Returns existent od pair or create a new one if it doesn't exist.
+
+        Args:
+            id_od: the origin-destination id (eg. "1-3")
+            category_od: the railway category of the freight transported.
+        """
+
+        # check if od pair is in the network
+        if id_od not in self.od_pairs:
+            self._create_od_pair(id_od, category_od)
+
+        # check if od pair has the category asked
+        if category_od not in self.od_pairs[id_od]:
+            self._create_od_pair(id_od, category_od)
+
+        return self.od_pairs[id_od][category_od]
+
     def get_total_ton_km(self):
         """Sum all ton_km from all od_pairs used in the model."""
         total_tk_link = 0.0
@@ -118,24 +136,6 @@ class BaseModalNetwork(object):
 
         return total_tk_link
 
-    def get_od(self, id_od, category_od):
-        """Returns existent od pair or create a new one if it doesn't exist.
-
-        Args:
-            id_od: the origin-destination id (eg. "1-3")
-            category_od: the railway category of the freight transported.
-        """
-
-        # check if od pair is in the network
-        if id_od not in self.od_pairs:
-            self._create_od_pair(id_od, category_od)
-
-        # check if od pair has the category asked
-        if category_od not in self.od_pairs[id_od]:
-            self._create_od_pair(id_od, category_od)
-
-        return self.od_pairs[id_od][category_od]
-
     def get_total_tons(self):
         """Sum all tons from od_pairs used in the model."""
         total_tons = 0.0
@@ -145,6 +145,9 @@ class BaseModalNetwork(object):
             total_tons += od.get_ton()
 
         return total_tons
+
+    def get_average_distance(self):
+        return self.get_total_ton_km() / self.get_total_tons()
 
     def get_dimensions(self):
         """Calculate network dimensions in km.
@@ -176,6 +179,15 @@ class BaseModalNetwork(object):
                       "low": low_dimension}
 
         return dimensions
+
+    def get_total_cost_tk(self):
+        mobility_cost = self.costs["mob"]["total_mobility"]
+        infrastructure_cost = self.costs["inf"]["total_infrastructure"]
+
+        return mobility_cost + infrastructure_cost
+
+    def get_costs_tk(self):
+        return self.costs
 
     # reports
     def print_objects_report(self):
@@ -222,13 +234,18 @@ class RoadwayNetwork(BaseModalNetwork):
     REPORT_CLASS = RoadwayReport
     BUILDER_CLASS = RoadwayNetworkBuilder
 
-    def __init__(self):
+    def __init__(self, builder=None):
 
         self.trucks = None
         super(RoadwayNetwork, self).__init__()
 
+        # check if network was constructed with a specified builder
+        if builder:
+            network_builder = builder
+        else:
+            network_builder = self.BUILDER_CLASS()
+
         # build network
-        network_builder = self.BUILDER_CLASS()
         network_builder.build(self)
 
 
@@ -243,14 +260,19 @@ class RailwayNetwork(BaseModalNetwork):
     REPORT_CLASS = RailwayReport
     BUILDER_CLASS = RailwayNetworkBuilder
 
-    def __init__(self):
+    def __init__(self, builder=None):
 
         self.wagons = None
         self.locoms = None
         super(RailwayNetwork, self).__init__()
 
+        # check if network was constructed with a specified builder
+        if builder:
+            network_builder = builder
+        else:
+            network_builder = self.BUILDER_CLASS()
+
         # build network
-        network_builder = self.BUILDER_CLASS()
         network_builder.build(self)
 
     # PUBLIC
@@ -299,6 +321,11 @@ class RailwayNetwork(BaseModalNetwork):
         Check if regrouping trains in a single link is more cost-effective than
         previous situation, where some trains where operating below their
         maximum capacity. If its not the case, revert regrouping."""
+
+        # check that simple cost mobility was calculated
+        if not self.is_costed:
+            self.calc_simple_mobility_cost()
+            self.is_costed = True
 
         # iterate through all links
         for link in self.iter_links():
