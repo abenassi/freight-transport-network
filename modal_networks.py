@@ -385,8 +385,7 @@ class RailwayNetwork(BaseModalNetwork):
         links data."""
 
         # create a railway network cost object
-        network_cost = RailwayNetworkCost(self.params, self.locoms,
-                                          self.wagons, self.links)
+        network_cost = RailwayNetworkCost(self)
 
         return network_cost.cost_infrast()
 
@@ -397,8 +396,7 @@ class RailwayNetwork(BaseModalNetwork):
         described by current parameters, locomotives, wagons and links data."""
 
         # create a railway network cost object
-        network_cost = RailwayNetworkCost(self.params, self.locoms,
-                                          self.wagons, self.links)
+        network_cost = RailwayNetworkCost(self)
 
         return network_cost.cost_mobility()
 

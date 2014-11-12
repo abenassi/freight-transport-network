@@ -73,11 +73,16 @@ class RailwayLink(Link):
 
     FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
               "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
-              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km"]
+              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
+              "num_detours"]
 
     # traffic parameters
     idle_capacity_regroup = 0.0  # ton-km
     idle_capacity_no_regroup = 0.0  # ton-km
+
+    # detour parameters
+    turnout_freq = None
+    turnout_freq_max_density = None
 
     # track costs
     eac_detour = None
@@ -90,11 +95,18 @@ class RailwayLink(Link):
                "Idle capacity: {:,.1f}".format(self.get_idle_cap())
 
     # PUBLIC
+    def set_turnout_freq(self, turnout_freq):
+        self.turnout_freq = turnout_freq
+
+    def set_turnout_max_density(self, turnout_freq_max_density):
+        self.turnout_freq_max_density = turnout_freq_max_density
+
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.original_ton,
                 self.derived_ton, self.get_ton(), self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
-                self.eac_track, self.maintenance, self.gross_tk]
+                self.eac_track, self.maintenance, self.gross_tk,
+                self.get_number_of_detours()]
 
     def add_idle_cap_regroup(self, idle_capacity_ton):
         """Add idle capacity passed in ton-km, that can be removed."""
@@ -157,7 +169,42 @@ class RailwayLink(Link):
                       self.get_idle_cap()) / locomotive_capacity
         locoms_weight = num_locoms * locomotive_weight
 
-        return (wagons_weight + locoms_weight + self.get_ton()) * self.dist
+        # calculate gross ton-km
+        self.gross_tk = (wagons_weight + locoms_weight +
+                         self.get_ton()) * self.dist
+
+        return self.gross_tk
+
+    def get_number_of_detours(self):
+        """Calculate number of detours needed at the link."""
+
+        # check if there is traffic
+        if self.gross_tk:
+            num_detours = self._calc_number_of_detours(self.gross_tk,
+                                                       self.get_dist())
+        else:
+            num_detours = 0
+
+        return num_detours
+
+    # PRIVATE
+    def _calc_number_of_detours(self, gross_tk, dist):
+        """Calculate number of detours needed in a certain track."""
+
+        # store parameters in short-name variables
+        max_turnout_distance = self.turnout_freq
+        max_turnout_density = self.turnout_freq_max_density
+        t_distance = max_turnout_distance
+
+        # calculate density
+        density = gross_tk / dist
+
+        if not density < max_turnout_density:
+            t_distance = max_turnout_distance / (density / max_turnout_density)
+
+        num_detours = dist / t_distance
+
+        return num_detours
 
 
 def test():

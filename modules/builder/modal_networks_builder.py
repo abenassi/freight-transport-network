@@ -226,6 +226,9 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         # set rolling material parameters
         self._set_rolling_material_parameters(rn)
 
+        # set link detour parameters
+        self._set_link_detour_parameters(rn)
+
         print "RailwayNetwork object has been succesfully built.\n"
 
     # PRIVATE
@@ -256,3 +259,13 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         rn.locoms.turnout_time = rn.params["turnout_time"].value
         rn.locoms.turnout_freq = rn.params["turnout_freq"].value
         rn.locoms.regroup_time = rn.params["regroup_time"].value
+
+    def _set_link_detour_parameters(self, rn):
+        """Set parameters to calculate number of detours needed per link."""
+
+        for link in rn.iter_links():
+
+            link.set_turnout_freq(rn.params["turnout_freq"].value)
+
+            turnout_max_density = rn.params["turnout_freq_max_density"].value
+            link.set_turnout_max_density(turnout_max_density)

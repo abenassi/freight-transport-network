@@ -1,4 +1,5 @@
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell import get_column_letter
 from openpyxl.styles import Style, Alignment, Font
 from pprint import pprint
 
@@ -100,10 +101,13 @@ class BaseReport():
         ws.append(first_link.FIELDS)
 
         # iterate links appending data attributes of each link-gauge
-        for link in rn.links.values():
-            for gauge in link.values():
-                link_attributes = gauge.get_attributes()
-                ws.append(link_attributes)
+        for link in rn.iter_links():
+            link_attributes = link.get_attributes()
+            ws.append(link_attributes)
+
+        # add auto filter
+        col_letter = get_column_letter(ws.get_highest_column())
+        ws.auto_filter.ref = "A1:" + col_letter + "1"
 
     def _report_od_pairs_to_xl(self, rn, wb, ws_name):
 
@@ -119,6 +123,10 @@ class BaseReport():
         for od in rn.iter_od_pairs():
             od_attributes = od.get_attributes()
             ws.append(od_attributes)
+
+        # add auto filter
+        col_letter = get_column_letter(ws.get_highest_column())
+        ws.auto_filter.ref = "A1:" + col_letter + "1"
 
     def _report_global_results(self, rn, wb, ws_name):
 

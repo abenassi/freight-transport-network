@@ -270,7 +270,7 @@ def test():
 
     # CALCULATE SIMPLE MOBILITY COSTS and its INFRASTRUCTURE COSTS
     print "\n***********************************"
-    print "Calculate simple mobility cost."
+    print "Calculate simple mobility cost.", description
     print "***********************************"
     rail_network.calc_simple_mobility_cost()
     rail_network.calc_infrastructure_cost()
@@ -287,7 +287,7 @@ def test():
 
     # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
     print "\n***********************************"
-    print "Calculate optimized mobility cost."
+    print "Calculate optimized mobility cost.", description
     print "***********************************"
     rail_network.calc_optimized_mobility_cost()
     rail_network.calc_infrastructure_cost()
