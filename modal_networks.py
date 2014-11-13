@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from modules import RailwayNetworkBuilder, RoadwayNetworkBuilder
 from modules import RailwayNetworkCost, RoadwayNetworkCost
-from modules import RailwayReport, RoadwayReport
+from modules import RailwayNetworkReport, RoadwayNetworkReport
 import math
 
 """
@@ -251,7 +251,7 @@ class RoadwayNetwork(BaseModalNetwork):
     RoadwayNetwork() starts an empty network and it uses RoadwayNetworkBuilder
     to build an instance."""
 
-    REPORT_CLASS = RoadwayReport
+    REPORT_CLASS = RoadwayNetworkReport
     COST_CLASS = RoadwayNetworkCost
     BUILDER_CLASS = RoadwayNetworkBuilder
 
@@ -313,7 +313,7 @@ class RailwayNetwork(BaseModalNetwork):
     to build an instance.
     """
 
-    REPORT_CLASS = RailwayReport
+    REPORT_CLASS = RailwayNetworkReport
     COST_CLASS = RailwayNetworkCost
     BUILDER_CLASS = RailwayNetworkBuilder
 

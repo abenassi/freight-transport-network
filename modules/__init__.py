@@ -1,3 +1,3 @@
 from cost import RailwayNetworkCost, RoadwayNetworkCost
-from report import RailwayReport, RoadwayReport
+from report import RailwayNetworkReport, RoadwayNetworkReport
 from builder import RailwayNetworkBuilder, RoadwayNetworkBuilder

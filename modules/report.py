@@ -231,7 +231,7 @@ class BaseReport():
             cell.style = self.HEADER_STYLE
 
 
-class RoadwayReport(BaseReport):
+class RoadwayNetworkReport(BaseReport):
 
     XL_REPORT = "reports/roadway_report.xlsx"
     XL_LINKS_BY_OD = "reports/roadway_links_by_od.xlsx"
@@ -266,7 +266,7 @@ class RoadwayReport(BaseReport):
         wb.save(self.xl_report)
 
 
-class RailwayReport(BaseReport):
+class RailwayNetworkReport(BaseReport):
 
     XL_REPORT = "reports/railway_report.xlsx"
     XL_LINKS_BY_OD = "reports/railway_links_by_od.xlsx"
