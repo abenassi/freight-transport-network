@@ -55,6 +55,9 @@ class Link():
     def get_dist(self):
         return self.dist
 
+    def get_ton_km(self):
+        return self.get_ton() * self.get_dist()
+
     def get_id(self):
         return self.id
 

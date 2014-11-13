@@ -1,8 +1,11 @@
-class RailwayNetworkCost():
+class BaseNetworkCost(object):
 
     def __init__(self, rn):
         self.rn = rn
-        self.total_ton_km = self._calc_total_ton_km()
+        self.total_ton_km = self.rn.get_total_ton_km()
+
+
+class RailwayNetworkCost(BaseNetworkCost):
 
     # PUBLIC
     def cost_mobility(self):
@@ -49,10 +52,10 @@ class RailwayNetworkCost():
                                                  locomotive_weight)
 
                 # calculate costs of link infrastructure
-                eac_detour = self._cost_detour(gross_tk, link.dist)
-                eac_track = self._cost_eac_track(gross_tk, link.dist)
+                eac_detour = self._cost_detour(gross_tk, link.get_dist())
+                eac_track = self._cost_eac_track(gross_tk, link.get_dist())
                 maintenance = self._cost_infrast_maint(
-                    gross_tk, link.dist)
+                    gross_tk, link.get_dist())
 
                 # update RV cost category with traffic of the link
                 RV["eac_detour"] += eac_detour
@@ -74,19 +77,6 @@ class RailwayNetworkCost():
         return RV
 
     # PRIVATE
-    def _calc_total_ton_km(self):
-        """Calculate total ton_km of the network."""
-
-        # init count in zero
-        total_ton_km = 0
-
-        # add ton_km passing on each link
-        for link in self.rn.iter_links():
-            ton_km = link.get_dist() * link.get_ton()
-            total_ton_km += ton_km
-
-        return total_ton_km
-
     # *** cost MOBILITY methods ***
     def _cost_eac_ton_km(self, eac, units):
         """Calculate eac by ton_km for a number of units."""
@@ -277,6 +267,68 @@ class RailwayNetworkCost():
         b = pow(1 + int_rate, use_life) - 1
 
         return a / b
+
+
+class RoadwayNetworkCost(BaseNetworkCost):
+
+    # PUBLIC
+    def cost_mobility(self):
+        """Calculate each type of mobility cost."""
+        RV = {}
+
+        # sum all costs and add it to total mobility
+        RV["total_mobility"] = self._cost_mobility()
+
+        return RV
+
+    def cost_infrast(self):
+        """Calculate each type of infrastructure cost."""
+        RV = {}
+        RV["eac_track"] = 0
+
+        # calculate gross ton_km and infrastructure cost for each link
+        for link in self.rn.iter_links():
+
+            # check if there is load on that link
+            if link.get_ton() > 0:
+
+                # calculate costs of link infrastructure
+                eac_track = self._cost_eac_track(link.get_ton(),
+                                                 link.get_dist())
+
+                # update RV cost category with traffic of the link
+                RV["eac_track"] += eac_track
+
+                # write costs to link object
+                link.eac_track = eac_track
+
+        # divide all costs to express them in terms of ton-km
+        for infrast_cost in RV:
+            RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
+
+        # sum all costs and add it to total mobility
+        RV["total_infrastructure"] = sum(RV.values())
+
+        return RV
+
+    # PRIVATE
+    def _cost_mobility(self):
+        """Calculate cost of truck mobility."""
+
+        mobility_cost_tk = self.rn.params["mobility_cost_tk"].value
+        mobility_cost = self.rn.get_total_ton_km() * mobility_cost_tk
+
+        return mobility_cost / self.total_ton_km
+
+    def _cost_eac_track(self, ton, dist):
+        """Calculate equivalent annual cost of track."""
+
+        a_eac = self.rn.params["coef_a_infrast_cost"].value
+        b_eac = self.rn.params["coef_b_infrast_cost"].value
+
+        eac = b_eac * (ton ** a_eac)
+
+        return eac * dist
 
 
 def test():

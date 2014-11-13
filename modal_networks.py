@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
-from modules import (RailwayNetworkBuilder, RoadwayNetworkBuilder,
-                     RailwayNetworkCost, RailwayReport, RoadwayReport)
+from modules import RailwayNetworkBuilder, RoadwayNetworkBuilder
+from modules import RailwayNetworkCost, RoadwayNetworkCost
+from modules import RailwayReport, RoadwayReport
 import math
 
 """
@@ -92,6 +93,9 @@ class BaseModalNetwork(object):
         else:
             return self.get_path(od).calc_distance(self.get_links())
 
+    def get_paths(self):
+        return self.paths
+
     def get_links(self):
         return self.links
 
@@ -180,14 +184,17 @@ class BaseModalNetwork(object):
 
         return dimensions
 
+    def get_costs_tk(self):
+        return self.costs
+
     def get_total_cost_tk(self):
         mobility_cost = self.costs["mob"]["total_mobility"]
         infrastructure_cost = self.costs["inf"]["total_infrastructure"]
 
         return mobility_cost + infrastructure_cost
 
-    def get_costs_tk(self):
-        return self.costs
+    def get_total_cost(self):
+        return self.get_total_cost_tk() * self.get_total_ton_km()
 
     # reports
     def print_objects_report(self):
@@ -218,10 +225,23 @@ class BaseModalNetwork(object):
         # ask for excel report passing RailNetwork object itself
         rep.report_to_excel(self)
 
+    def links_by_od_to_excel(self, xl_links_by_od=None):
+        """Write table of links by possible od pair to excel."""
+
+        # create report object
+        rep = self.REPORT_CLASS()
+
+        # ask for excel report passing RailNetwork object itself
+        rep.links_by_od_to_excel(self.get_paths(), xl_links_by_od)
+
     # PRIVATE
     def _create_od_pair(self, id_od, category_od):
         network_builder = self.BUILDER_CLASS()
         network_builder.create_od_pair(self, id_od, category_od)
+
+    def _reset_links(self):
+        for link in self.iter_links():
+            link.reset()
 
 
 class RoadwayNetwork(BaseModalNetwork):
@@ -232,6 +252,7 @@ class RoadwayNetwork(BaseModalNetwork):
     to build an instance."""
 
     REPORT_CLASS = RoadwayReport
+    COST_CLASS = RoadwayNetworkCost
     BUILDER_CLASS = RoadwayNetworkBuilder
 
     def __init__(self, builder=None):
@@ -248,6 +269,41 @@ class RoadwayNetwork(BaseModalNetwork):
         # build network
         network_builder.build(self)
 
+    # PUBLIC
+    # cost calculations
+    def calc_mobility_cost(self):
+        """Calculates mobility cost."""
+
+        # reset network before calculate costs
+        if self.is_costed:
+            self._reset_network()
+
+        # calculate and store mobility costs for all mobility requirements
+        network_cost = self.COST_CLASS(self)
+        self.costs["mob"] = network_cost.cost_mobility()
+
+        self.is_costed = True
+
+    def calc_infrastructure_cost(self):
+        """Calculates infrastructure cost for current mobility requirements."""
+
+        # create a railway network cost object
+        network_cost = self.COST_CLASS(self)
+
+        # calculate and store infrastructure costs
+        self.costs["inf"] = network_cost.cost_infrast()
+
+    def cost_network(self):
+        """Cost infrastructure and mobility of the network."""
+
+        self.calc_mobility_cost()
+        self.calc_infrastructure_cost()
+
+    # PRIVATE
+    def _reset_network(self):
+        self._reset_links()
+        self.is_costed = False
+
 
 class RailwayNetwork(BaseModalNetwork):
 
@@ -258,6 +314,7 @@ class RailwayNetwork(BaseModalNetwork):
     """
 
     REPORT_CLASS = RailwayReport
+    COST_CLASS = RailwayNetworkCost
     BUILDER_CLASS = RailwayNetworkBuilder
 
     def __init__(self, builder=None):
@@ -276,26 +333,7 @@ class RailwayNetwork(BaseModalNetwork):
         network_builder.build(self)
 
     # PUBLIC
-    def has_railway_path(self, od):
-        """Check if an od pair has an operable railway path.
-
-        Args:
-            od: od pair to be evaluated to has a railway path or not
-        """
-
-        # check if od is in paths
-        if not od.get_id() in self.paths:
-            return False
-
-        # check the path is operable by railway
-        path = self.paths[od.get_id()].get_path()
-        gauge = self.paths[od.get_id()].get_gauge()
-
-        has_path_and_gauge = bool(path and gauge)
-        has_links = "-" in path
-
-        return has_path_and_gauge and has_links
-
+    # cost calculations
     def calc_simple_mobility_cost(self):
         """Calculates mobility cost of running each origin-destination rail
         service independently."""
@@ -356,19 +394,47 @@ class RailwayNetwork(BaseModalNetwork):
         self.costs["mob"] = self._calc_mobility_cost()
 
     def calc_infrastructure_cost(self):
-        """Calculate infrastructure costs."""
+        """Calculates infrastructure cost for current mobility requirements.
+
+        Creates a railway NetworkCost() object to cost infrastructure for a
+        network described by current parameters, locomotives, wagons and
+        links data."""
+
+        # create a railway network cost object
+        network_cost = self.COST_CLASS(self)
 
         # calculate and store infrastructure costs
-        self.costs["inf"] = self._calc_infrastructure_cost()
+        self.costs["inf"] = network_cost.cost_infrast()
 
-    def links_by_od_to_excel(self, xl_links_by_od=None):
-        """Write table of links by possible od pair to excel."""
+    def cost_network(self):
+        """Cost infrastructure and mobility of the network.
 
-        # create report object
-        rep = RailwayReport()
+        It uses de best cost approach (optimized mobility cost)."""
 
-        # ask for excel report passing RailNetwork object itself
-        rep.links_by_od_to_excel(self.paths, xl_links_by_od)
+        self.calc_simple_mobility_cost()
+        self.calc_optimized_mobility_cost()
+        self.calc_infrastructure_cost()
+
+    # others
+    def has_railway_path(self, od):
+        """Check if an od pair has an operable railway path.
+
+        Args:
+            od: od pair to be evaluated to has a railway path or not
+        """
+
+        # check if od is in paths
+        if not od.get_id() in self.paths:
+            return False
+
+        # check the path is operable by railway
+        path = self.paths[od.get_id()].get_path()
+        gauge = self.paths[od.get_id()].get_gauge()
+
+        has_path_and_gauge = bool(path and gauge)
+        has_links = "-" in path
+
+        return has_path_and_gauge and has_links
 
     def print_rolling_material_report(self):
         """Print report with rolling material results."""
@@ -377,18 +443,6 @@ class RailwayNetwork(BaseModalNetwork):
         rep.print_rolling_material_report(self)
 
     # PRIVATE
-    def _calc_infrastructure_cost(self):
-        """Calculates infrastructure cost for current mobility requirements.
-
-        Creates a railway NetworkCost() object to cost infrastructure for a
-        network described by current parameters, locomotives, wagons and
-        links data."""
-
-        # create a railway network cost object
-        network_cost = RailwayNetworkCost(self)
-
-        return network_cost.cost_infrast()
-
     def _calc_mobility_cost(self):
         """Calculates mobility cost for current mobility requirements.
 
@@ -396,7 +450,7 @@ class RailwayNetwork(BaseModalNetwork):
         described by current parameters, locomotives, wagons and links data."""
 
         # create a railway network cost object
-        network_cost = RailwayNetworkCost(self)
+        network_cost = self.COST_CLASS(self)
 
         return network_cost.cost_mobility()
 
@@ -500,10 +554,6 @@ class RailwayNetwork(BaseModalNetwork):
         self.locoms.reset()
         self._reset_links()
         self.is_costed = False
-
-    def _reset_links(self):
-        for link in self.iter_links():
-            link.reset()
 
 
 def test_railway_network():

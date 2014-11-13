@@ -219,17 +219,17 @@ def main():
 
     # cost network at current situation
     fn.cost_network()
-    fn.report_to_excel("current situation")
+    fn.report_to_excel("current situation", append_report=True)
 
     # cost network deriving all possible freight to railway
     fn.derive_all_to_railway()
     fn.cost_network()
-    fn.report_to_excel("derive all to railway")
+    fn.report_to_excel("derive all to railway", append_report=True)
 
     # cost network deriving all freight to roadway
     fn.derive_all_to_roadway()
     fn.cost_network()
-    fn.report_to_excel("derive all to roadway")
+    fn.report_to_excel("derive all to roadway", append_report=True)
 
 
 def test():
@@ -246,15 +246,19 @@ def test():
 
     rail_network.calc_simple_mobility_cost()
     rail_network.calc_infrastructure_cost()
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - sin reagrupamiento",
+    report_description = description + " - sin reagrupamiento"
+    rail_network.report_to_excel(description=report_description,
                                  append_report=False)
 
     rail_network.calc_optimized_mobility_cost()
     rail_network.calc_infrastructure_cost()
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - con reagrupamiento",
+    report_description = description + " - con reagrupamiento"
+    rail_network.report_to_excel(description=report_description,
                                  append_report=True)
+
+    road_network.calc_mobility_cost()
+    road_network.calc_infrastructure_cost()
+    road_network.report_to_excel(description=description, append_report=False)
 
     # derive all road od_pairs
     freight_network.derive_all_to_railway()
@@ -262,7 +266,6 @@ def test():
     # print firsts reports, without costs calculations
     # rail_network.links_by_od_to_excel()
     rail_network.print_objects_report()
-    road_network.report_to_excel()
 
     # calculate costs with complete derivation to railway
     description = "derivacion"
@@ -280,8 +283,8 @@ def test():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - sin reagrupamiento",
+    report_description = description + " - sin reagrupamiento"
+    rail_network.report_to_excel(description=report_description,
                                  append_report=True)
 
 
@@ -297,9 +300,14 @@ def test():
     rail_network.print_costs_report()
 
     # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - con reagrupamiento",
+    report_description = description + " - con reagrupamiento"
+    rail_network.report_to_excel(description=report_description,
                                  append_report=True)
+
+    # CALCULATE ROAD COSTS
+    road_network.calc_mobility_cost()
+    road_network.calc_infrastructure_cost()
+    road_network.report_to_excel(description=description, append_report=True)
 
 
 if __name__ == '__main__':
