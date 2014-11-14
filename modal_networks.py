@@ -99,8 +99,11 @@ class BaseModalNetwork(object):
     def get_links(self):
         return self.links
 
-    def get_link(self, id_link):
-        return self.links[id_link]
+    def get_link(self, id_link, gauge=None):
+        if gauge:
+            return self.links[id_link][gauge]
+        else:
+            return self.links[id_link]
 
     def get_od(self, id_od, category_od):
         """Returns existent od pair or create a new one if it doesn't exist.
@@ -135,8 +138,13 @@ class BaseModalNetwork(object):
             total_tk_od += od.get_ton() * od.get_dist()
 
         # control that both ways of calculate total_ton_km are the same!
-        msg = "Link and OD based ways of total_ton_km calculation differ."
-        assert abs(total_tk_link / total_tk_od - 1) < 0.001, msg
+        msg = "Link and OD based ways of total_ton_km calculation" + \
+            "differ! Link: " + str(total_tk_link) + " OD: " + \
+            str(total_tk_od)
+        if total_tk_od == 0:
+            assert abs(total_tk_link - total_tk_od) < 0.01, msg
+        elif total_tk_link > 1 and total_tk_od > 1:
+            assert abs(total_tk_link / total_tk_od - 1) < 0.01, msg
 
         return total_tk_link
 
@@ -151,7 +159,10 @@ class BaseModalNetwork(object):
         return total_tons
 
     def get_average_distance(self):
-        return self.get_total_ton_km() / self.get_total_tons()
+        if self.get_total_tons() != 0:
+            return self.get_total_ton_km() / self.get_total_tons()
+        else:
+            return 0.0
 
     def get_dimensions(self):
         """Calculate network dimensions in km.

@@ -34,6 +34,20 @@ class Link():
     def add_original_ton(self, ton):
         self.original_ton += ton
 
+    def remove_ton(self, removed_tons):
+
+        # remove tons from link
+        if removed_tons < self.derived_ton:
+            self.derived_ton -= removed_tons
+
+        elif self.derived_ton == 0.0:
+            self.original_ton -= removed_tons
+
+        else:
+            original_tons_to_remove = removed_tons - self.derived_ton
+            self.derived_ton = 0.0
+            self.original_ton -= original_tons_to_remove
+
     def remove_original_ton(self, ton):
         self.original_ton -= ton
 

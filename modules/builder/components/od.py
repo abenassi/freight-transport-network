@@ -218,10 +218,20 @@ class OD(BasePath):
         assert self.id == other.id, msg
 
         # calculate tons to derive
-        tons_to_derive = self.get_ton() * coeff
+        tons_to_derive = (self.get_original_ton() * coeff +
+                          self.get_derived_ton())
 
         # remove tons from self od pair
-        self.original_ton -= tons_to_derive
+        if self.derived_ton == 0.0:
+            self.original_ton -= tons_to_derive
+
+        elif tons_to_derive < self.derived_ton:
+            self.derived_ton -= tons_to_derive
+
+        else:
+            original_tons_to_remove = tons_to_derive - self.derived_ton
+            self.derived_ton = 0.0
+            self.original_ton -= original_tons_to_remove
 
         # add tons to other od pair
         other.derived_ton += tons_to_derive

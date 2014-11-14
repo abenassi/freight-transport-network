@@ -147,7 +147,7 @@ class BaseReport():
             dimensions = rn.get_dimensions()
             values = [rn.get_total_tons(),
                       rn.get_total_ton_km(),
-                      rn.get_total_ton_km() / rn.get_total_tons(),
+                      rn.get_average_distance(),
                       dimensions["total"],
                       dimensions["high"],
                       dimensions["low"]]
