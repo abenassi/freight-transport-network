@@ -1,8 +1,7 @@
 import unittest
 import os
 from railway_cost import RailwayNetworkCost
-from builder.components import RailwayLink, RollingMaterial
-from builder.modal_networks_builder import XlLoadParam
+from builder import RailwayNetworkBuilder
 
 
 class RailwayNetworkCostTestCase(unittest.TestCase):
@@ -12,42 +11,24 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         # locations to excel files test data
         XL_PARAMETERS = os.path.join(os.path.dirname(__file__),
                                      "test_data/railway_parameters.xlsx")
+        XL_OD_PAIRS = os.path.join(os.path.dirname(__file__),
+                                   "test_data/railway_od_pairs.xlsx")
+        XL_LINKS = os.path.join(os.path.dirname(__file__),
+                                "test_data/railway_links.xlsx")
+        XL_PATHS = os.path.join(os.path.dirname(__file__),
+                                "test_data/railway_paths.xlsx")
 
-        params = {}
-        self._load_from_xl(XlLoadParam, XL_PARAMETERS, params)
+        # create test builder
+        builder = RailwayNetworkBuilder(xl_parameters=XL_PARAMETERS,
+                                        xl_od_pairs=XL_OD_PAIRS,
+                                        xl_links=XL_LINKS,
+                                        xl_paths=XL_PATHS)
 
-        # create link representing main network
-        link = RailwayLink("1-3", 15121.0, "ancha")
-        link.add_original_ton(728662.0)
-        links = {"1-3": {"ancha": link}}
-
-        # create locomotives object
-        locoms = RollingMaterial()
-        locoms.running = 215737.0
-        locoms.idle_heads = 517767.86
-        locoms.idle_turnout = 172589.29
-        locoms.speed = 40  # (km/h)
-        locoms.availability = 6570  # (hr/year)
-        locoms.capacity = 1276.8  # (ton)
-        locoms.head_stops_time = 15  # (hr/head_stop)
-        locoms.turnout_time = 4  # (hr/turnout_stop)
-        locoms.turnout_freq = 200  # (km between turnouts)
-
-        # create wagons object
-        wagons = RollingMaterial()
-        wagons.running = 8197991.0
-        wagons.idle_heads = 118051071.0
-        wagons.idle_turnout = 6558393.0
-        wagons.speed = 40  # (km/h)
-        wagons.availability = 8672.4  # (hr/year)
-        wagons.capacity = 33.6  # (ton)
-        wagons.head_stops_time = 90  # (hr/head_stop)
-        wagons.turnout_time = 4  # (hr/turnout_stop)
-        wagons.turnout_freq = 200  # (km between turnout_stop
+        # create network
+        self.rn = RailwayNetwork(builder)
 
         # init object enought fed to test infrastructure methods
-        self.nc = RailwayNetworkCost(params, links=links, locoms=locoms,
-                                     wagons=wagons)
+        self.nc = RailwayNetworkCost(rn)
 
         # net ton-km to test
         self.load_tk = 11018100000.0
