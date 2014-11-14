@@ -42,7 +42,7 @@ class BaseModalNetwork(object):
         self.links = {}
         self.paths = {}
         self.costs = {"mob": None, "inf": None}
-        self.is_costed = False
+        self.is_simple_costed = False
 
     def __iter__(self):
         return self.iter_links()
@@ -123,6 +123,25 @@ class BaseModalNetwork(object):
 
         return self.od_pairs[id_od][category_od]
 
+    def has_od(self, id_od, category_od):
+        """Returns true if od pair exists in the network.
+
+        Args:
+            id_od: the origin-destination id (eg. "1-3")
+            category_od: the railway category of the freight transported.
+        """
+
+        # check if od pair is in the network
+        if (id_od in self.od_pairs) and (category_od in self.od_pairs[id_od]):
+            has_od = True
+        else:
+            has_od = False
+
+        return has_od
+
+    def has_od_pairs(self):
+        return len(self.od_pairs) > 0
+
     def get_total_ton_km(self):
         """Sum all ton_km from all od_pairs used in the model."""
         total_tk_link = 0.0
@@ -177,7 +196,10 @@ class BaseModalNetwork(object):
                                if link.get_ton() > 0.0])
 
         # calculate average density
-        average_density = self.get_total_ton_km() / total_dimension
+        if total_dimension > 0.1:
+            average_density = self.get_total_ton_km() / total_dimension
+        else:
+            average_density = 0.0
 
         # calculate high density dimension
         high_density = average_density * 2
@@ -254,6 +276,19 @@ class BaseModalNetwork(object):
         for link in self.iter_links():
             link.reset()
 
+    def _clean_od_pairs(self):
+        """Remove od_pairs with no tons."""
+
+        # iterate od pairs looking for empty ones (ie, with no tons)
+        for od in self.iter_od_pairs():
+
+            if od.get_ton() < 0.001:
+                self.od_pairs[od.get_id()].pop(od.get_category())
+
+                # check if there is any od_pair left, of another category
+                if len(self.od_pairs[od.get_id()]) == 0:
+                    self.od_pairs.pop(od.get_id())
+
 
 class RoadwayNetwork(BaseModalNetwork):
 
@@ -286,14 +321,11 @@ class RoadwayNetwork(BaseModalNetwork):
         """Calculates mobility cost."""
 
         # reset network before calculate costs
-        if self.is_costed:
-            self._reset_network()
+        self._reset_network()
 
         # calculate and store mobility costs for all mobility requirements
         network_cost = self.COST_CLASS(self)
         self.costs["mob"] = network_cost.cost_mobility()
-
-        self.is_costed = True
 
     def calc_infrastructure_cost(self):
         """Calculates infrastructure cost for current mobility requirements."""
@@ -313,7 +345,7 @@ class RoadwayNetwork(BaseModalNetwork):
     # PRIVATE
     def _reset_network(self):
         self._reset_links()
-        self.is_costed = False
+        self._clean_od_pairs()
 
 
 class RailwayNetwork(BaseModalNetwork):
@@ -350,8 +382,7 @@ class RailwayNetwork(BaseModalNetwork):
         service independently."""
 
         # reset network before calculate costs
-        if self.is_costed:
-            self._reset_network()
+        self._reset_network()
 
         # iterate through all od pairs
         for od in self.iter_od_pairs():
@@ -362,7 +393,9 @@ class RailwayNetwork(BaseModalNetwork):
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
 
-        self.is_costed = True
+        self.is_simple_costed = True
+
+
 
     def calc_optimized_mobility_cost(self):
         """Regroup trains operating below maximum capacity.
@@ -372,9 +405,8 @@ class RailwayNetwork(BaseModalNetwork):
         maximum capacity. If its not the case, revert regrouping."""
 
         # check that simple cost mobility was calculated
-        if not self.is_costed:
+        if not self.is_simple_costed:
             self.calc_simple_mobility_cost()
-            self.is_costed = True
 
         # iterate through all links
         for link in self.iter_links():
@@ -404,6 +436,9 @@ class RailwayNetwork(BaseModalNetwork):
         # calculate and store mobility costs
         self.costs["mob"] = self._calc_mobility_cost()
 
+        # now network is not simple costed anymore (is optimized costed)
+        self.is_simple_costed = False
+
     def calc_infrastructure_cost(self):
         """Calculates infrastructure cost for current mobility requirements.
 
@@ -422,7 +457,6 @@ class RailwayNetwork(BaseModalNetwork):
 
         It uses de best cost approach (optimized mobility cost)."""
 
-        self.calc_simple_mobility_cost()
         self.calc_optimized_mobility_cost()
         self.calc_infrastructure_cost()
 
@@ -477,6 +511,10 @@ class RailwayNetwork(BaseModalNetwork):
             od: OD pair with tons to be carried by rolling material
         """
 
+        # check od has significant tons
+        if not od.get_ton() > 0.1:
+            return
+
         # wagons mobility
         self.wagons.add_freight_service(od.get_ton(), od.get_dist())
 
@@ -499,14 +537,14 @@ class RailwayNetwork(BaseModalNetwork):
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
-            link_gauge = self.links[id_link][od.gauge]
+            link = self.get_link(id_link, od.gauge)
 
             # try to update tons and idle capacity of link-gauge
             try:
                 if can_be_regrouped:
-                    link_gauge.add_idle_cap_regroup(idle_capacity_l)
+                    link.add_idle_cap_regroup(idle_capacity_l)
                 else:
-                    link_gauge.add_idle_cap_no_regroup(idle_capacity_l)
+                    link.add_idle_cap_no_regroup(idle_capacity_l)
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:
@@ -564,7 +602,8 @@ class RailwayNetwork(BaseModalNetwork):
         self.wagons.reset()
         self.locoms.reset()
         self._reset_links()
-        self.is_costed = False
+        self._clean_od_pairs()
+        self.is_simple_costed = False
 
 
 def test_railway_network():

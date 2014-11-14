@@ -115,18 +115,24 @@ class BaseReport():
         ws = wb.create_sheet()
         ws.title = ws_name
 
-        # write fields
-        first_od = rn.od_pairs.values()[0].values()[0]
-        ws.append(first_od.FIELDS)
+        # check there are od pairs
+        if rn.has_od_pairs():
 
-        # iterate od pairs appending data attributes of each od pair
-        for od in rn.iter_od_pairs():
-            od_attributes = od.get_attributes()
-            ws.append(od_attributes)
+            # write fields
+            first_od = rn.od_pairs.values()[0].values()[0]
+            ws.append(first_od.FIELDS)
 
-        # add auto filter
-        col_letter = get_column_letter(ws.get_highest_column())
-        ws.auto_filter.ref = "A1:" + col_letter + "1"
+            # iterate od pairs appending data attributes of each od pair
+            for od in rn.iter_od_pairs():
+                od_attributes = od.get_attributes()
+                ws.append(od_attributes)
+
+            # add auto filter
+            col_letter = get_column_letter(ws.get_highest_column())
+            ws.auto_filter.ref = "A1:" + col_letter + "1"
+
+        else:
+            ws.append(["There are no od pairs!"])
 
     def _report_global_results(self, rn, wb, ws_name):
 

@@ -151,11 +151,20 @@ class FreightNetwork():
                 COEFF = 1.0
                 self.derive_to_roadway(rail_od, COEFF)
 
-    def minimize_network_cost(self):
+    def min_network_cost_deriving_links(self):
         """Find the modal split with minimum overall cost.
 
         Derive traffic from one mode to the other looking for the minimum
-        overall cost of freight transportation."""
+        overall cost of freight transportation.
+
+        The algorithm starts with maximum possible traffic derivation to
+        railway and then move back all the traffic of one link at a time, from
+        railway to roadway, looking to reduce overall cost of the entire
+        bimodal network by disabling railway tracks (ie, the links).
+
+        At first sight, there is no way to know what combination of freed
+        railway links will reduce the overall cost from the scenario of maximum
+        traffic derivation to railway."""
         pass
 
     def report_to_excel(self, description=None, append_report=False):
@@ -192,9 +201,15 @@ class FreightNetwork():
         if not has_railway_path:
             return False
 
-        # get rail_od to calculate total original road tons
-        rail_od = self.rail.get_od(road_od.get_id(), road_od.get_category())
-        orig_road_ton = road_od.get_original_ton() + rail_od.get_derived_ton()
+        # calculate original road tons
+        id_od = road_od.get_id()
+        category_od = road_od.get_category()
+        if self.rail.has_od(id_od, category_od):
+            rail_od = self.rail.get_od(id_od, category_od)
+            orig_road_ton = (road_od.get_original_ton() +
+                             rail_od.get_derived_ton())
+        else:
+            orig_road_ton = road_od.get_original_ton()
 
         # check if od pair meet minimum tons adn distance to be derivable
         min_ton = orig_road_ton > self.rail.params["min_tons_to_derive"].value
@@ -306,7 +321,6 @@ def main():
     fn.derive_all_to_roadway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
-
 
 if __name__ == '__main__':
     main()

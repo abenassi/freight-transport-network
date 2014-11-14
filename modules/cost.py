@@ -69,7 +69,10 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         # divide all costs to express them in terms of ton-km
         for infrast_cost in RV:
-            RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
+            if self.total_ton_km > 0.1:
+                RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
+            else:
+                RV[infrast_cost] = 0.0
 
         # sum all costs and add it to total mobility
         RV["total_infrastructure"] = sum(RV.values())
@@ -85,8 +88,11 @@ class RailwayNetworkCost(BaseNetworkCost):
         year_eac = eac * units
 
         # calculate cost per ton_km
-        eac_ton_km = year_eac / self.total_ton_km
-        # print self.total_ton_km
+        if self.total_ton_km > 0.1:
+            eac_ton_km = year_eac / self.total_ton_km
+
+        else:
+            eac_ton_km = 0.0
 
         return eac_ton_km
 
@@ -120,8 +126,12 @@ class RailwayNetworkCost(BaseNetworkCost):
         lub_fuel_ratio = self.rn.params["lubricants_fuel_ratio"].value
 
         # calculate fuel_ton_km cost
-        fuel_ton_km = fuel_by_km * loc_average_haul * \
-            num_locoms / self.total_ton_km
+        if self.total_ton_km > 0.1:
+            fuel_ton_km = fuel_by_km * loc_average_haul * \
+                num_locoms / self.total_ton_km
+
+        else:
+            fuel_ton_km = 0.0
 
         # calculate lubricant ton km cost
         lub_ton_km = fuel_ton_km * lub_fuel_ratio
@@ -131,13 +141,19 @@ class RailwayNetworkCost(BaseNetworkCost):
     def _cost_mobility_maintenance(self):
         """Calcualate cost of locomotives and wagons maintenance by ton_km."""
 
-        # calculate locmotives maintenance by ton_km
-        locom_maintenance = self.rn.params["maintenance_by_locomotive"].value * \
-            self.rn.locoms.get_units_needed_by_time() / self.total_ton_km
+        if self.total_ton_km > 0.1:
 
-        # calculate wagon maintenance by ton_km
-        wagon_maintenance = self.rn.params["maintenance_by_wagon"].value * \
-            self.rn.wagons.get_units_needed_by_time() / self.total_ton_km
+            # calculate locmotives maintenance by ton_km
+            locom_maintenance = self.rn.params["maintenance_by_locomotive"].value * \
+                self.rn.locoms.get_units_needed_by_time() / self.total_ton_km
+
+            # calculate wagon maintenance by ton_km
+            wagon_maintenance = self.rn.params["maintenance_by_wagon"].value * \
+                self.rn.wagons.get_units_needed_by_time() / self.total_ton_km
+
+        else:
+            locom_maintenance = 0.0
+            wagon_maintenance = 0.0
 
         return locom_maintenance + wagon_maintenance
 
@@ -150,7 +166,13 @@ class RailwayNetworkCost(BaseNetworkCost):
         # calculate locomotive hours with manpower on the train
         operation_hours = self.rn.locoms.get_operation_time()
 
-        return cost_by_hour * operation_hours / self.total_ton_km
+        if self.total_ton_km > 0.1:
+            manpower_cost = cost_by_hour * operation_hours / self.total_ton_km
+
+        else:
+            manpower_cost = 0.0
+
+        return manpower_cost
 
     # *** cost INFRASTRUCTURE methods ***
     def _cost_detour(self, gross_tk, dist):

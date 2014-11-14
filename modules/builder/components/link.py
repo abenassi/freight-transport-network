@@ -31,6 +31,14 @@ class Link():
         self.eac_track = None
         self.maintenance = None
 
+        # check original tons are significant
+        if self.original_ton < 0.1:
+            self.original_ton = 0.0
+
+        # check original tons are significant
+        if self.derived_ton < 0.1:
+            self.derived_ton = 0.0
+
     def add_original_ton(self, ton):
         self.original_ton += ton
 
