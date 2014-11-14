@@ -13,7 +13,7 @@ class BaseReport():
     ALIGN = Alignment(vertical='center')
     ALIGN_HEADER = Alignment(horizontal='center', vertical='center',
                              wrap_text=True)
-    CELL_STYLE = Style(alignment=ALIGN, number_format="#,##0.0")
+    CELL_STYLE = Style(alignment=ALIGN)
     FONT = Font(bold=True)
     HEADER_STYLE = Style(alignment=ALIGN_HEADER, font=FONT)
 
@@ -147,7 +147,7 @@ class BaseReport():
             dimensions = rn.get_dimensions()
             values = [rn.get_total_tons(),
                       rn.get_total_ton_km(),
-                      rn.get_total_ton_km() / rn.get_total_tons(),
+                      rn.get_average_distance(),
                       dimensions["total"],
                       dimensions["high"],
                       dimensions["low"]]
@@ -231,29 +231,44 @@ class BaseReport():
             cell.style = self.HEADER_STYLE
 
 
-class RoadwayReport(BaseReport):
+class RoadwayNetworkReport(BaseReport):
 
-    XL_REPORT = "reports/roadway_results_report.xlsx"
+    XL_REPORT = "reports/roadway_report.xlsx"
     XL_LINKS_BY_OD = "reports/roadway_links_by_od.xlsx"
 
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
 
-        # create a workbook
-        wb = Workbook(write_only=True)
+        if self.append_report:
+            try:
+                # open the last report
+                wb = load_workbook(self.xl_report)
+            except:
+                # create a new report
+                wb = Workbook(write_only=True)
+                self.append_report = False
+        else:
+            # create a new report
+            wb = Workbook(write_only=True)
 
         # network reports
+        self._report_global_results(rn, wb, "global_results")
+        self._report_costs(rn, wb, "costs")
         self._report_links_to_xl(rn, wb, "links")
         self._report_od_pairs_to_xl(rn, wb, "od_pairs")
-        self._report_global_results(rn, wb, "global_results")
+
+        # styling all the report if its in appending mode
+        if self.append_report:
+            for ws in wb:
+                self._style_ws(ws)
 
         # save excel report
         wb.save(self.xl_report)
 
 
-class RailwayReport(BaseReport):
+class RailwayNetworkReport(BaseReport):
 
-    XL_REPORT = "reports/railway_results_report.xlsx"
+    XL_REPORT = "reports/railway_report.xlsx"
     XL_LINKS_BY_OD = "reports/railway_links_by_od.xlsx"
 
     # PUBLIC
