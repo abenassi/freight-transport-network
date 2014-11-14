@@ -28,11 +28,16 @@ It takes railway and roadway data from "data" directory:
 The output is stored in "reports" directory as excel files:
 
 1. **railway_links_by_od.xlsx** is just a table with links used by each od pair.
-2. **report_simple_mobility.xlsx** is the result of cost the railway network costing each od pair as it would be serviced independently by trains dedicated only to one od pair freight.
-3. **report_optimized_mobility.xlsx** is the result of cost the railway network reorganizing trains in each link to minimize idleness of locomotives capacity (making larger trains of smaller ones when possible).
-4. **roadway_results_report.xlsx** is still limited for the moment. RoadwayNetwork cost methods are not yet developed as we are still doing research on truck costs.
+2. **railway_report.xlsx** is the result of cost the railway network at the chosen traffic derivation scenarios.
+3. **roadway_report.xlsx** is the result of cost the roadway network at the chosen traffic derivation scenarios.
 
-You can see in main() method inside freight_network module how user interface and most common usage of the model is going to be. It is not the method triggered when you run freight_network.py, that is replaced by a test method for the moment.
+You can see in main() method inside freight_network module how user interface and most common usage of the model is. At the moment it cost both networks and report results for three traffic derivation scenarios:
+
+1. **Current situation**. How much cost to run the entire bimodal freight network with the current modal split.
+2. **Derive all to railway**. How much would cost to run the entire bimodal freight network if we derive all possible traffic to railway mode (It is worth to note that lots of traffic can never be derived to railway because of Origin-Destination (OD) distance is too short, OD tons are not enough, the product cannot go by train, there is no train at Origin or Destination, etc.)
+3. **Derive all to roadway**. How much would cost to run the entire bimodal freight network if we derive all traffic to roadway mode, efectively shutting down the entire railway network (Note that we always can transport any freight by road).
+
+In the future, the model will have the ability to calculate more complex scenarios where overall cost could be even less than the one reached in "current situation" or the other two extreme scenarios of maximum possible derivation.
 
 
 ## Test
