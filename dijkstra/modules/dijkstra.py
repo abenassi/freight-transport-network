@@ -1,88 +1,76 @@
-def dijkstra(graph, a, z):
+def dijkstra(graph, node_a, node_z):
     """
-    Algoritmo de Dijkstra
+    Implementation of dijkstra shortest path algorithm.
 
-    Determina el camino mas corto entre los vertices 'a' y 'z' de un
-    grafo ponderado y conexo 'graph'.
+    Find the shortest path between vertex 'a' and 'z' from a weighted graph
+    with links.
+
+    Args:
+        graph: Dictionary-like Graph with all the nodes and its weighted links.
+        node_a: Node of origin.
+        node_z: Node of destination.
     """
-    assert a in graph
-    assert z in graph
 
-    # Definicion de infinito como un valor mayor 
-    # al doble de suma de todos los pesos
-    Inf = 0
-    for u in graph:
-        for v, w in graph[u]:
-            Inf += w
+    # check nodes are in graph
+    assert node_a in graph
+    assert node_z in graph
 
-    # Inicializacion de estructuras auxiliares:
-    #  L: diccionario vertice -> etiqueta
-    #  S: conjunto de vertices con etiquetas temporales
-    #  A: vertice -> vertice previo (en camino longitud minima)
-    L = dict([(u, Inf) for u in graph]) #py3: L = {u:Inf for u in graph}
-    L[a] = 0
-    S = set([u for u in graph]) #py3: S = {u for u in graph}
-    A = { }
+    # infinite will be the sum of all weights
+    inf = 0
+    for node in graph:
+        for link, weight in graph[node]:
+            inf += weight
 
-    # Funcion auxiliar, dado un vertice retorna su etiqueta
-    # se utiliza para encontrar el vertice the etiqueta minima
-    def W(v):
-        return L[v]
-    # Iteracion principal del algoritmo de Dijkstra
-    while z in S:
-        u = min(S, key=W)
-        S.discard(u)
-        for v, w in graph[u]:
-            if v in S:
-                if L[u] + w < L[v]:
-                    L[v] = L[u] + w
-                    A[v] = u
+    # set initial distances to node_a of all nodes as infinite
+    node_distances = dict([(node, inf) for node in graph])
 
-    # Reconstruccion del camino de longitud minima
-    P = []
-    u = z
-    while u != a:
-        P.append(u)
-        u = A[u]
-    P.append('a')
-    P.reverse()
+    # set distance of node_a to itself to zero
+    node_distances[node_a] = 0
 
-    # retorna longitud minima y camino de longitud minima
-    return L[z], P
-                    
+    # create a set with all nodes in the graph
+    nodes_set = set([node for node in graph])
 
-G1 = { # Rosen, Figura 4 (pp. 559)
-    'a' : [('b', 4), ('c',2)],
-    'b' : [('a', 4), ('c',1), ('d',5)],
-    'c' : [('a', 2), ('b',1), ('d',8), ('e',10)],
-    'd' : [('b', 5), ('c',8), ('e',2), ('z', 6)],
-    'e' : [('c',10), ('d',2), ('z',3)],
-    'z' : [('d', 6), ('e',3)],
-    }
+    # create a dictionary that will have the previous vertix of each node
+    previous_vertix = {}
 
-G2 = { # Rosen, Ej. 8.6-2 (pp. 562)
-    'a' : [('b', 2), ('c',3)],
-    'b' : [('a', 2), ('d',5), ('e',2)],
-    'c' : [('a', 3), ('e',5)],
-    'd' : [('b', 5), ('e',1), ('z',2)],
-    'e' : [('b', 2), ('c',5), ('d',1), ('z',4)],
-    'z' : [('d', 2), ('e',4)],
-    }
+    # aux method to get distance of a certain vertix to node_a
+    def get_distance(vertix):
+        return node_distances[vertix]
 
+    # main iteration of dijkstra algorithm
+    while node_z in nodes_set:
 
-def test():
-    
-    from pprint import pprint
-    #
-    w, p =  dijkstra(G1, 'a', 'z')
-    pprint (G1)
-    pprint (p)
-    pprint (w)
-    #
-    w, p =  dijkstra(G2, 'a', 'z')
-    pprint (G2)
-    pprint (p)
-    pprint (w)
+        # get node with minimum distance from the set of nodes
+        node = min(nodes_set, key=get_distance)
 
-if __name__ == '__main__':
-    test()
+        # remove selected node from the set
+        nodes_set.discard(node)
+
+        # iterate through vertices of the selected node
+        for vertix, weight in graph[node]:
+
+            # check if vertix is in the set
+            if vertix in nodes_set:
+
+                # check if path through this vertix would be shorter
+                if node_distances[node] + weight < node_distances[vertix]:
+
+                    # update distance of vertix with the shorter one found
+                    node_distances[vertix] = node_distances[node] + weight
+
+                    # update the previous_vertix to be the new closer node
+                    previous_vertix[vertix] = node
+
+    # reconstruct the path found creating a list of nodes
+    path_to_z = []
+    node = node_z
+    while node != node_a:
+        path_to_z.append(node)
+        node = previous_vertix[node]
+    path_to_z.append('a')
+    path_to_z.reverse()
+
+    # get the distance of node_z from node_a
+    distance_to_z = node_distances[node_z]
+
+    return distance_to_z, path_to_z
