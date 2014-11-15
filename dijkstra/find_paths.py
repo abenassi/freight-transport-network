@@ -1,11 +1,9 @@
 #!C:\Python27
 # -*- coding: utf-8 -*-
-from openpyxl import load_workbook
-import os
 import sys
 import time
-from dijkstra import dijkstra
-from graph import Graph
+from openpyxl import load_workbook
+from modules import dijkstra, Graph
 
 
 class Network():
@@ -214,17 +212,17 @@ def main(xl_input, network_names, xl_output):
 
 def main_railway():
 
-    XL_INPUT = "railway_links_table.xlsx"
+    XL_INPUT = "data/railway_links_table.xlsx"
     NETWORK_NAMES = ["ancha", "media", "angosta"]
-    XL_OUTPUT = "railway_shortest_paths.xlsx"
+    XL_OUTPUT = "paths/railway_shortest_paths.xlsx"
     main(XL_INPUT, NETWORK_NAMES, XL_OUTPUT)
 
 
 def main_roadway():
 
-    XL_INPUT = "roadway_links_table.xlsx"
+    XL_INPUT = "data/roadway_links_table.xlsx"
     NETWORK_NAMES = ["unica"]
-    XL_OUTPUT = "roadway_shortest_paths.xlsx"
+    XL_OUTPUT = "paths/roadway_shortest_paths.xlsx"
     main(XL_INPUT, NETWORK_NAMES, XL_OUTPUT)
 
 
