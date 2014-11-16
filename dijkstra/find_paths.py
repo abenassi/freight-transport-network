@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import time
-from openpyxl import load_workbook
+from openpyxl import load_workbook, Workbook
 from modules import dijkstra, Graph
 
 """
@@ -60,7 +60,7 @@ class Network():
             # create graph
             self.graphs[gauge] = Graph(ws)
 
-    def calculate_paths(self):
+    def find_shortest_paths(self):
         """Find shortest paths for each possible pair of nodes, by gauge."""
 
         # start total networks timer
@@ -69,20 +69,25 @@ class Network():
         # iterate through each gauge
         for gauge in self.gauge_names:
 
-            # calculate paths for the network
-            self._calculate_paths(gauge)
+            # find paths for the gauge
+            self._find_shortest_paths(gauge)
+
+        # find paths for the network, with multiple gauges allowed
+        max_transshipments = 3
+        self._find_multiple_gauges_shortest_paths(max_transshipments)
 
         # stop total networks timer
         elapsed = (time.time() - total_timer_start)
         self._report_time(elapsed, "all networks")
 
-    def store_paths_in_excel(self, wb, xl_output=None):
+    def store_paths_in_excel(self, xl_output=None):
         """Store found paths in excel."""
 
         print "\n Saving results in excel..."
         sys.stdout.flush()
 
         # create worksheet to store all results
+        wb = Workbook(write_only=True)
         ws_all = wb.create_sheet()
         ws_all.title = "all_" + self.PATH_SHEET_SUFFIX
 
@@ -94,7 +99,7 @@ class Network():
             self._store_network_paths(wb, gauge, ws_all)
 
         # sort by distance before save
-        # self._sort_by_distance(ws_all)
+        self._sort_by_distance(ws_all)
 
         # save workbook
         wb.save(xl_output or self.XL_OUTPUT)
@@ -102,7 +107,7 @@ class Network():
         print "Finished."
 
     # PRIVATE
-    def _calculate_paths(self, gauge):
+    def _find_shortest_paths(self, gauge):
         """Find shortest paths for each possible pair of nodes."""
 
         # take graph of network
@@ -153,6 +158,15 @@ class Network():
 
                 # show progress
                 index_calculated_paths += 1
+
+    def _find_multiple_gauges_shortest_paths(self, max_transshipments):
+        """Find shortest paths allowing transshipments between gauges.
+
+        Args:
+            max_transshipments: Maximum number of transshipments between
+            different gauges allowed.
+        """
+        pass
 
     def _report_time(self, time_spend, activity):
         print "{} took {:.2} seconds".format(activity, time_spend)
@@ -222,8 +236,8 @@ def main(xl_input, xl_output):
 
     # create graphs from links, find shortest paths and store then in excel
     network.create_graphs_from_excel(wb)
-    network.calculate_paths()
-    network.store_paths_in_excel(wb, xl_output)
+    network.find_shortest_paths()
+    network.store_paths_in_excel(xl_output)
 
     # return network object, in case of the user wants to use it
     return network
