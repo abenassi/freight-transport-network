@@ -41,8 +41,8 @@ class Network():
     PATH_FIELDS = ["id_od", "origin", "destination", "distance", "path",
                    "gauge"]
 
-    def __init__(self, gauge_names):
-        self.gauge_names = gauge_names
+    def __init__(self):
+        self.gauge_names = []
         self.graphs = {}
         self.paths = {}
 
@@ -50,11 +50,12 @@ class Network():
     def create_graphs_from_excel(self, wb):
         """Create graphs from lists of links in excel."""
 
-        # iterate through each gauge and worksheet
-        for gauge in self.gauge_names:
+        # iterate through each worksheet
+        for ws in wb:
 
-            # take worksheet
-            ws = wb.get_sheet_by_name(gauge)
+            # worksheet name is gauge name
+            gauge = ws.title
+            self.gauge_names.append(gauge)
 
             # create graph
             self.graphs[gauge] = Graph(ws)
@@ -68,15 +69,8 @@ class Network():
         # iterate through each gauge
         for gauge in self.gauge_names:
 
-            # start network timer
-            network_timer_start = time.time()
-
             # calculate paths for the network
             self._calculate_paths(gauge)
-
-            # stop network timer
-            elapsed = (time.time() - network_timer_start)
-            self._report_time(elapsed, gauge)
 
         # stop total networks timer
         elapsed = (time.time() - total_timer_start)
@@ -128,7 +122,6 @@ class Network():
 
         # calculate minimum paths between all nodes
         index_calculated_paths = 0
-        start_timer = time.time()
 
         for node_a in nodes:
 
@@ -160,14 +153,6 @@ class Network():
 
                 # show progress
                 index_calculated_paths += 1
-
-                elapsed = (time.time() - start_timer)
-
-                activity = str(index_calculated_paths) + \
-                    " paths calculation from " + \
-                    str(total_paths) + " total paths "
-
-                self._report_time(elapsed, activity)
 
     def _report_time(self, time_spend, activity):
         print "{} took {:.2} seconds".format(activity, time_spend)
@@ -220,7 +205,7 @@ class Network():
         pass
 
 
-def main(xl_input, gauge_names, xl_output):
+def main(xl_input, xl_output):
     """Find shortest paths between all nodes of a network, by gauge.
 
     Args:
@@ -233,7 +218,7 @@ def main(xl_input, gauge_names, xl_output):
     wb = load_workbook(xl_input)
 
     # create a Network object
-    network = Network(gauge_names)
+    network = Network()
 
     # create graphs from links, find shortest paths and store then in excel
     network.create_graphs_from_excel(wb)
@@ -248,9 +233,8 @@ def main_railway():
     """Find shortest paths for the railway network."""
 
     XL_INPUT = "data/railway_links_table.xlsx"
-    GAUGE_NAMES = ["ancha", "media", "angosta"]
     XL_OUTPUT = "paths/railway_shortest_paths.xlsx"
-    network = main(XL_INPUT, GAUGE_NAMES, XL_OUTPUT)
+    network = main(XL_INPUT, XL_OUTPUT)
 
     return network
 
@@ -259,9 +243,8 @@ def main_roadway():
     """Find shortest paths for the roadway network."""
 
     XL_INPUT = "data/roadway_links_table.xlsx"
-    GAUGE_NAMES = ["unica"]
     XL_OUTPUT = "paths/roadway_shortest_paths.xlsx"
-    network = main(XL_INPUT, GAUGE_NAMES, XL_OUTPUT)
+    network = main(XL_INPUT, XL_OUTPUT)
 
     return network
 
