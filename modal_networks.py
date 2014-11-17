@@ -397,12 +397,9 @@ class RailwayNetwork(BaseModalNetwork):
 
     # PUBLIC
     # cost calculations
-    def calc_simple_mobility_cost(self):
-        """Calculates mobility cost of running each origin-destination rail
-        service independently."""
-
-        # reset network before calculate costs
-        self._reset_network()
+    def calc_mobility_requirements(self):
+        """Calculate mobility requirements of running each origin-destination
+        rail service independently."""
 
         # iterate through all od pairs
         for od in self.iter_od_pairs():
@@ -410,12 +407,20 @@ class RailwayNetwork(BaseModalNetwork):
             # calculate mobility requirements to run rail service for od
             self._calculate_mobility_od(od)
 
+    def calc_simple_mobility_cost(self):
+        """Calculates mobility cost of running each origin-destination rail
+        service independently."""
+
+        # reset network before calculate costs
+        self._reset_network()
+
+        # calculate mobility requirements to run all rail services
+        self.calc_mobility_requirements()
+
         # calculate and store mobility costs for all mobility requirements
         self.costs["mob"] = self._calc_mobility_cost()
 
         self.is_simple_costed = True
-
-
 
     def calc_optimized_mobility_cost(self):
         """Regroup trains operating below maximum capacity.

@@ -1,22 +1,26 @@
 import unittest
 import os
+import sys
 from railway_cost import RailwayNetworkCost
 from builder import RailwayNetworkBuilder
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from modal_networks import RailwayNetwork
 
 
 class RailwayNetworkCostTestCase(unittest.TestCase):
 
     def setUp(self):
 
+        root_dir = os.path.dirname(os.path.dirname(__file__))
+
         # locations to excel files test data
-        XL_PARAMETERS = os.path.join(os.path.dirname(__file__),
+        XL_PARAMETERS = os.path.join(root_dir,
                                      "test_data/railway_parameters.xlsx")
-        XL_OD_PAIRS = os.path.join(os.path.dirname(__file__),
+        XL_OD_PAIRS = os.path.join(root_dir,
                                    "test_data/railway_od_pairs.xlsx")
-        XL_LINKS = os.path.join(os.path.dirname(__file__),
-                                "test_data/railway_links.xlsx")
-        XL_PATHS = os.path.join(os.path.dirname(__file__),
-                                "test_data/railway_paths.xlsx")
+        XL_LINKS = os.path.join(root_dir, "test_data/railway_links.xlsx")
+        XL_PATHS = os.path.join(root_dir, "test_data/railway_paths.xlsx")
 
         # create test builder
         builder = RailwayNetworkBuilder(xl_parameters=XL_PARAMETERS,
@@ -28,7 +32,8 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         self.rn = RailwayNetwork(builder)
 
         # init object enought fed to test infrastructure methods
-        self.nc = RailwayNetworkCost(rn)
+        self.nc = RailwayNetworkCost(self.rn)
+        self.rn.calc_mobility_requirements()
 
         # net ton-km to test
         self.load_tk = 11018100000.0
@@ -45,7 +50,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
     # GENERAL cost tests
     def test_calc_total_ton_km(self):
         self.assertAlmostEqual(self.nc._calc_total_ton_km(), self.load_tk,
-                               delta=2000)
+                               delta=10000)
 
     # INFRASTRUCTURE cost tests
     def test_cost_infrast_maint(self):
@@ -92,11 +97,13 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
     # MOBILITY cost tests
     def test_cost_manpower(self):
         manpower_cost_tk = self.nc.cost_mobility()["manpower"]
-        self.assertAlmostEqual(manpower_cost_tk, 0.00107202)
+        self.assertAlmostEqual(manpower_cost_tk, 0.0010809136373677642, 5)
 
     def test_cost_mobility(self):
         total_mobility_cost_tk = self.nc.cost_mobility()["total_mobility"]
-        self.assertAlmostEqual(total_mobility_cost_tk, 0.01837137, 5)
+        self.assertAlmostEqual(total_mobility_cost_tk, 0.018443320134665583, 5)
+
+    # TIME cost tests
 
     # AUXILIAR METHODS
     def _load_from_xl(self, loader_class, xl_name, output_dict):

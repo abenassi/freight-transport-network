@@ -79,6 +79,20 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         return RV
 
+    def cost_time(self):
+        """Calculate each type of time related cost."""
+        RV = {}
+
+        # fill RV with moblity costs per ton-km
+        RV["deposit"] = self._cost_deposit()
+        RV["immobilized_value"] = self._cost_immobilized_value()
+        RV["short_freight"] = self._cost_short_freight()
+
+        # sum all costs and add it to total mobility
+        RV["total_time"] = sum(RV.values())
+
+        return RV
+
     # PRIVATE
     # *** cost MOBILITY methods ***
     def _cost_eac_ton_km(self, eac, units):
@@ -289,6 +303,19 @@ class RailwayNetworkCost(BaseNetworkCost):
         b = pow(1 + int_rate, use_life) - 1
 
         return a / b
+
+    # *** cost TIME methods ***
+    def _cost_deposit(self):
+        """Calculate cost of freight deposit while waiting a train service."""
+        pass
+
+    def _cost_immobilized_value(self):
+        """Calculate immobilizing value cost during deposit and travel time."""
+        pass
+
+    def _cost_short_freight(self):
+        """Calculate cost of transport from door to train station."""
+        pass
 
 
 class RoadwayNetworkCost(BaseNetworkCost):
