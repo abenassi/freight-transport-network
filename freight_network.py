@@ -21,9 +21,9 @@ class FreightNetwork():
     other, exploring changes in overall cost of different traffic
     configurations."""
 
-    def __init__(self, railway_network, roadway_network):
-        self.rail = railway_network
-        self.road = roadway_network
+    def __init__(self, railway_network=None, roadway_network=None):
+        self.rail = railway_network or RailwayNetwork()
+        self.road = roadway_network or RoadwayNetwork()
         self.min_cost = sys.maxint
         self.max_cost = 0.0
 
@@ -298,9 +298,7 @@ def main():
     case."""
 
     # initialize freight transport networks
-    rail = RailwayNetwork()
-    road = RoadwayNetwork()
-    fn = FreightNetwork(rail, road)
+    fn = FreightNetwork()
 
     # cost network at current situation
     scenario = "current situation"
