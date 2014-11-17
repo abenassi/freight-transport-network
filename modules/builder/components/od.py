@@ -134,7 +134,8 @@ class OD(BasePath):
 
     NF = "{:,.1f}"
     FIELDS = ["id_od", "gauge", "distance", "original ton", "derived ton",
-              "ton", "railway_category", "path"]
+              "ton", "railway_category", "path", "id_lowest_link",
+              "ton_lowest_link"]
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None,
                  rail_category=None):
@@ -153,6 +154,7 @@ class OD(BasePath):
         self.original_ton = ton
         self.derived_ton = 0.0
         self.rail_category = rail_category
+        self.lowest_link = None
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
@@ -179,13 +181,40 @@ class OD(BasePath):
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(), self.get_category(),
-                self.path]
+                self.path, self.get_lowest_link_id(),
+                self.get_lowest_link_scale()]
 
     def get_dist(self):
         return self.dist
 
     def get_category(self):
         return self.rail_category
+
+    def get_lowest_link_scale(self):
+        """Returns the tons passing through the lowest link used by OD pair.
+
+        It is a mesure used to calculate the frequency that train services can
+        have for the OD pair, taking into account the worst part of the path,
+        in terms of the scale reached."""
+
+        if self.lowest_link:
+            return self.lowest_link.get_ton()
+
+        else:
+            return None
+
+    def get_lowest_link_id(self):
+        """Returns the tons passing through the lowest link used by OD pair.
+
+        It is a mesure used to calculate the frequency that train services can
+        have for the OD pair, taking into account the worst part of the path,
+        in terms of the scale reached."""
+
+        if self.lowest_link:
+            return self.lowest_link.get_id()
+
+        else:
+            return None
 
     def calc_distance(self, network_links):
         self.dist = super(OD, self).calc_distance(network_links)
@@ -250,6 +279,9 @@ class OD(BasePath):
     def set_category(self, category_od):
         self.rail_category = category_od
 
+    def set_lowest_scale_link(self, link):
+        self.lowest_link = link
+
     # BOOL methods
     def has_declared_path(self):
         """Has a path data member, even if its a "not found" one."""
@@ -258,3 +290,7 @@ class OD(BasePath):
     def is_intrazone(self):
         """Check if origin = destination."""
         return len(self.nodes) == 2 and self.nodes[0] == self.nodes[1]
+
+    def has_operable_path(self):
+        """Has a positive path that can be operated."""
+        return self.has_declared_path() and self.path_nodes

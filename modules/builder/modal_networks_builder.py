@@ -59,6 +59,9 @@ class BaseModalNetworkBuilder(object):
         # calculate tons carried by each link
         self._calculate_link_tons(mn)
 
+        # store lowest link scale for each od pair
+        mn.find_lowest_scale_links()
+
     def create_od_pair(self, mn, id_od, category_od):
 
         # create od pair object

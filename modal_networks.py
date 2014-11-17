@@ -229,6 +229,26 @@ class BaseModalNetwork(object):
     def get_total_cost(self):
         return self.get_total_cost_tk() * self.get_total_ton_km()
 
+    def find_lowest_scale_links(self):
+        """Find the lowest scale link used by every od pair."""
+
+        # iterate od pairs of the network
+        for od in self.iter_od_pairs():
+
+            # get the gauge of the link
+            gauge = od.get_gauge()
+
+            # check if there are links (if the pair is not intrazone)
+            if not od.is_intrazone() and od.has_operable_path():
+                lowest_link_id = min(od.get_links(), key=lambda x: self.get_link(x, gauge).get_ton())
+                lowest_link = self.get_link(lowest_link_id, gauge)
+
+            else:
+                lowest_link = None
+
+            # store a reference to lowest link in th od pair object
+            od.set_lowest_scale_link(lowest_link)
+
     # reports
     def print_objects_report(self):
         """Print report with examples of objects inside RailwayNetwork."""

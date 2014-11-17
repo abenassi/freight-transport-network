@@ -49,6 +49,10 @@ class FreightNetwork():
                 # derive road tons to railway
                 self.derive_to_railway(road_od, coeff)
 
+        # find lowest scale link for each od pair of the networks
+        self.rail.find_lowest_scale_links()
+        self.road.find_lowest_scale_links()
+
     def derive_all_to_roadway(self):
         """Derive all possible rail od pairs from rail mode to road mode."""
 
@@ -58,6 +62,10 @@ class FreightNetwork():
             # derive road tons to railway
             COEFF = 1.0
             self.derive_to_roadway(rail_od, COEFF)
+
+        # find lowest scale link for each od pair of the networks
+        self.rail.find_lowest_scale_links()
+        self.road.find_lowest_scale_links()
 
     def cost_network(self):
         """Cost total freight transport network."""
