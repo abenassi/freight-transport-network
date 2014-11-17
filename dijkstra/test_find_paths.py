@@ -1,4 +1,5 @@
 import unittest
+import os
 import find_paths
 from openpyxl import load_workbook
 
@@ -36,10 +37,12 @@ class FindPathsModuleTestCase(unittest.TestCase):
 
     def setUp(self):
 
+        root_dir = os.path.dirname(__file__)
+
         # names of excels to be compared
-        self.test_input_excel = "test/test_railway_links_table.xlsx"
-        self.test_compare_excel = "test/test_railway_shortest_paths.xlsx"
-        self.test_output_excel = "test/railway_shortest_paths.xlsx"
+        self.test_input_excel = os.path.join(root_dir, "test/test_railway_links_table.xlsx")
+        self.test_compare_excel = os.path.join(root_dir, "test/test_railway_shortest_paths.xlsx")
+        self.test_output_excel = os.path.join(root_dir, "test/railway_shortest_paths.xlsx")
 
         # run scraper method
         find_paths.main(self.test_input_excel, self.test_output_excel)
