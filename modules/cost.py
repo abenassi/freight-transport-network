@@ -226,15 +226,100 @@ class RailwayTimeCost(BaseNetworkCost):
 
     def _cost_deposit(self):
         """Calculate cost of freight deposit while waiting a train service."""
-        pass
+
+        # get parameters into short name variables
+        cost_day_ton = self.rn.params["deposit_cost_per_day_ton"].value
+
+        # calculate deposit cost for each od pair
+        total_deposit_cost = 0.0
+        for od in self.rn.iter_od_pairs():
+
+            # calculate days of deposit
+            lowest_link_scale = od.get_lowest_link_scale()
+            days_of_deposit = self._calc_deposit_days(lowest_link_scale)
+
+            # calculate od deposit cost
+            od_deposit_cost = cost_day_ton * days_of_deposit * od.get_ton()
+            od.set_deposit_cost(od_deposit_cost)
+
+            total_deposit_cost += od_deposit_cost
+
+        # total deposit cost is returned in ton-km
+        return total_deposit_cost / self.total_ton_km
 
     def _cost_immobilized_value(self):
         """Calculate immobilizing value cost during deposit and travel time."""
-        pass
+
+        cost_ton_day = self.rn.params["cost_of_immobilized_ton"].value
+
+        # calculate immobilized time for each od pair
+        total_immo_ton_days = 0.0
+        for od in self.rn.iter_od_pairs():
+
+            # calculate days of deposit
+            lowest_link_scale = od.get_lowest_link_scale()
+            days_of_deposit = self._calc_deposit_days(lowest_link_scale)
+
+            # calculate days of travel
+            days_of_travel = self._calc_travel_days(od)
+
+            # total immobilized days and ton-days for od pair
+            immobilized_days = days_of_deposit + days_of_travel
+            immobilized_ton_days = immobilized_days * od.get_ton()
+
+            total_immo_ton_days += immobilized_ton_days
+
+        total_cost_immo_value = total_immo_ton_days * cost_ton_day
+
+        # total cost of immobilized value is returned in ton-km
+        return total_cost_immo_value / self.total_ton_km
 
     def _cost_short_freight(self):
         """Calculate cost of transport from door to train station."""
-        pass
+
+        short_freight_cost_ton = self.rn.params["short_freight_to_train"].value
+
+        # calculate short freight cost for each od pair
+        total_short_freight_cost = 0.0
+        for od in self.rn.iter_od_pairs():
+
+            short_freight_cost = short_freight_cost_ton * od.get_ton() * 2
+            total_short_freight_cost += short_freight_cost
+
+        # total cost of short freight is returned in ton-km
+        return total_short_freight_cost / self.total_ton_km
+
+    def _calc_deposit_days(self, lowest_link_scale):
+        """Calculate deposit days to hold a load while waiting a train."""
+
+        # get parameters into short name variables
+        locomotive_load = (self.rn.params["locomotive_capacity"].value /
+                           self.rn.params["loading_ratio"].value)
+        min_weekly_train_freq = self.rn.params["min_weekly_freq"].value
+
+        # calculate how many trains per week will be at that scale
+        weekly_train_freq = (lowest_link_scale / locomotive_load) / (365 / 7)
+        weekly_train_freq = max(weekly_train_freq, min_weekly_train_freq)
+
+        # calculate average days of deposit waiting the train
+        average_days_waiting = 1 / weekly_train_freq * 7 / 2
+
+        # calculate deposit days at origin and destination
+        total_deposit_days = average_days_waiting * 2
+
+        return total_deposit_days
+
+    def _calc_travel_days(self, od):
+        """Calculate travel time of an od pair."""
+
+        # get parameters into short name variables
+        truck_to_train_time = self.rn.params["ratio_truck_to_train_travel_time"].value
+        speed = self.rn.params["speed"].value
+
+        # TODO: it needs to take into account idle time during travel!!!
+        # currently, only running time is being considered, temporarily running
+        # time is multiplied by two to approximate total time
+        return od.get_dist() / speed / 24 * 2 * truck_to_train_time
 
 
 class RailwayNetworkCost(BaseNetworkCost):

@@ -1,7 +1,8 @@
 import unittest
 import os
 import sys
-from railway_cost import RailwayNetworkCost
+from cost import RailwayNetworkCost
+from cost import RailwayMobilityCost, RailwayInfrastructureCost, RailwayTimeCost
 from builder import RailwayNetworkBuilder
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -33,6 +34,9 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
 
         # init object enought fed to test infrastructure methods
         self.nc = RailwayNetworkCost(self.rn)
+        self.mob = RailwayMobilityCost(self.rn)
+        self.inf = RailwayInfrastructureCost(self.rn)
+        self.time = RailwayTimeCost(self.rn)
         self.rn.calc_mobility_requirements()
 
         # net ton-km to test
@@ -47,51 +51,48 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         self.main_dist = 7202.0
         self.secondary_dist = 7919.0
 
-    # GENERAL cost tests
-    def test_calc_total_ton_km(self):
-        self.assertAlmostEqual(self.nc._calc_total_ton_km(), self.load_tk,
-                               delta=10000)
-
     # INFRASTRUCTURE cost tests
     def test_cost_infrast_maint(self):
-        infrast_maint_cost = self.nc._cost_infrast_maint(self.gross_tk,
-                                                         self.dist)
+        infrast_maint_cost = self.inf._cost_infrast_maint(self.gross_tk,
+                                                          self.dist)
         self.assertAlmostEqual(infrast_maint_cost, 47989846.78, delta=2000000)
 
     def test_capital_recovery_factor(self):
         int_rate = 0.08
         use_life = 30
-        crf = self.nc._capital_recovery_factor(int_rate, use_life)
+        crf = self.inf._capital_recovery_factor(int_rate, use_life)
         self.assertAlmostEqual(crf, 0.08882743338727227)
 
     def test_cost_eac_track(self):
         # FAINTERU base case with main track parameters
-        track_eac = self.nc._cost_eac_track(self.main_gross_tk, self.main_dist)
+        track_eac = self.inf._cost_eac_track(self.main_gross_tk,
+                                             self.main_dist)
         self.assertAlmostEqual(track_eac, 232400036.0, delta=10)
 
         # FAINTERU density * 3.16 with main track parameters
-        track_eac = self.nc._cost_eac_track(45704866707, self.main_dist)
+        track_eac = self.inf._cost_eac_track(45704866707, self.main_dist)
         self.assertAlmostEqual(track_eac, 492564218, delta=10)
 
         # FAINTERU density * 3.16 with secondary track parameters
-        track_eac = self.nc._cost_eac_track(12563761436, self.secondary_dist)
+        track_eac = self.inf._cost_eac_track(12563761436, self.secondary_dist)
         self.assertAlmostEqual(track_eac, 227724904, delta=10)
 
-        track_eac = self.nc._cost_eac_track(303670609022.56, self.dist)
+        track_eac = self.inf._cost_eac_track(303670609022.56, self.dist)
         self.assertAlmostEqual(track_eac, 1807731647, delta=10)
 
     def test_calc_number_of_detours(self):
-        num_detours = self.nc._calc_number_of_detours(self.gross_tk, self.dist)
+        num_detours = self.inf._calc_number_of_detours(self.gross_tk,
+                                                       self.dist)
         self.assertAlmostEqual(num_detours, 76.83, 2)
 
     def test_cost_eac_track_with_detours(self):
         density = 2008271.0
         distance = 1.0
-        cost_eac_detour = self.nc._cost_eac_track(density, distance)
+        cost_eac_detour = self.inf._cost_eac_track(density, distance)
         self.assertAlmostEqual(cost_eac_detour, 32268.82, 2)
 
     def test_cost_detour(self):
-        detours_cost = self.nc._cost_detour(self.gross_tk, self.dist)
+        detours_cost = self.inf._cost_detour(self.gross_tk, self.dist)
         self.assertAlmostEqual(detours_cost, 10357513.22, delta=100000)
 
     # MOBILITY cost tests
@@ -104,6 +105,9 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         self.assertAlmostEqual(total_mobility_cost_tk, 0.018443320134665583, 5)
 
     # TIME cost tests
+    def test_cost_time(self):
+        total_time_cost_tk = self.nc.cost_time()["total_time"]
+        self.assertAlmostEqual(total_time_cost_tk, 0.013571173218642400)
 
     # AUXILIAR METHODS
     def _load_from_xl(self, loader_class, xl_name, output_dict):

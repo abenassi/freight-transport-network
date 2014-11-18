@@ -477,6 +477,14 @@ class RailwayNetwork(BaseModalNetwork):
         # calculate and store infrastructure costs
         self.costs["inf"] = network_cost.cost_infrast()
 
+    def cost_time(self):
+
+        # create a railway network cost object
+        network_cost = self.COST_CLASS(self)
+
+        # calculate and store time costs
+        self.costs["time"] = network_cost.cost_time()
+
     def cost_network(self):
         """Cost infrastructure and mobility of the network.
 
@@ -484,6 +492,7 @@ class RailwayNetwork(BaseModalNetwork):
 
         self.calc_optimized_mobility_cost()
         self.calc_infrastructure_cost()
+        self.cost_time()
 
     # others
     def has_railway_path(self, od):

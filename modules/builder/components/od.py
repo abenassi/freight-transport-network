@@ -135,7 +135,8 @@ class OD(BasePath):
     NF = "{:,.1f}"
     FIELDS = ["id_od", "gauge", "distance", "original ton", "derived ton",
               "ton", "railway_category", "path", "id_lowest_link",
-              "ton_lowest_link"]
+              "ton_lowest_link", "deposit_cost", "short_freight_cost",
+              "immo_value_cost"]
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None,
                  rail_category=None):
@@ -155,6 +156,11 @@ class OD(BasePath):
         self.derived_ton = 0.0
         self.rail_category = rail_category
         self.lowest_link = None
+
+        # cost properties
+        self.deposit_cost = None
+        self.short_freight_cost = None
+        self.immo_value_cost = None
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
@@ -182,7 +188,8 @@ class OD(BasePath):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(), self.get_category(),
                 self.path, self.get_lowest_link_id(),
-                self.get_lowest_link_scale()]
+                self.get_lowest_link_scale(), self.get_deposit_cost(),
+                self.get_short_freight_cost(), self.get_immo_value_cost()]
 
     def get_dist(self):
         return self.dist
@@ -215,6 +222,15 @@ class OD(BasePath):
 
         else:
             return None
+
+    def get_deposit_cost(self):
+        return self.deposit_cost
+
+    def get_short_freight_cost(self):
+        return self.short_freight_cost
+
+    def get_immo_value_cost(self):
+        return self.immo_value_cost
 
     def calc_distance(self, network_links):
         self.dist = super(OD, self).calc_distance(network_links)
@@ -281,6 +297,15 @@ class OD(BasePath):
 
     def set_lowest_scale_link(self, link):
         self.lowest_link = link
+
+    def set_deposit_cost(self, deposit_cost):
+        self.deposit_cost = deposit_cost
+
+    def set_short_freight_cost(self, short_freight_cost):
+        self.short_freight_cost = short_freight_cost
+
+    def set_immo_value_cost(self, immo_value_cost):
+        self.immo_value_cost = immo_value_cost
 
     # BOOL methods
     def has_declared_path(self):
