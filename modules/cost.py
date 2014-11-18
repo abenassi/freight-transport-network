@@ -5,96 +5,10 @@ class BaseNetworkCost(object):
         self.total_ton_km = self.rn.get_total_ton_km()
 
 
-class RailwayNetworkCost(BaseNetworkCost):
+# ***   RAILWAY cost subclasses   *** #
 
-    # PUBLIC
-    def cost_mobility(self):
-        """Calculate each type of mobility cost."""
-        RV = {}
+class RailwayMobilityCost(BaseNetworkCost):
 
-        # fill RV with moblity costs per ton-km
-        RV["eac_wagon"] = self._cost_eac_wagon()
-        RV["eac_locom"] = self._cost_eac_locom()
-        RV["fuel_and_lub"] = self._cost_fuel_and_lub()
-        RV["maintenance"] = self._cost_mobility_maintenance()
-        RV["manpower"] = self._cost_manpower()
-
-        # sum all costs and add it to total mobility
-        RV["total_mobility"] = sum(RV.values())
-
-        return RV
-
-    def cost_infrast(self):
-        """Calculate each type of infrastructure cost."""
-
-        # initialize return value
-        RV = {}
-        RV["eac_detour"] = 0
-        RV["eac_track"] = 0
-        RV["maintenance"] = 0
-
-        # take parameters
-        wagon_capacity = self.rn.params["wagon_capacity"].value
-        wagon_weight = self.rn.params["wagon_weight"].value
-        locomotive_capacity = self.rn.params["locomotive_capacity"].value
-        locomotive_weight = self.rn.params["locomotive_weight"].value
-
-        # calculate gross ton_km and infrastructure cost for each link
-        for link in self.rn.iter_links():
-
-            # check if there is load on that link
-            if link.get_ton() > 0:
-
-                # calculate gross ton-km carried by the link
-                gross_tk = link.get_gross_ton_km(wagon_capacity,
-                                                 wagon_weight,
-                                                 locomotive_capacity,
-                                                 locomotive_weight)
-
-                # calculate costs of link infrastructure
-                eac_detour = self._cost_detour(gross_tk, link.get_dist())
-                eac_track = self._cost_eac_track(gross_tk, link.get_dist())
-                maintenance = self._cost_infrast_maint(
-                    gross_tk, link.get_dist())
-
-                # update RV cost category with traffic of the link
-                RV["eac_detour"] += eac_detour
-                RV["eac_track"] += eac_track
-                RV["maintenance"] += maintenance
-
-                # write costs to link object
-                link.eac_detour = eac_detour
-                link.eac_track = eac_track
-                link.maintenance = maintenance
-
-        # divide all costs to express them in terms of ton-km
-        for infrast_cost in RV:
-            if self.total_ton_km > 0.1:
-                RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
-            else:
-                RV[infrast_cost] = 0.0
-
-        # sum all costs and add it to total mobility
-        RV["total_infrastructure"] = sum(RV.values())
-
-        return RV
-
-    def cost_time(self):
-        """Calculate each type of time related cost."""
-        RV = {}
-
-        # fill RV with moblity costs per ton-km
-        RV["deposit"] = self._cost_deposit()
-        RV["immobilized_value"] = self._cost_immobilized_value()
-        RV["short_freight"] = self._cost_short_freight()
-
-        # sum all costs and add it to total mobility
-        RV["total_time"] = sum(RV.values())
-
-        return RV
-
-    # PRIVATE
-    # *** cost MOBILITY methods ***
     def _cost_eac_ton_km(self, eac, units):
         """Calculate eac by ton_km for a number of units."""
 
@@ -188,7 +102,9 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         return manpower_cost
 
-    # *** cost INFRASTRUCTURE methods ***
+
+class RailwayInfrastructureCost(BaseNetworkCost):
+
     def _cost_detour(self, gross_tk, dist):
         """Calculate equivalent annual cost of detours."""
 
@@ -236,7 +152,8 @@ class RailwayNetworkCost(BaseNetworkCost):
             a_eac = self.rn.params["coef_a_track_cost"].value
             b_eac = self.rn.params["coef_b_track_cost"].value
             use_life = self.rn.params["useful_life_track"].value
-            max_gross_tk = self.rn.params["gross_tk_in_hq_track_lifetime"].value
+            max_gross_tk = self.rn.params[
+                "gross_tk_in_hq_track_lifetime"].value
             int_rate = self.rn.params["interest_rate"].value
             max_cost_track = self.rn.params["high_quality_track_price"].value
 
@@ -304,7 +221,9 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         return a / b
 
-    # *** cost TIME methods ***
+
+class RailwayTimeCost(BaseNetworkCost):
+
     def _cost_deposit(self):
         """Calculate cost of freight deposit while waiting a train service."""
         pass
@@ -318,22 +237,44 @@ class RailwayNetworkCost(BaseNetworkCost):
         pass
 
 
-class RoadwayNetworkCost(BaseNetworkCost):
+class RailwayNetworkCost(BaseNetworkCost):
 
-    # PUBLIC
     def cost_mobility(self):
         """Calculate each type of mobility cost."""
         RV = {}
 
+        # init object to cost mobility
+        rmc = RailwayMobilityCost(self.rn)
+
+        # fill RV with moblity costs per ton-km
+        RV["eac_wagon"] = rmc._cost_eac_wagon()
+        RV["eac_locom"] = rmc._cost_eac_locom()
+        RV["fuel_and_lub"] = rmc._cost_fuel_and_lub()
+        RV["maintenance"] = rmc._cost_mobility_maintenance()
+        RV["manpower"] = rmc._cost_manpower()
+
         # sum all costs and add it to total mobility
-        RV["total_mobility"] = self._cost_mobility()
+        RV["total_mobility"] = sum(RV.values())
 
         return RV
 
     def cost_infrast(self):
         """Calculate each type of infrastructure cost."""
+
+        # initialize return value
         RV = {}
+        RV["eac_detour"] = 0
         RV["eac_track"] = 0
+        RV["maintenance"] = 0
+
+        # init object to cost infrastructure
+        ric = RailwayInfrastructureCost(self.rn)
+
+        # take parameters
+        wagon_capacity = self.rn.params["wagon_capacity"].value
+        wagon_weight = self.rn.params["wagon_weight"].value
+        locomotive_capacity = self.rn.params["locomotive_capacity"].value
+        locomotive_weight = self.rn.params["locomotive_weight"].value
 
         # calculate gross ton_km and infrastructure cost for each link
         for link in self.rn.iter_links():
@@ -341,26 +282,62 @@ class RoadwayNetworkCost(BaseNetworkCost):
             # check if there is load on that link
             if link.get_ton() > 0:
 
+                # calculate gross ton-km carried by the link
+                gross_tk = link.get_gross_ton_km(wagon_capacity,
+                                                 wagon_weight,
+                                                 locomotive_capacity,
+                                                 locomotive_weight)
+
                 # calculate costs of link infrastructure
-                eac_track = self._cost_eac_track(link.get_ton(),
-                                                 link.get_dist())
+                eac_detour = ric._cost_detour(gross_tk, link.get_dist())
+                eac_track = ric._cost_eac_track(gross_tk, link.get_dist())
+                maintenance = ric._cost_infrast_maint(
+                    gross_tk, link.get_dist())
 
                 # update RV cost category with traffic of the link
+                RV["eac_detour"] += eac_detour
                 RV["eac_track"] += eac_track
+                RV["maintenance"] += maintenance
 
                 # write costs to link object
+                link.eac_detour = eac_detour
                 link.eac_track = eac_track
+                link.maintenance = maintenance
 
         # divide all costs to express them in terms of ton-km
         for infrast_cost in RV:
-            RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
+            if ric.total_ton_km > 0.1:
+                RV[infrast_cost] = RV[infrast_cost] / ric.total_ton_km
+            else:
+                RV[infrast_cost] = 0.0
 
         # sum all costs and add it to total mobility
         RV["total_infrastructure"] = sum(RV.values())
 
         return RV
 
-    # PRIVATE
+    def cost_time(self):
+        """Calculate each type of time related cost."""
+        RV = {}
+
+        # init object to cost time
+        rtc = RailwayTimeCost(self.rn)
+
+        # fill RV with moblity costs per ton-km
+        RV["deposit"] = rtc._cost_deposit()
+        RV["immobilized_value"] = rtc._cost_immobilized_value()
+        RV["short_freight"] = rtc._cost_short_freight()
+
+        # sum all costs and add it to total mobility
+        RV["total_time"] = sum(RV.values())
+
+        return RV
+
+
+# ***   ROADWAY cost subclasses   *** #
+
+class RoadwayMobilityCost(BaseNetworkCost):
+
     def _cost_mobility(self):
         """Calculate cost of truck mobility."""
 
@@ -368,6 +345,9 @@ class RoadwayNetworkCost(BaseNetworkCost):
         mobility_cost = self.rn.get_total_ton_km() * mobility_cost_tk
 
         return mobility_cost / self.total_ton_km
+
+
+class RoadwayInfrastructureCost(BaseNetworkCost):
 
     def _cost_eac_track(self, ton, dist):
         """Calculate equivalent annual cost of track."""
@@ -380,53 +360,49 @@ class RoadwayNetworkCost(BaseNetworkCost):
         return eac * dist
 
 
-def test():
+class RoadwayNetworkCost(BaseNetworkCost):
 
-    print "\nTest Case 1: mobility cost"
-    print "-----------"
+    def cost_mobility(self):
+        """Calculate each type of mobility cost."""
+        RV = {}
 
-    # set up all objects to pass to NetworkCost
-    from railway_parameters import Parameter
-    params = {"wagon_eac": Parameter("wagon_eac", 6463.8),
-              "locomotive_eac": Parameter("locomotive_eac", 154445.9),
-              "fuel_cost_by_km": Parameter("fuel_cost_by_km", 2),
-              "lubricants_fuel_ratio": Parameter("lubricants_fuel_ratio", 0.0667),
-              "maintenance_by_locomotive": Parameter("maintenance_by_locomotive", 100170),
-              "maintenance_by_wagon": Parameter("maintenance_by_wagon", 2487.6),
-              "manpower_cost_by_loc_hour": Parameter("manpower_cost_by_loc_hour", 30.42)}
+        # init object to cost mobility
+        rmc = RoadwayMobilityCost(self.rn)
 
-    from railway_rolling_material import RollingMaterial
-    locoms = RollingMaterial()
-    locoms.running = 137.91 * 1564.29
-    locoms.idle_heads = 137.91 * 30 * 125.14
-    locoms.idle_turnout = 137.91 * 1250.14
-    locoms.speed = 40  # (km/h)
-    locoms.availability = 6570  # (hr/year)
-    locoms.capacity = 2400  # (ton)
-    locoms.head_stops_time = 15  # (hr/head_stop)
-    locoms.turnout_time = 4  # (hr/turnout_stop)
-    locoms.turnout_freq = 200  # (km between turnouts
+        # sum all costs and add it to total mobility
+        RV["total_mobility"] = rmc._cost_mobility()
 
-    wagons = RollingMaterial()
-    wagons.running = 15313.81 * 535.33
-    wagons.idle_heads = 15313.81 * 180 * 42.83
-    wagons.idle_turnout = 15313.81 * 428.27
-    wagons.speed = 40  # (km/h)
-    wagons.availability = 8672  # (hr/year)
-    wagons.capacity = 60  # (ton)
-    wagons.head_stops_time = 15  # (hr/head_stop)
-    wagons.turnout_time = 4  # (hr/turnout_stop)
-    wagons.turnout_freq = 200  # (km between turnouts
+        return RV
 
-    from railway_link import Link
-    link = Link("1-3", 500, "ancha")
-    link.ton = 22036200
-    links = {"1-3": {"ancha": link}}
+    def cost_infrast(self):
+        """Calculate each type of infrastructure cost."""
+        RV = {}
+        RV["eac_track"] = 0
 
-    from pprint import pprint
-    pprint(NetworkCost(params, locoms, wagons, links).cost_mobility())
-    print "\nlocoms", locoms
-    print "\nwagons", wagons
+        # init object to cost mobility
+        ric = RoadwayInfrastructureCost(self.rn)
 
-if __name__ == '__main__':
-    test()
+        # calculate gross ton_km and infrastructure cost for each link
+        for link in self.rn.iter_links():
+
+            # check if there is load on that link
+            if link.get_ton() > 0:
+
+                # calculate costs of link infrastructure
+                eac_track = ric._cost_eac_track(link.get_ton(),
+                                                link.get_dist())
+
+                # update RV cost category with traffic of the link
+                RV["eac_track"] += eac_track
+
+                # write costs to link object
+                link.eac_track = eac_track
+
+        # divide all costs to express them in terms of ton-km
+        for infrast_cost in RV:
+            RV[infrast_cost] = RV[infrast_cost] / ric.total_ton_km
+
+        # sum all costs and add it to total mobility
+        RV["total_infrastructure"] = sum(RV.values())
+
+        return RV
