@@ -195,15 +195,11 @@ class BaseReport():
             # write report description
             ws.cell(row=1, column=i_col).value = self.description
 
-            # add mobility costs to the costs sheet of report
-            for key, value in rn.costs["mob"].items():
-                ws.cell(row=i_row, column=i_col).value = value
-                i_row += 1
-
-            # add infrastructure costs to the costs sheet of report
-            for key, value in rn.costs["inf"].items():
-                ws.cell(row=i_row, column=i_col).value = value
-                i_row += 1
+            # add each type of costs to the costs sheet of report
+            for cost_type in rn.costs.keys():
+                for key, value in rn.costs[cost_type].items():
+                    ws.cell(row=i_row, column=i_col).value = value
+                    i_row += 1
 
         else:
             # create ws
@@ -211,13 +207,10 @@ class BaseReport():
             ws.title = ws_name
             ws.append(["variable", self.description])
 
-            # add mobility costs to the costs sheet of report
-            for key, value in rn.costs["mob"].items():
-                ws.append([key, value])
-
-            # add infrastructure costs to the costs sheet of report
-            for key, value in rn.costs["inf"].items():
-                ws.append([key, value])
+            # add each type of costs to the costs sheet of report
+            for cost_type in rn.costs.keys():
+                for key, value in rn.costs[cost_type].items():
+                    ws.append([key, value])
 
     def _style_ws(self, ws):
 

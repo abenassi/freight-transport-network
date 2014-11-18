@@ -237,7 +237,7 @@ class RailwayTimeCost(BaseNetworkCost):
             if od.get_ton() > 0 and od.get_lowest_link_scale():
 
                 # calculate days of deposit
-                lowest_link_scale = od.get_lowest_link_scale()
+                lowest_link_scale = od.get_lowest_link_scale() / 2
                 days_of_deposit = self._calc_deposit_days(lowest_link_scale)
 
                 # calculate od deposit cost
@@ -266,7 +266,7 @@ class RailwayTimeCost(BaseNetworkCost):
             if od.get_ton() > 0 and od.get_lowest_link_scale():
 
                 # calculate days of deposit
-                lowest_link_scale = od.get_lowest_link_scale()
+                lowest_link_scale = od.get_lowest_link_scale() / 2
                 days_of_deposit = self._calc_deposit_days(lowest_link_scale)
 
                 # calculate days of travel
