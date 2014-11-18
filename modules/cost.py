@@ -234,18 +234,25 @@ class RailwayTimeCost(BaseNetworkCost):
         total_deposit_cost = 0.0
         for od in self.rn.iter_od_pairs():
 
-            # calculate days of deposit
-            lowest_link_scale = od.get_lowest_link_scale()
-            days_of_deposit = self._calc_deposit_days(lowest_link_scale)
+            if od.get_ton() > 0 and od.get_lowest_link_scale():
 
-            # calculate od deposit cost
-            od_deposit_cost = cost_day_ton * days_of_deposit * od.get_ton()
-            od.set_deposit_cost(od_deposit_cost)
+                # calculate days of deposit
+                lowest_link_scale = od.get_lowest_link_scale()
+                days_of_deposit = self._calc_deposit_days(lowest_link_scale)
 
-            total_deposit_cost += od_deposit_cost
+                # calculate od deposit cost
+                od_deposit_cost = cost_day_ton * days_of_deposit * od.get_ton()
+                od.set_deposit_cost(od_deposit_cost)
 
-        # total deposit cost is returned in ton-km
-        return total_deposit_cost / self.total_ton_km
+                total_deposit_cost += od_deposit_cost
+
+        if self.total_ton_km > 0.1:
+
+            # total deposit cost is returned in ton-km
+            return total_deposit_cost / self.total_ton_km
+
+        else:
+            return 0.0
 
     def _cost_immobilized_value(self):
         """Calculate immobilizing value cost during deposit and travel time."""
@@ -256,23 +263,31 @@ class RailwayTimeCost(BaseNetworkCost):
         total_immo_ton_days = 0.0
         for od in self.rn.iter_od_pairs():
 
-            # calculate days of deposit
-            lowest_link_scale = od.get_lowest_link_scale()
-            days_of_deposit = self._calc_deposit_days(lowest_link_scale)
+            if od.get_ton() > 0 and od.get_lowest_link_scale():
 
-            # calculate days of travel
-            days_of_travel = self._calc_travel_days(od)
+                # calculate days of deposit
+                lowest_link_scale = od.get_lowest_link_scale()
+                days_of_deposit = self._calc_deposit_days(lowest_link_scale)
 
-            # total immobilized days and ton-days for od pair
-            immobilized_days = days_of_deposit + days_of_travel
-            immobilized_ton_days = immobilized_days * od.get_ton()
+                # calculate days of travel
+                days_of_travel = self._calc_travel_days(od)
 
-            total_immo_ton_days += immobilized_ton_days
+                # total immobilized days and ton-days for od pair
+                immobilized_days = days_of_deposit + days_of_travel
+                immobilized_ton_days = immobilized_days * od.get_ton()
+
+                total_immo_ton_days += immobilized_ton_days
+                od.set_immo_value_cost(immobilized_ton_days * cost_ton_day)
 
         total_cost_immo_value = total_immo_ton_days * cost_ton_day
 
-        # total cost of immobilized value is returned in ton-km
-        return total_cost_immo_value / self.total_ton_km
+        if self.total_ton_km > 0.1:
+
+            # total cost of immobilized value is returned in ton-km
+            return total_cost_immo_value / self.total_ton_km
+
+        else:
+            return 0.0
 
     def _cost_short_freight(self):
         """Calculate cost of transport from door to train station."""
@@ -285,9 +300,15 @@ class RailwayTimeCost(BaseNetworkCost):
 
             short_freight_cost = short_freight_cost_ton * od.get_ton() * 2
             total_short_freight_cost += short_freight_cost
+            od.set_short_freight_cost(short_freight_cost)
 
-        # total cost of short freight is returned in ton-km
-        return total_short_freight_cost / self.total_ton_km
+        if self.total_ton_km > 0.1:
+
+            # total cost of short freight is returned in ton-km
+            return total_short_freight_cost / self.total_ton_km
+
+        else:
+            return 0.0
 
     def _calc_deposit_days(self, lowest_link_scale):
         """Calculate deposit days to hold a load while waiting a train."""
