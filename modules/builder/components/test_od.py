@@ -4,6 +4,7 @@ from od import OD, Path
 
 
 class ODTestCase(unittest.TestCase):
+
     """Test construction of od pair."""
 
     def setUp(self):
@@ -26,6 +27,7 @@ class ODTestCase(unittest.TestCase):
 
 
 class PathTestCase(unittest.TestCase):
+
     """Test construction path."""
 
     def setUp(self):
@@ -38,8 +40,5 @@ class PathTestCase(unittest.TestCase):
         self.assertEqual(distance, 300)
 
 
-def main():
-    unittest.main()
-
 if __name__ == '__main__':
-    main()
+    unittest.main()

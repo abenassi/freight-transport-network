@@ -2,7 +2,8 @@ import unittest
 import os
 import sys
 from cost import RailwayNetworkCost
-from cost import RailwayMobilityCost, RailwayInfrastructureCost, RailwayTimeCost
+from cost import RailwayMobilityCost, RailwayInfrastructureCost
+from cost import RailwayTimeCost
 from builder import RailwayNetworkBuilder
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -107,7 +108,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
     # TIME cost tests
     def test_cost_time(self):
         total_time_cost_tk = self.nc.cost_time()["total_time"]
-        self.assertAlmostEqual(total_time_cost_tk, 0.013571173218642400)
+        self.assertAlmostEqual(total_time_cost_tk, 0.011905434303139083)
 
     # AUXILIAR METHODS
     def _load_from_xl(self, loader_class, xl_name, output_dict):
@@ -124,8 +125,5 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
                 print "Warning", element.id, "is repeated in", xl_name
 
 
-def main():
-    unittest.main()
-
 if __name__ == '__main__':
-    main()
+    unittest.main()
