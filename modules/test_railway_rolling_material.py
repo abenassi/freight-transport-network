@@ -70,5 +70,8 @@ class RollingMaterialTestCase(unittest.TestCase):
         self.assertEqual(self.rm.saved_running, -25000.0)
 
 
-if __name__ == '__main__':
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()

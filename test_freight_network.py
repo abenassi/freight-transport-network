@@ -36,5 +36,8 @@ class FreightNetworkTestCase(unittest.TestCase):
         self.assertEqual(coeff * road_ton, od_road.get_ton())
 
 
-if __name__ == '__main__':
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()

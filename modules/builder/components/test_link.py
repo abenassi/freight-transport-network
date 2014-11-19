@@ -3,7 +3,6 @@ from link import Link, RailwayLink, RoadwayLink
 
 
 class LinkTestCase(unittest.TestCase):
-
     """Test construction of a base Link."""
 
     def setUp(self):
@@ -20,11 +19,10 @@ class LinkTestCase(unittest.TestCase):
 
 
 class RailwayLinkTestCase(unittest.TestCase):
-
     """Test methods of RailwayLink."""
 
     def setUp(self):
-        self.link = RailwayLink("1009-1003", 1000, "ancha")
+            self.link = RailwayLink("1009-1003", 1000, "ancha")
 
     def test_regroup(self):
         """Test method to regroup idle wagons in railway link."""
@@ -39,5 +37,9 @@ class RailwayLinkTestCase(unittest.TestCase):
         self.link.revert_regroup(250)
         self.assertTrue(self.link.get_idle_cap_regroup(), 500)
 
-if __name__ == '__main__':
+
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()

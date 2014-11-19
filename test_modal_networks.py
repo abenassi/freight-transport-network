@@ -56,5 +56,9 @@ class RailwayNetworkTestCase(unittest.TestCase):
                                delta=0.0002)
 
 
-if __name__ == '__main__':
+def main():
     unittest.main()
+
+if __name__ == '__main__':
+    main()
+
