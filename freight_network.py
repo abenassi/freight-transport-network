@@ -91,12 +91,16 @@ class FreightNetwork():
         # remove tons from road links used by road od_pair
         for id_road_link in road_od.get_links():
             road_link = self.road.get_link(id_road_link, road_od.get_gauge())
-            road_link.remove_ton(derived_tons)
+            road_link.remove_ton(ton=derived_tons,
+                                 categories=road_od.get_category(),
+                                 id_ods=road_od.get_id())
 
         # add derived tons to rail links, used by rail od_pair
         for id_rail_link in rail_od.get_links():
             rail_link = self.rail.get_link(id_rail_link, rail_od.get_gauge())
-            rail_link.add_derived_ton(derived_tons)
+            rail_link.add_derived_ton(ton=derived_tons,
+                                      categories=rail_od.get_category(),
+                                      id_ods=rail_od.get_id())
 
     def derive_to_roadway(self, rail_od, coeff):
         """Derive a rail od pair to roadway mode.
@@ -117,12 +121,16 @@ class FreightNetwork():
         # remove tons from road links used by road od_pair
         for id_rail_link in rail_od.get_links():
             rail_link = self.rail.get_link(id_rail_link, rail_od.get_gauge())
-            rail_link.remove_ton(derived_tons)
+            rail_link.remove_ton(ton=derived_tons,
+                                 categories=rail_od.get_category(),
+                                 id_ods=rail_od.get_id())
 
         # add derived tons to rail links, used by rail od_pair
         for id_road_link in road_od.get_links():
             road_link = self.road.get_link(id_road_link, road_od.get_gauge())
-            road_link.add_derived_ton(derived_tons)
+            road_link.add_derived_ton(ton=derived_tons,
+                                      categories=road_od.get_category(),
+                                      id_ods=road_od.get_id())
 
     def derive_link_to_railway(self, road_link):
         """Derive all possible road od pairs that use road_link to rail."""

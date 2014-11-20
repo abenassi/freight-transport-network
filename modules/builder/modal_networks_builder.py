@@ -180,7 +180,9 @@ class BaseModalNetworkBuilder(object):
             # try to update tons of a link_gauge
             try:
                 link = mn.get_links()[id_link][od.get_gauge()]
-                link.add_original_ton(od.get_ton())
+                link.add_original_ton(ton=od.get_ton(),
+                                      categories=od.get_category(),
+                                      id_ods=od.get_id())
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:

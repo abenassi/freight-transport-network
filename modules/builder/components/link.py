@@ -1,8 +1,15 @@
-class Link():
+from tons import Tons
+
+
+class Link(Tons):
 
     """Base class for a link in a freight transport network."""
 
     def __init__(self, id, distance, gauge):
+
+        # call superclass constructor first
+        super(Link, self).__init__()
+
         # identification properties
         self.id = id
         self.gauge = gauge
@@ -12,8 +19,6 @@ class Link():
         self.dist = float(distance)  # Km
 
         # traffic parameters
-        self.original_ton = 0.0  # original ton of freight
-        self.derived_ton = 0.0  # derived ton of freight
         self.gross_tk = None  # gross ton-km
 
         # track costs
@@ -31,48 +36,8 @@ class Link():
         self.eac_track = None
         self.maintenance = None
 
-        # check original tons are significant
-        if self.original_ton < 0.1:
-            self.original_ton = 0.0
-
-        # check original tons are significant
-        if self.derived_ton < 0.1:
-            self.derived_ton = 0.0
-
-    def add_original_ton(self, ton):
-        self.original_ton += ton
-
-    def remove_ton(self, removed_tons):
-
-        # remove tons from link
-        if removed_tons < self.derived_ton:
-            self.derived_ton -= removed_tons
-
-        elif self.derived_ton == 0.0:
-            self.original_ton -= removed_tons
-
-        else:
-            original_tons_to_remove = removed_tons - self.derived_ton
-            self.derived_ton = 0.0
-            self.original_ton -= original_tons_to_remove
-
-    def remove_original_ton(self, ton):
-        self.original_ton -= ton
-
-    def add_derived_ton(self, ton):
-        self.derived_ton += ton
-
-    def remove_derived_ton(self, ton):
-        self.derived_ton -= ton
-
-    def get_original_ton(self):
-        return self.original_ton
-
-    def get_derived_ton(self):
-        return self.derived_ton
-
-    def get_ton(self):
-        return self.get_original_ton() + self.get_derived_ton()
+        # check stored values of tons are significant
+        self.clean_insignificant_ton_values(0.01)
 
     def get_dist(self):
         return self.dist
@@ -85,7 +50,11 @@ class Link():
 
 
 class RoadwayLink(Link):
-    """Represents a link in a roadway network."""
+
+    """Represents a link in a roadway network.
+
+    TODO: It still needs to be implemented, for the moment RailwayLink is
+    used as its good enough to act as a RoadwayLink as it is."""
     pass
 
 
@@ -101,16 +70,21 @@ class RailwayLink(Link):
               "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
               "num_detours"]
 
-    # traffic parameters
-    idle_capacity_regroup = 0.0  # ton-km
-    idle_capacity_no_regroup = 0.0  # ton-km
+    def __init__(self, id, distance, gauge):
 
-    # detour parameters
-    turnout_freq = None
-    turnout_freq_max_density = None
+        # call superclass constructor first
+        super(RailwayLink, self).__init__(id, distance, gauge)
 
-    # track costs
-    eac_detour = None
+        # traffic parameters
+        self.idle_capacity_regroup = 0.0  # ton-km
+        self.idle_capacity_no_regroup = 0.0  # ton-km
+
+        # detour parameters
+        self.turnout_freq = None
+        self.turnout_freq_max_density = None
+
+        # track costs
+        self.eac_detour = None
 
     def __repr__(self):
         return "Link: " + str(self.id).ljust(10) + \
@@ -127,8 +101,8 @@ class RailwayLink(Link):
         self.turnout_freq_max_density = turnout_freq_max_density
 
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.original_ton,
-                self.derived_ton, self.get_ton(), self.idle_capacity_regroup,
+        return [self.id, self.gauge, self.dist, self.get_original_ton(),
+                self.get_derived_ton(), self.get_ton(), self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.gross_tk,
                 self.get_number_of_detours()]
@@ -230,15 +204,3 @@ class RailwayLink(Link):
         num_detours = dist / t_distance
 
         return num_detours
-
-
-def test():
-
-    print "\nCreate a link"
-    print "-----------"
-    link = RailwayLink("1009-1003", 150.4, "ancha")
-
-    print link
-
-if __name__ == '__main__':
-    test()

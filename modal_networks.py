@@ -229,6 +229,33 @@ class BaseModalNetwork(object):
     def get_total_cost(self):
         return self.get_total_cost_tk() * self.get_total_ton_km()
 
+    def is_regroupable(self, category):
+        """Returns True if category can be regrouped and False otherwise."""
+
+        if "regroup_" + str(category) in self.params:
+            return self.params["regroup_" + str(category)].value == 1
+
+        else:
+            return False
+
+    def get_regrouping_categories(self):
+        """Return a list with all the categories that can be regrouped."""
+
+        regrouping_categories = []
+
+        # iter regrouping categories in parameters dictionary
+        category = 1
+        regroup_prefix = "regroup_"
+        while regroup_prefix + str(category) in self.params:
+
+            # add regrouping categories to the list
+            if self.params[regroup_prefix + str(category)].value == 1:
+                regrouping_categories.append(category)
+
+            category += 1
+
+        return regrouping_categories
+
     def find_lowest_scale_links(self):
         """Find the lowest scale link used by every od pair."""
 
@@ -240,7 +267,21 @@ class BaseModalNetwork(object):
 
             # check if there are links (if the pair is not intrazone)
             if not od.is_intrazone() and od.has_operable_path():
-                lowest_link_id = min(od.get_links(), key=lambda x: self.get_link(x, gauge).get_ton())
+
+                # find wich product categories can be regrouped with this od
+                od_category = od.get_category()
+
+                # if is regroupable, all regroupable categories can be with it
+                if self.is_regroupable(od_category):
+                    categories = self.get_regrouping_categories()
+
+                # if is not regroupable, tons must go with the same category
+                else:
+                    categories = od_category
+
+                # get lowest scale link of od pair, based con regrouping categ
+                lowest_link_id = min(od.get_links(),
+                                     key=lambda x: self.get_link(x, gauge).get_ton(categories=categories))
                 lowest_link = self.get_link(lowest_link_id, gauge)
 
             else:
