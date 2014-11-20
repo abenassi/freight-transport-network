@@ -4,10 +4,20 @@ class BaseNetworkCost(object):
         self.rn = rn
         self.total_ton_km = self.rn.get_total_ton_km()
 
+    def _market_to_shadow_prices(self, market_cost):
+        """Convert market cost to shadow cost."""
+
+        rpc = self.rn.params[self.MARKET_TO_SHADOW].value
+        shadow_cost = market_cost * rpc
+
+        return shadow_cost
+
 
 # ***   RAILWAY cost subclasses   *** #
 
 class RailwayMobilityCost(BaseNetworkCost):
+
+    MARKET_TO_SHADOW = "mobility_cost_rpc"
 
     def _cost_eac_ton_km(self, eac, units):
         """Calculate eac by ton_km for a number of units."""
@@ -30,9 +40,12 @@ class RailwayMobilityCost(BaseNetworkCost):
         # assign parameters to short variables
         wagon_eac = self.rn.params["wagon_eac"].value
         num_wagons = self.rn.wagons.get_units_needed_by_time()
-        # print "wagon", wagon_eac, num_wagons
 
-        return self._cost_eac_ton_km(wagon_eac, num_wagons)
+        # convert market cost to shadow cost
+        market_cost = self._cost_eac_ton_km(wagon_eac, num_wagons)
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_eac_locom(self):
         """Calculate eac by ton_km of locomotives."""
@@ -40,9 +53,12 @@ class RailwayMobilityCost(BaseNetworkCost):
         # assign parameters to short variables
         locom_eac = self.rn.params["locomotive_eac"].value
         num_locoms = self.rn.locoms.get_units_needed_by_time()
-        # print "locomotive", locom_eac, num_locoms
+    
+        # convert market cost to shadow cost
+        market_cost = self._cost_eac_ton_km(locom_eac, num_locoms)
+        shadow_cost = self._market_to_shadow_prices(market_cost)
 
-        return self._cost_eac_ton_km(locom_eac, num_locoms)
+        return shadow_cost
 
     def _cost_fuel_and_lub(self):
         """Calculate cost of fuel and lubricant by ton_km."""
@@ -64,7 +80,11 @@ class RailwayMobilityCost(BaseNetworkCost):
         # calculate lubricant ton km cost
         lub_ton_km = fuel_ton_km * lub_fuel_ratio
 
-        return fuel_ton_km + lub_ton_km
+        # convert market cost to shadow cost
+        market_cost = fuel_ton_km + lub_ton_km
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_mobility_maintenance(self):
         """Calcualate cost of locomotives and wagons maintenance by ton_km."""
@@ -83,7 +103,11 @@ class RailwayMobilityCost(BaseNetworkCost):
             locom_maintenance = 0.0
             wagon_maintenance = 0.0
 
-        return locom_maintenance + wagon_maintenance
+        # convert market cost to shadow cost
+        market_cost = locom_maintenance + wagon_maintenance
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_manpower(self):
         """Calculate cost of manpower on board of train."""
@@ -100,10 +124,16 @@ class RailwayMobilityCost(BaseNetworkCost):
         else:
             manpower_cost = 0.0
 
-        return manpower_cost
+        # convert market cost to shadow cost
+        market_cost = manpower_cost
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
 
 class RailwayInfrastructureCost(BaseNetworkCost):
+
+    MARKET_TO_SHADOW = "infrast_cost_rpc"
 
     def _cost_detour(self, gross_tk, dist):
         """Calculate equivalent annual cost of detours."""
@@ -120,7 +150,11 @@ class RailwayInfrastructureCost(BaseNetworkCost):
         total_eac_cost = num_detours * self._cost_eac_track(density, 1.0,
                                                             True)
 
-        return total_wages_cost + total_eac_cost
+        # convert market cost to shadow cost
+        market_cost = total_wages_cost + total_eac_cost
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _calc_number_of_detours(self, gross_tk, dist):
         """Calculate number of detours needed in a certain track."""
@@ -177,7 +211,11 @@ class RailwayInfrastructureCost(BaseNetworkCost):
         else:
             eac = 0.0
 
-        return eac
+        # convert market cost to shadow cost
+        market_cost = eac
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_infrast_maint(self, gross_tk, dist):
         """Calculate cost of maintaining infrastructure."""
@@ -193,7 +231,11 @@ class RailwayInfrastructureCost(BaseNetworkCost):
         no_track_maint = ((gross_tk / dist) ** a_notrack) * \
             b_notrack * gross_tk
 
-        return track_maint + no_track_maint
+        # convert market cost to shadow cost
+        market_cost = track_maint + no_track_maint
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _capital_recovery_factor(self, int_rate, use_life):
         """Calculate capital recovery factor."""
@@ -205,6 +247,8 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
 
 class RailwayTimeCost(BaseNetworkCost):
+
+    MARKET_TO_SHADOW = "time_cost_rpc"
 
     def _cost_deposit(self):
         """Calculate cost of freight deposit while waiting a train service."""
@@ -231,10 +275,16 @@ class RailwayTimeCost(BaseNetworkCost):
         if self.total_ton_km > 0.1:
 
             # total deposit cost is returned in ton-km
-            return total_deposit_cost / self.total_ton_km
+            deposit_cost = total_deposit_cost / self.total_ton_km
 
         else:
-            return 0.0
+            deposit_cost = 0.0
+
+        # convert market cost to shadow cost
+        market_cost = deposit_cost
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_immobilized_value(self):
         """Calculate immobilizing value cost during deposit and travel time."""
@@ -266,10 +316,16 @@ class RailwayTimeCost(BaseNetworkCost):
         if self.total_ton_km > 0.1:
 
             # total cost of immobilized value is returned in ton-km
-            return total_cost_immo_value / self.total_ton_km
+            immobilized_value_cost = total_cost_immo_value / self.total_ton_km
 
         else:
-            return 0.0
+            immobilized_value_cost = 0.0
+
+        # convert market cost to shadow cost
+        market_cost = immobilized_value_cost
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _cost_short_freight(self):
         """Calculate cost of transport from door to train station."""
@@ -287,10 +343,16 @@ class RailwayTimeCost(BaseNetworkCost):
         if self.total_ton_km > 0.1:
 
             # total cost of short freight is returned in ton-km
-            return total_short_freight_cost / self.total_ton_km
+            short_freight_cost_tk = total_short_freight_cost / self.total_ton_km
 
         else:
-            return 0.0
+            short_freight_cost_tk = 0.0
+
+        # convert market cost to shadow cost
+        market_cost = short_freight_cost_tk
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
     def _calc_deposit_days(self, lowest_link_scale):
         """Calculate deposit days to hold a load while waiting a train."""
@@ -433,16 +495,24 @@ class RailwayNetworkCost(BaseNetworkCost):
 
 class RoadwayMobilityCost(BaseNetworkCost):
 
+    MARKET_TO_SHADOW = "mobility_cost_rpc"
+
     def _cost_mobility(self):
         """Calculate cost of truck mobility."""
 
         mobility_cost_tk = self.rn.params["mobility_cost_tk"].value
         mobility_cost = self.rn.get_total_ton_km() * mobility_cost_tk
 
-        return mobility_cost / self.total_ton_km
+        # convert market cost to shadow cost
+        market_cost = mobility_cost / self.total_ton_km
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
 
 class RoadwayInfrastructureCost(BaseNetworkCost):
+
+    MARKET_TO_SHADOW = "infrast_cost_rpc"
 
     def _cost_eac_track(self, ton, dist):
         """Calculate equivalent annual cost of track."""
@@ -452,7 +522,11 @@ class RoadwayInfrastructureCost(BaseNetworkCost):
 
         eac = b_eac * (ton ** a_eac)
 
-        return eac * dist
+        # convert market cost to shadow cost
+        market_cost = eac * dist
+        shadow_cost = self._market_to_shadow_prices(market_cost)
+
+        return shadow_cost
 
 
 class RoadwayNetworkCost(BaseNetworkCost):
