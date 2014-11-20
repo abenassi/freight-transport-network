@@ -290,6 +290,25 @@ class BaseModalNetwork(object):
             # store a reference to lowest link in th od pair object
             od.set_lowest_scale_link(lowest_link)
 
+    def is_main_track(self, gross_tk, dist):
+        """Check if this is a main track.
+
+        If net tons density (ton-km/km) goes below a certain threshold, this is
+        a secondary track. If density goes above the threshold, is a main
+        track."""
+
+        # store parameters in short-name variables
+        net_to_gross = self.params["net_to_gross_factor"].value
+        main_min_density = self.params["main_min_density"].value
+
+        # calculate net ton-km
+        net_tk = gross_tk / net_to_gross
+
+        # calculate density
+        density = net_tk / dist
+
+        return density > main_min_density
+
     # reports
     def print_objects_report(self):
         """Print report with examples of objects inside RailwayNetwork."""

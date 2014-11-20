@@ -68,7 +68,7 @@ class RailwayLink(Link):
     FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
               "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
               "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
-              "num_detours"]
+              "num_detours", "track_type"]
 
     def __init__(self, id, distance, gauge):
 
@@ -78,6 +78,7 @@ class RailwayLink(Link):
         # traffic parameters
         self.idle_capacity_regroup = 0.0  # ton-km
         self.idle_capacity_no_regroup = 0.0  # ton-km
+        self.main_track = None
 
         # detour parameters
         self.turnout_freq = None
@@ -105,7 +106,7 @@ class RailwayLink(Link):
                 self.get_derived_ton(), self.get_ton(), self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.gross_tk,
-                self.get_number_of_detours()]
+                self.get_number_of_detours(), self.main_track]
 
     def add_idle_cap_regroup(self, idle_capacity_ton):
         """Add idle capacity passed in ton-km, that can be removed."""
@@ -185,6 +186,13 @@ class RailwayLink(Link):
             num_detours = 0
 
         return num_detours
+
+    def set_main_track(self, main_track):
+
+        if main_track:
+            self.main_track = "A"
+        else:
+            self.main_track = "B"
 
     # PRIVATE
     def _calc_number_of_detours(self, gross_tk, dist):

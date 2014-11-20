@@ -117,7 +117,8 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
         # calculate eac of detour tracks
         density = gross_tk / dist
-        total_eac_cost = num_detours * self._cost_eac_track(density, 1.0)
+        total_eac_cost = num_detours * self._cost_eac_track(density, 1.0,
+                                                            True)
 
         return total_wages_cost + total_eac_cost
 
@@ -139,14 +140,14 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
         return num_detours
 
-    def _cost_eac_track(self, gross_tk, dist):
+    def _cost_eac_track(self, gross_tk, dist, main_track):
         """Calculate equivalent annual cost of track.
 
         If its a main track, calculate EAC cost of track. If its a secondary
         track, there is no eac cost of track."""
 
         # check if is a main track
-        if self._is_main_track(gross_tk, dist):
+        if main_track:
 
             # store parameters in short-name variables
             a_eac = self.rn.params["coef_a_track_cost"].value
@@ -193,25 +194,6 @@ class RailwayInfrastructureCost(BaseNetworkCost):
             b_notrack * gross_tk
 
         return track_maint + no_track_maint
-
-    def _is_main_track(self, gross_tk, dist):
-        """Check if this is a main track.
-
-        If net tons density (ton-km/km) goes below a certain threshold, this is
-        a secondary track. If density goes above the threshold, is a main
-        track."""
-
-        # store parameters in short-name variables
-        net_to_gross = self.rn.params["net_to_gross_factor"].value
-        main_min_density = self.rn.params["main_min_density"].value
-
-        # calculate net ton-km
-        net_tk = gross_tk / net_to_gross
-
-        # calculate density
-        density = net_tk / dist
-
-        return density > main_min_density
 
     def _capital_recovery_factor(self, int_rate, use_life):
         """Calculate capital recovery factor."""
@@ -394,11 +376,18 @@ class RailwayNetworkCost(BaseNetworkCost):
                                                  locomotive_capacity,
                                                  locomotive_weight)
 
+                # ask to the railway network if this is a main track
+                main_track = self.rn.is_main_track(gross_tk, link.get_dist())
+
+                # store the result to the link
+                link.set_main_track(main_track)
+
                 # calculate costs of link infrastructure
                 eac_detour = ric._cost_detour(gross_tk, link.get_dist())
-                eac_track = ric._cost_eac_track(gross_tk, link.get_dist())
-                maintenance = ric._cost_infrast_maint(
-                    gross_tk, link.get_dist())
+                eac_track = ric._cost_eac_track(gross_tk, link.get_dist(),
+                                                main_track)
+                maintenance = ric._cost_infrast_maint(gross_tk,
+                                                      link.get_dist())
 
                 # update RV cost category with traffic of the link
                 RV["eac_detour"] += eac_detour
