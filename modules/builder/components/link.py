@@ -20,6 +20,7 @@ class Link(Tons):
 
         # traffic parameters
         self.gross_tk = None  # gross ton-km
+        self.main_track = None
 
         # track costs
         self.eac_track = None
@@ -32,13 +33,6 @@ class Link(Tons):
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
 
     # PUBLIC
-    def reset(self):
-        self.eac_track = None
-        self.maintenance = None
-
-        # check stored values of tons are significant
-        self.clean_insignificant_ton_values(0.01)
-
     def get_dist(self):
         return self.dist
 
@@ -47,6 +41,20 @@ class Link(Tons):
 
     def get_id(self):
         return self.id
+
+    def set_main_track(self, main_track):
+        """Set track category between main (A) and secondary (B)."""
+        if main_track:
+            self.main_track = "A"
+        else:
+            self.main_track = "B"
+
+    def reset(self):
+        self.eac_track = None
+        self.maintenance = None
+
+        # check stored values of tons are significant
+        self.clean_insignificant_ton_values(0.01)
 
 
 class RoadwayLink(Link):
@@ -78,7 +86,6 @@ class RailwayLink(Link):
         # traffic parameters
         self.idle_capacity_regroup = 0.0  # ton-km
         self.idle_capacity_no_regroup = 0.0  # ton-km
-        self.main_track = None
 
         # detour parameters
         self.turnout_freq = None
@@ -95,26 +102,13 @@ class RailwayLink(Link):
                "Idle capacity: {:,.1f}".format(self.get_idle_cap())
 
     # PUBLIC
-    def set_turnout_freq(self, turnout_freq):
-        self.turnout_freq = turnout_freq
-
-    def set_turnout_max_density(self, turnout_freq_max_density):
-        self.turnout_freq_max_density = turnout_freq_max_density
-
+    # getters
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(), self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.gross_tk,
                 self.get_number_of_detours(), self.main_track]
-
-    def add_idle_cap_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton-km, that can be removed."""
-        self.idle_capacity_regroup += idle_capacity_ton
-
-    def add_idle_cap_no_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton-km, that can not be removed."""
-        self.idle_capacity_no_regroup += idle_capacity_ton
 
     def get_idle_cap(self):
         """Returns idle capacity in tons."""
@@ -139,22 +133,6 @@ class RailwayLink(Link):
     def get_idle_cap_no_regroup(self):
         """Returns idle capacity in ton-km, that can not be removed."""
         return self.idle_capacity_no_regroup
-
-    def regroup(self, idle_capacity_ton):
-        """Eliminate idle capacity passed in ton."""
-
-        # check if link has that idle capacity
-        if self.idle_capacity_regroup - idle_capacity_ton < 0:
-            msg = "{} has no {} idle capacity!".format(self.id,
-                                                       idle_capacity_ton)
-
-            raise ValueError(msg)
-
-        self.idle_capacity_regroup -= idle_capacity_ton
-
-    def revert_regroup(self, idle_capacity_ton):
-        """Regain idle capacity passed in ton."""
-        self.idle_capacity_regroup += idle_capacity_ton
 
     def get_gross_ton_km(self, wagon_capacity, wagon_weight,
                          locomotive_capacity, locomotive_weight):
@@ -187,12 +165,38 @@ class RailwayLink(Link):
 
         return num_detours
 
-    def set_main_track(self, main_track):
+    # setters
+    def set_turnout_freq(self, turnout_freq):
+        self.turnout_freq = turnout_freq
 
-        if main_track:
-            self.main_track = "A"
-        else:
-            self.main_track = "B"
+    def set_turnout_max_density(self, turnout_freq_max_density):
+        self.turnout_freq_max_density = turnout_freq_max_density
+
+    # add methods
+    def add_idle_cap_regroup(self, idle_capacity_ton):
+        """Add idle capacity passed in ton-km, that can be removed."""
+        self.idle_capacity_regroup += idle_capacity_ton
+
+    def add_idle_cap_no_regroup(self, idle_capacity_ton):
+        """Add idle capacity passed in ton-km, that can not be removed."""
+        self.idle_capacity_no_regroup += idle_capacity_ton
+
+    # regroup methods
+    def regroup(self, idle_capacity_ton):
+        """Eliminate idle capacity passed in ton."""
+
+        # check if link has that idle capacity
+        if self.idle_capacity_regroup - idle_capacity_ton < 0:
+            msg = "{} has no {} idle capacity!".format(self.id,
+                                                       idle_capacity_ton)
+
+            raise ValueError(msg)
+
+        self.idle_capacity_regroup -= idle_capacity_ton
+
+    def revert_regroup(self, idle_capacity_ton):
+        """Regain idle capacity passed in ton."""
+        self.idle_capacity_regroup += idle_capacity_ton
 
     # PRIVATE
     def _calc_number_of_detours(self, gross_tk, dist):

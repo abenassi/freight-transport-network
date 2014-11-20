@@ -120,12 +120,26 @@ class Tons(object):
 
     # PRIVATE
     def _iter_values(self):
+        """Iterate all values."""
 
         for mode in self.tons.values():
             for category in mode.values():
                 for value in category.values():
                     yield value
 
+    def _safe_dict_keys(self, category, id_od, mode):
+        """Create necessary dicts to ensure all keys can be called."""
+
+        if mode not in self.tons:
+            self.tons[mode] = {}
+
+        if category not in self.tons[mode]:
+            self.tons[mode][category] = {}
+
+        if id_od not in self.tons[mode][category]:
+            self.tons[mode][category][id_od] = 0.0
+
+    # add and remove methods
     def _add_ton(self, ton, category, id_od, mode):
         """Add ton to a mode-category-id_od value."""
 
@@ -169,14 +183,4 @@ class Tons(object):
         # delete item
         del(self.tons[mode][category][id_od])
 
-    def _safe_dict_keys(self, category, id_od, mode):
-        """Create necessary dicts to ensure all keys can be called."""
-
-        if mode not in self.tons:
-            self.tons[mode] = {}
-
-        if category not in self.tons[mode]:
-            self.tons[mode][category] = {}
-
-        if id_od not in self.tons[mode][category]:
-            self.tons[mode][category][id_od] = 0.0
+    
