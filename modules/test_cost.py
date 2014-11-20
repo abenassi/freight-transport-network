@@ -82,6 +82,13 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         track_eac = self.inf._cost_eac_track(303670609022.56, self.dist, True)
         self.assertAlmostEqual(track_eac, 1482339950, delta=10)
 
+    def test_cost_eac_secondary_track(self):
+        gross_tk = 100000000
+        dist = 100
+        expected_eac = 1332411.50
+        eac = self.inf._cost_eac_secondary_track(gross_tk, dist)
+        self.assertAlmostEqual(eac, expected_eac, 1)
+
     def test_calc_number_of_detours(self):
         num_detours = self.inf._calc_number_of_detours(self.gross_tk,
                                                        self.dist)

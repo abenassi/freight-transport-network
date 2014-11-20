@@ -53,7 +53,7 @@ class RailwayMobilityCost(BaseNetworkCost):
         # assign parameters to short variables
         locom_eac = self.rn.params["locomotive_eac"].value
         num_locoms = self.rn.locoms.get_units_needed_by_time()
-    
+
         # convert market cost to shadow cost
         market_cost = self._cost_eac_ton_km(locom_eac, num_locoms)
         shadow_cost = self._market_to_shadow_prices(market_cost)
@@ -182,34 +182,10 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
         # check if is a main track
         if main_track:
-
-            # store parameters in short-name variables
-            a_eac = self.rn.params["coef_a_track_cost"].value
-            b_eac = self.rn.params["coef_b_track_cost"].value
-            use_life = self.rn.params["useful_life_track"].value
-            max_gross_tk = self.rn.params[
-                "gross_tk_in_hq_track_lifetime"].value
-            int_rate = self.rn.params["interest_rate"].value
-            max_cost_track = self.rn.params["high_quality_track_price"].value
-
-            # calculate gross tk in max possible useful life years
-            gross_tk_in_use_life = use_life * gross_tk / dist
-
-            # use estimated function if gross_tk expected is less than maximum
-            if gross_tk_in_use_life < max_gross_tk:
-                cost_track = a_eac + b_eac * gross_tk_in_use_life
-
-            # otherwise, use high quality track price and recalculate use_life
-            else:
-                cost_track = max_cost_track
-                use_life = max_gross_tk / (gross_tk / dist)
-
-            # calculate eac by year
-            crf = self._capital_recovery_factor(int_rate, use_life)
-            eac = cost_track * crf * dist
+            eac = self._cost_eac_main_track(gross_tk, dist)
 
         else:
-            eac = 0.0
+            eac = self._cost_eac_secondary_track(gross_tk, dist)
 
         # convert market cost to shadow cost
         market_cost = eac
@@ -245,6 +221,55 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
         return a / b
 
+    def _cost_eac_main_track(self, gross_tk, dist):
+
+        # store parameters in short-name variables
+        a_eac = self.rn.params["coef_a_track_cost"].value
+        b_eac = self.rn.params["coef_b_track_cost"].value
+        use_life = self.rn.params["useful_life_track"].value
+        max_gross_tk = self.rn.params[
+            "gross_tk_in_hq_track_lifetime"].value
+        int_rate = self.rn.params["interest_rate"].value
+        max_cost_track = self.rn.params["high_quality_track_price"].value
+
+        # calculate gross tk in max possible useful life years
+        gross_tk_in_use_life = use_life * gross_tk / dist
+
+        # use estimated function if gross_tk expected is less than maximum
+        if gross_tk_in_use_life < max_gross_tk:
+            cost_track = a_eac + b_eac * gross_tk_in_use_life
+
+        # otherwise, use high quality track price and recalculate use_life
+        else:
+            cost_track = max_cost_track
+            use_life = max_gross_tk / (gross_tk / dist)
+
+        # calculate eac by year
+        crf = self._capital_recovery_factor(int_rate, use_life)
+        eac = cost_track * crf * dist
+
+        return eac
+
+    def _cost_eac_secondary_track(self, gross_tk, dist):
+
+        # store parameters in short-name variables
+        min_cost_track = self.rn.params["low_quality_track_price"].value
+        use_life = self.rn.params["useful_life_track"].value
+        int_rate = self.rn.params["interest_rate"].value
+        gross_main_min_dens = self.rn.params["gross_main_min_density"].value
+
+        # calculate eac by year
+        crf = self._capital_recovery_factor(int_rate, use_life)
+        eac = min_cost_track * crf * dist
+
+        # adjust eac cost for densities below minimum
+        gross_density = gross_tk / dist
+        adj_coeff = gross_density / gross_main_min_dens
+
+        eac = eac * adj_coeff
+
+        return eac
+
 
 class RailwayTimeCost(BaseNetworkCost):
 
@@ -260,7 +285,8 @@ class RailwayTimeCost(BaseNetworkCost):
         total_deposit_cost = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if od.get_ton() > 0 and od.get_lowest_link_scale():
+            if (od.get_ton() > 0 and od.get_category() != 1 and
+                    od.get_lowest_link_scale()):
 
                 # calculate days of deposit
                 lowest_link_scale = od.get_lowest_link_scale() / 2
@@ -295,7 +321,8 @@ class RailwayTimeCost(BaseNetworkCost):
         total_immo_ton_days = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if od.get_ton() > 0 and od.get_lowest_link_scale():
+            if (od.get_ton() > 0 and od.get_category() != 1 and
+                    od.get_lowest_link_scale()):
 
                 # calculate days of deposit
                 lowest_link_scale = od.get_lowest_link_scale() / 2
@@ -335,10 +362,10 @@ class RailwayTimeCost(BaseNetworkCost):
         # calculate short freight cost for each od pair
         total_short_freight_cost = 0.0
         for od in self.rn.iter_od_pairs():
-
-            short_freight_cost = short_freight_cost_ton * od.get_ton() * 2
-            total_short_freight_cost += short_freight_cost
-            od.set_short_freight_cost(short_freight_cost)
+            if od.get_category() != 1:
+                short_freight_cost = short_freight_cost_ton * od.get_ton() * 2
+                total_short_freight_cost += short_freight_cost
+                od.set_short_freight_cost(short_freight_cost)
 
         if self.total_ton_km > 0.1:
 
