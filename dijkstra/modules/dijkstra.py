@@ -67,7 +67,7 @@ def dijkstra(graph, node_a, node_z):
     while node != node_a:
         path_to_z.append(node)
         node = previous_vertix[node]
-    path_to_z.append('a')
+    path_to_z.append(node_a)
     path_to_z.reverse()
 
     # get the distance of node_z from node_a

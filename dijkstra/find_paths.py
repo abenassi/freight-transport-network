@@ -72,13 +72,9 @@ class Network():
             # find paths for the gauge
             self._find_shortest_paths(gauge)
 
-        # find paths for the network, with multiple gauges allowed
-        max_transshipments = 3
-        self._find_multiple_gauges_shortest_paths(max_transshipments)
-
         # stop total networks timer
         elapsed = (time.time() - total_timer_start)
-        self._report_time(elapsed, "all networks")
+        self._report_time(elapsed, "all gauges")
 
     def store_paths_in_excel(self, xl_output=None):
         """Store found paths in excel."""
@@ -98,35 +94,30 @@ class Network():
         for gauge in self.paths:
             self._store_network_paths(wb, gauge, ws_all)
 
-        # sort by distance before save
-        self._sort_by_distance(ws_all)
-
         # save workbook
         wb.save(xl_output or self.XL_OUTPUT)
 
         print "Finished."
 
     # PRIVATE
+    # main private methods
     def _find_shortest_paths(self, gauge):
         """Find shortest paths for each possible pair of nodes."""
 
-        # take graph of network
+        # take graph of the gauge
         graph = self.graphs[gauge]
 
-        # create paths dictionary
+        # create paths dictionary for the gauge
         self.paths[gauge] = {}
         paths = self.paths[gauge]
 
-        # take nodes
+        # get nodes with access to the gauge
         nodes = graph.keys()
         nodes.sort()
 
         # calcualte total paths
         total_paths = len(nodes) ** 2
         print total_paths, "paths will be calculated"
-
-        # calculate minimum paths between all nodes
-        index_calculated_paths = 0
 
         for node_a in nodes:
 
@@ -144,20 +135,15 @@ class Network():
                     paths[node_a][node_b]["distance"] = 0.0
                     paths[node_a][node_b]["path"] = None
 
+                # if nodes are different, find shortest path
                 else:
 
                     # use dijkstra to calculate minimum path from a to b
                     distance, path = dijkstra(graph, node_a, node_b)
 
-                    # replace "a" in path for node_a
-                    path[0] = node_a
-
                     # store results in paths
                     paths[node_a][node_b]["distance"] = distance
                     paths[node_a][node_b]["path"] = path
-
-                # show progress
-                index_calculated_paths += 1
 
     def _find_multiple_gauges_shortest_paths(self, max_transshipments):
         """Find shortest paths allowing transshipments between gauges.
@@ -168,9 +154,6 @@ class Network():
         """
         pass
 
-    def _report_time(self, time_spend, activity):
-        print "{} took {:.2} seconds".format(activity, time_spend)
-
     def _store_network_paths(self, wb, gauge, ws_all=None):
         """Copy paths to general worksheet and to gauge specific worksheet."""
 
@@ -179,44 +162,50 @@ class Network():
         ws.title = gauge + "_" + self.PATH_SHEET_SUFFIX
         ws.append(self.PATH_FIELDS)
 
-        # take paths of the gauge
+        # get paths of the gauge
         paths = self.paths[gauge]
 
-        # take nodes to iterate
+        # get nodes to iterate them
         nodes = sorted(paths.keys())
 
         # iterate throught paths, copying them to worksheet
         for node_a in nodes:
             for node_b in nodes:
 
-                # take distance
+                # get distance and path
                 distance = paths[node_a][node_b]["distance"]
-
-                # create string por path
                 list_path = paths[node_a][node_b]["path"]
+                path = self._list_path_to_string(list_path)
 
-                if list_path:
-                    list_path = [str(node).zfill(3) for node in list_path]
-                    string_path = "-".join(list_path)
+                # create id of the origin destination pair
+                id_od = self._nodes_to_id_od(node_a, node_b)
 
-                else:
-                    string_path = None
-
-                # create link name
-                link_name = str(node_a) + "-" + str(node_b)
-
-                # copy data to worksheet
-                data = [link_name, node_a, node_b, distance, string_path]
+                # copy data to gauge worksheet
+                data = [id_od, node_a, node_b, distance, path, gauge]
                 ws.append(data)
 
-                # copy data to global worksheet
+                # copy data to global worksheet (with all gauges) if provided
                 if ws_all:
-                    data.append(gauge)
                     ws_all.append(data)
 
-    def _sort_by_distance(self, ws):
-        """Sort paths in a worksheet by distance."""
-        pass
+    # secondary private methods
+    def _report_time(self, time_spend, activity):
+        print "{} took {:.2} seconds".format(activity, time_spend)
+
+    def _list_path_to_string(self, list_path):
+        """Convert a list of nodes representing a path in a string."""
+
+        if list_path:
+            list_path = [str(node).zfill(3) for node in list_path]
+            string_path = "-".join(list_path)
+
+        else:
+            string_path = None
+
+        return string_path
+
+    def _nodes_to_id_od(self, node_a, node_b):
+        return str(node_a) + "-" + str(node_b)
 
 
 def main(xl_input, xl_output):
