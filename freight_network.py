@@ -132,8 +132,11 @@ class FreightNetwork():
                                       categories=road_od.get_category(),
                                       id_ods=road_od.get_id())
 
-    def derive_link_to_railway(self, road_link):
+    def derive_link_to_railway(self, id_road_link, gauge_road_link):
         """Derive all possible road od pairs that use road_link to rail."""
+
+        # get road link from the road network
+        road_link = self.road.get_link(id_road_link, gauge_road_link)
 
         for road_od in self.road.iter_od_pairs():
 
@@ -154,8 +157,11 @@ class FreightNetwork():
                 # derive road tons to railway
                 self.derive_to_railway(road_od, coeff)
 
-    def derive_link_to_roadway(self, rail_link):
+    def derive_link_to_roadway(self, id_rail_link, gauge_rail_link):
         """Derive all possible rail od pairs that use rail_link to road."""
+
+        # get rail link from the rail network
+        rail_link = self.road.get_link(id_rail_link, gauge_rail_link)
 
         for rail_od in self.rail.iter_od_pairs():
 
@@ -335,6 +341,7 @@ def main():
     fn.derive_all_to_roadway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
+
 
 if __name__ == '__main__':
     main()
