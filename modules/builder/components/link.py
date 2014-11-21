@@ -19,12 +19,14 @@ class Link(Tons):
         self.dist = float(distance)  # Km
 
         # traffic parameters
-        self.gross_tk = None  # gross ton-km
         self.main_track = None
 
         # track costs
         self.eac_track = None
         self.maintenance = None
+
+        # other parameters
+        self.net_to_gross_factor = None
 
     def __repr__(self):
         return "Link: " + str(self.get_id()).ljust(10) + \
@@ -39,8 +41,14 @@ class Link(Tons):
     def get_ton_km(self):
         return self.get_ton() * self.get_dist()
 
+    def get_gross_ton_km(self):
+        return self.get_ton_km() * self.net_to_gross_factor
+
     def get_id(self):
         return self.id
+
+    def get_gauge(self):
+        return self.gauge
 
     def set_main_track(self, main_track):
         """Set track category between main (A) and secondary (B)."""
@@ -99,7 +107,7 @@ class RailwayLink(Link):
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20) + \
-               "Idle capacity: {:,.1f}".format(self.get_idle_cap())
+               "Idle capacity: {:,.1f}".format(self.get_idle_cap()).ljust(30)
 
     # PUBLIC
     # getters
@@ -107,7 +115,7 @@ class RailwayLink(Link):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(), self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
-                self.eac_track, self.maintenance, self.gross_tk,
+                self.eac_track, self.maintenance, self.get_gross_ton_km(),
                 self.get_number_of_detours(), self.main_track]
 
     def get_idle_cap(self):
@@ -134,31 +142,40 @@ class RailwayLink(Link):
         """Returns idle capacity in ton-km, that can not be removed."""
         return self.idle_capacity_no_regroup
 
-    def get_gross_ton_km(self, wagon_capacity, wagon_weight,
-                         locomotive_capacity, locomotive_weight):
-        """Take rolling material parameters and calculate gross ton_km."""
+    def get_gross_ton_km(self, wagon_capacity=None, wagon_weight=None,
+                         locomotive_capacity=None, locomotive_weight=None):
+        """Take rolling material parameters and calculate gross ton_km.
 
-        # wagons weight
-        num_wagons = self.get_ton() / wagon_capacity
-        wagons_weight = num_wagons * wagon_weight
+        If rolling material parameters are not provided, call super class
+        method wich is an aproximation to the real calculation."""
 
-        # locomotives weight
-        num_locoms = (self.get_ton() +
-                      self.get_idle_cap()) / locomotive_capacity
-        locoms_weight = num_locoms * locomotive_weight
+        if not (wagon_capacity and wagon_weight and
+                locomotive_capacity and locomotive_weight):
 
-        # calculate gross ton-km
-        self.gross_tk = (wagons_weight + locoms_weight +
-                         self.get_ton()) * self.dist
+            gross_tk = super(RailwayLink, self).get_gross_ton_km()
 
-        return self.gross_tk
+        else:
+            # wagons weight
+            num_wagons = self.get_ton() / wagon_capacity
+            wagons_weight = num_wagons * wagon_weight
+
+            # locomotives weight
+            num_locoms = (self.get_ton() +
+                          self.get_idle_cap()) / locomotive_capacity
+            locoms_weight = num_locoms * locomotive_weight
+
+            # calculate gross ton-km
+            gross_tk = (wagons_weight + locoms_weight +
+                        self.get_ton()) * self.dist
+
+            return gross_tk
 
     def get_number_of_detours(self):
         """Calculate number of detours needed at the link."""
 
         # check if there is traffic
-        if self.gross_tk:
-            num_detours = self._calc_number_of_detours(self.gross_tk,
+        if self.get_gross_ton_km():
+            num_detours = self._calc_number_of_detours(self.get_gross_ton_km(),
                                                        self.get_dist())
         else:
             num_detours = 0

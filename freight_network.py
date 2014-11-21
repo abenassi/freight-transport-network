@@ -1,6 +1,7 @@
 from modal_networks import RailwayNetwork, RoadwayNetwork
 import sys
 import numpy as np
+from optimization import WeakLinksAggregator
 
 """
     This is the main module that will be visible to the user. Exposes
@@ -21,6 +22,8 @@ class FreightNetwork():
     other, exploring changes in overall cost of different traffic
     configurations."""
 
+    LINKS_OPTIMIZATION_CLASS = WeakLinksAggregator
+
     def __init__(self, railway_network=None, roadway_network=None):
         self.rail = railway_network or RailwayNetwork()
         self.road = roadway_network or RoadwayNetwork()
@@ -28,6 +31,21 @@ class FreightNetwork():
         self.max_cost = 0.0
 
     # PUBLIC
+    # iters and getters
+    def iter_rail_links(self):
+        for rail_link in self.rail.iter_links():
+            yield rail_link
+
+    def get_total_cost(self):
+        return self.rail.get_total_cost() + self.road.get_total_cost()
+
+    # costing methods
+    def cost_network(self):
+        """Cost total freight transport network."""
+        self.rail.cost_network()
+        self.road.cost_network()
+
+    # deriving methods
     def derive_all_to_railway(self):
         """Derive all possible road od pairs from road mode to rail mode."""
 
@@ -67,18 +85,19 @@ class FreightNetwork():
         self.rail.find_lowest_scale_links()
         self.road.find_lowest_scale_links()
 
-    def cost_network(self):
-        """Cost total freight transport network."""
-        self.rail.cost_network()
-        self.road.cost_network()
-
-    def derive_to_railway(self, road_od, coeff):
+    def derive_to_railway(self, road_od, coeff=None):
         """Derive a road od pair to railway mode.
 
         Args:
             road_od: Road OD pair to be derived.
             coeff: Percentage of tons to be derived.
         """
+
+        # assign default value is none coeff is passed
+        if not coeff:
+            coeff = self._get_derivation_coefficient(road_od.get_ton(),
+                                                     road_od.get_dist(),
+                                                     road_od.get_category())
 
         # first, calculate tons to be derived
         derived_tons = (road_od.get_original_ton() * coeff +
@@ -102,13 +121,20 @@ class FreightNetwork():
                                       categories=rail_od.get_category(),
                                       id_ods=rail_od.get_id())
 
-    def derive_to_roadway(self, rail_od, coeff):
+        # returns road_od receiving derivated freight, for eventual reversion
+        return rail_od
+
+    def derive_to_roadway(self, rail_od, coeff=None):
         """Derive a rail od pair to roadway mode.
 
         Args:
             rail_od: Rail OD pair to be derived.
             coeff: Percentage of tons to be derived.
         """
+
+        # assign default value is none coeff is passed
+        if not coeff:
+            coeff = 1.0
 
         # first, calculate tons to be derived
         derived_tons = (rail_od.get_original_ton() * coeff +
@@ -132,8 +158,14 @@ class FreightNetwork():
                                       categories=road_od.get_category(),
                                       id_ods=road_od.get_id())
 
+        # returns road_od receiving derivated freight, for eventual reversion
+        return road_od
+
     def derive_link_to_railway(self, id_road_link, gauge_road_link):
         """Derive all possible road od pairs that use road_link to rail."""
+
+        # list to store rail od pairs receiving derivated freight
+        rail_od_derivations = []
 
         # get road link from the road network
         road_link = self.road.get_link(id_road_link, gauge_road_link)
@@ -155,13 +187,21 @@ class FreightNetwork():
                                                          category)
 
                 # derive road tons to railway
-                self.derive_to_railway(road_od, coeff)
+                rail_od_derivation = self.derive_to_railway(road_od, coeff)
+
+                # store reference to rail od pair derivation for reversion
+                rail_od_derivations.append(rail_od_derivation)
+
+        return rail_od_derivations
 
     def derive_link_to_roadway(self, id_rail_link, gauge_rail_link):
         """Derive all possible rail od pairs that use rail_link to road."""
 
+        # list to store rail od pairs receiving derivated freight
+        road_od_derivations = []
+
         # get rail link from the rail network
-        rail_link = self.road.get_link(id_rail_link, gauge_rail_link)
+        rail_link = self.rail.get_link(id_rail_link, gauge_rail_link)
 
         for rail_od in self.rail.iter_od_pairs():
 
@@ -171,8 +211,14 @@ class FreightNetwork():
 
                 # derive road tons to railway
                 COEFF = 1.0
-                self.derive_to_roadway(rail_od, COEFF)
+                road_od_derivation = self.derive_to_roadway(rail_od, COEFF)
 
+                # store reference to road od pair derivation for reversion
+                road_od_derivations.append(road_od_derivation)
+
+        return road_od_derivations
+
+    # optimizing strategies
     def min_network_cost_deriving_links(self):
         """Find the modal split with minimum overall cost.
 
@@ -187,8 +233,12 @@ class FreightNetwork():
         At first sight, there is no way to know what combination of freed
         railway links will reduce the overall cost from the scenario of maximum
         traffic derivation to railway."""
-        pass
 
+        self.derive_all_to_railway()
+        self.cost_network()
+        self.LINKS_OPTIMIZATION_CLASS(self).optimize()
+
+    # report methods
     def report_to_excel(self, description=None, append_report=False):
         """Make a report of RailwayNetwork and RoadNetwork results.
 
@@ -334,6 +384,13 @@ def main():
     fn.derive_all_to_railway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all but some links to railway
+    # scenario = "derive all to railway but some links"
+    # print "Costing", scenario
+    # fn.min_network_cost_deriving_links()
+    # fn.cost_network()
+    # fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"

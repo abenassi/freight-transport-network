@@ -56,6 +56,9 @@ class BaseModalNetworkBuilder(object):
         # calculate distance of od pairs from link distances data
         self._calculate_od_distances(mn)
 
+        # set links parameters
+        self._set_links_parameters(mn)
+
         # calculate tons carried by each link
         self._calculate_link_tons(mn)
 
@@ -190,6 +193,11 @@ class BaseModalNetworkBuilder(object):
                 print "".join(("There is no link ", id_link, " and gauge ",
                                od.get_gauge(), " for od pair ", od.get_id(),
                                " with path: ", od.get_path()))
+
+    def _set_links_parameters(self, mn):
+
+        for link in mn.iter_links():
+            link.net_to_gross_factor = mn.params["net_to_gross_factor"].value
 
 
 class RoadwayNetworkBuilder(BaseModalNetworkBuilder):

@@ -244,7 +244,9 @@ class OD(BasePath):
         """Derive tons to another freight transport mode.
 
         It derives tons to an OD pair object coming from another transport mode
-        but with the same id.
+        but with the same id. Only original tons of the od pair are subject to
+        derivation coefficient (coeff), while previously derivated tons are
+        just returned completely
 
         Args:
             other: OD object from another transport mode that will receive
@@ -259,27 +261,22 @@ class OD(BasePath):
         """
 
         # check od pairs have same id
-        msg = "OD pairs are different: {} != {}".format(self.id, other.id)
-        assert self.id == other.id, msg
+        msg = "OD pairs are different: {} != {}".format(self.get_id(),
+                                                        other.get_id())
+        assert (self.get_id() == other.get_id() and
+                self.get_category() == other.get_category()), msg
 
         # calculate tons to derive
-        tons_to_derive = (self.get_original_ton() * coeff +
-                          self.get_derived_ton())
+        original_tons_to_derive = self.get_original_ton() * coeff
+        derived_tons_to_return = self.get_derived_ton()
 
         # remove tons from self od pair
-        if self.derived_ton == 0.0:
-            self.original_ton -= tons_to_derive
-
-        elif tons_to_derive < self.derived_ton:
-            self.derived_ton -= tons_to_derive
-
-        else:
-            original_tons_to_remove = tons_to_derive - self.derived_ton
-            self.derived_ton = 0.0
-            self.original_ton -= original_tons_to_remove
+        self.original_ton -= original_tons_to_derive
+        self.derived_ton -= derived_tons_to_return
 
         # add tons to other od pair
-        other.derived_ton += tons_to_derive
+        other.derived_ton += original_tons_to_derive
+        other.original_ton += derived_tons_to_return
 
     def set_path(self, path, gauge):
         """Take a path and gauge and set it to the od pair."""
