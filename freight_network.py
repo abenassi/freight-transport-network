@@ -386,11 +386,11 @@ def main():
     fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all but some links to railway
-    # scenario = "derive all to railway but some links"
-    # print "Costing", scenario
-    # fn.min_network_cost_deriving_links()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
+    scenario = "derive all to railway but some links"
+    print "Costing", scenario
+    fn.min_network_cost_deriving_links()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"

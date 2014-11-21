@@ -221,10 +221,16 @@ class BaseModalNetwork(object):
         return self.costs
 
     def get_total_cost_tk(self):
-        mobility_cost = self.costs["mob"]["total_mobility"]
-        infrastructure_cost = self.costs["inf"]["total_infrastructure"]
+        """Add up all the costs."""
 
-        return mobility_cost + infrastructure_cost
+        total_cost_tk = 0.0
+
+        for cost_section in self.costs.values():
+            for cost_name in cost_section:
+                if cost_name.startswith("total_"):
+                    total_cost_tk += cost_section[cost_name]
+
+        return total_cost_tk
 
     def get_total_cost(self):
         return self.get_total_cost_tk() * self.get_total_ton_km()

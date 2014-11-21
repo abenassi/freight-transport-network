@@ -488,6 +488,12 @@ class RailwayNetworkCost(BaseNetworkCost):
                 link.eac_track = eac_track
                 link.maintenance = maintenance
 
+            # set all costs in the link to zero
+            else:
+                link.eac_detour = 0.0
+                link.eac_track = 0.0
+                link.maintenance = 0.0
+
         # divide all costs to express them in terms of ton-km
         for infrast_cost in RV:
             if ric.total_ton_km > 0.1:

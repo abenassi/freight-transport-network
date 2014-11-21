@@ -174,7 +174,7 @@ class RailwayLink(Link):
         """Calculate number of detours needed at the link."""
 
         # check if there is traffic
-        if self.get_gross_ton_km():
+        if self.get_gross_ton_km() > 0.0:
             num_detours = self._calc_number_of_detours(self.get_gross_ton_km(),
                                                        self.get_dist())
         else:
