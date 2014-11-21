@@ -140,6 +140,7 @@ class OD(BasePath):
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None,
                  rail_category=None):
+
         # identification properties
         self.id = self._get_safe_id(id)
         self.nodes = [int(i) for i in self.id.split("-")]
@@ -260,23 +261,32 @@ class OD(BasePath):
                 od pair with the same origin and destination (ie, same id)
         """
 
-        # check od pairs have same id
+        # check od pairs have same id and category
         msg = "OD pairs are different: {} != {}".format(self.get_id(),
                                                         other.get_id())
         assert (self.get_id() == other.get_id() and
                 self.get_category() == other.get_category()), msg
 
-        # calculate tons to derive
-        original_tons_to_derive = self.get_original_ton() * coeff
-        derived_tons_to_return = self.get_derived_ton()
+        # calculate original tons from both od pairs
+        self_original_ton = self.get_original_ton() + other.get_derived_ton()
+
+        # calculate tons should be derived
+        ton_should_be_derived = self_original_ton * coeff
+        ton_already_derived = other.get_derived_ton()
+        ton_to_derive = ton_should_be_derived - ton_already_derived
+
+        # get tons to be returned (derived from "other" previously)
+        ton_to_return = self.get_derived_ton()
 
         # remove tons from self od pair
-        self.original_ton -= original_tons_to_derive
-        self.derived_ton -= derived_tons_to_return
+        self.original_ton -= ton_to_derive
+        self.derived_ton -= ton_to_return
 
         # add tons to other od pair
-        other.derived_ton += original_tons_to_derive
-        other.original_ton += derived_tons_to_return
+        other.derived_ton += ton_to_derive
+        other.original_ton += ton_to_return
+
+        return (ton_to_derive, ton_to_return)
 
     def set_path(self, path, gauge):
         """Take a path and gauge and set it to the od pair."""
