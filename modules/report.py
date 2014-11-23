@@ -156,7 +156,8 @@ class BaseReport():
                       rn.get_average_distance(),
                       dimensions["total"],
                       dimensions["high"],
-                      dimensions["low"]]
+                      dimensions["low"],
+                      rn.get_density()]
 
             for value in values:
                 ws.cell(row=i_row, column=i_col).value = value
@@ -171,14 +172,14 @@ class BaseReport():
             # copy function calls
             ws.append(["total tons", rn.get_total_tons()])
             ws.append(["total ton-km", rn.get_total_ton_km()])
-            ws.append(["average distance",
-                      rn.get_total_ton_km() / rn.get_total_tons()])
+            ws.append(["average distance", rn.get_average_distance()])
 
             # copy dimensions
             dimensions = rn.get_dimensions()
             ws.append(["total dimension", dimensions["total"]])
             ws.append(["high density dimension", dimensions["high"]])
             ws.append(["low density dimension", dimensions["low"]])
+            ws.append(["density", rn.get_density()])
 
     def _report_costs(self, rn, wb, ws_name):
 

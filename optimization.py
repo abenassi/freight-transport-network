@@ -11,7 +11,7 @@ class WeakLinksAggregator(OptimizationStrategy):
 
     def optimize(self):
 
-        for rail_link in self.fn.iter_rail_links():
+        for rail_link in self.fn.iter_rail_links(sorted_by=True):
 
             # only check links that has more than zero tons
             if rail_link.get_ton() > 0.0:
@@ -31,10 +31,10 @@ class WeakLinksAggregator(OptimizationStrategy):
                 new_cost = self.fn.get_total_cost()
                 if new_cost > curr_cost:
                     self._revert_derivations(derivations)
-                    print "...reverted."
+                    print "...ok."
 
                 else:
-                    print "...DERIVED!"
+                    print "...DERIVED BACK TO ROADWAY!"
 
     def _revert_derivations(self, derivations):
 

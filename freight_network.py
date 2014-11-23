@@ -32,9 +32,17 @@ class FreightNetwork():
 
     # PUBLIC
     # iters and getters
-    def iter_rail_links(self):
-        for rail_link in self.rail.iter_links():
-            yield rail_link
+    def iter_rail_links(self, sorted_by=None):
+
+        # iterate rail links with no order
+        if not sorted_by:
+            for rail_link in self.rail.iter_links():
+                yield rail_link
+
+        # iterate rail links ordering them by an attribute
+        else:
+            for rail_link in sorted(self.rail.iter_links()):
+                yield rail_link
 
     def get_total_cost(self):
         return self.rail.get_total_cost() + self.road.get_total_cost()
@@ -382,26 +390,19 @@ def main():
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
-    # cost network deriving all possible freight to railway
-    scenario = "derive all to railway"
+    # cost network deriving all but some links to railway
+    scenario = "derive all to railway but some links"
     print "Costing", scenario
-    fn.derive_all_to_railway()
+    fn.min_network_cost_deriving_links()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
-    # cost network deriving all but some links to railway
-    # scenario = "derive all to railway but some links"
-    # print "Costing", scenario
-    # fn.min_network_cost_deriving_links()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
-
     # cost network deriving all freight to roadway
-    # scenario = "derive all to roadway"
-    # print "Costing", scenario
-    # fn.derive_all_to_roadway()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
+    scenario = "derive all to roadway"
+    print "Costing", scenario
+    fn.derive_all_to_roadway()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
 
 
 if __name__ == '__main__':

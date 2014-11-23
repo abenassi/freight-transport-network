@@ -34,6 +34,12 @@ class Link(Tons):
                "Gauge: " + str(self.get_gauge()).ljust(8) + \
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
 
+    def __len__(self):
+        return self.get_dist()
+
+    def __lt__(self, other):
+        return self.get_ton() < other.get_ton()
+
     # PUBLIC
     def get_dist(self):
         return self.dist

@@ -183,6 +183,20 @@ class BaseModalNetwork(object):
         else:
             return 0.0
 
+    def get_density(self):
+        """Get average tons of density by km of network."""
+
+        total_network_dimension = self.get_dimensions()["total"]
+
+        # check network dimension is not zero
+        if total_network_dimension and total_network_dimension > 0:
+            density = self.get_total_ton_km() / total_network_dimension
+
+        else:
+            density = 0
+
+        return density
+
     def get_dimensions(self):
         """Calculate network dimensions in km.
 
