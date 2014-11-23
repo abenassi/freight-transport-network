@@ -1,5 +1,5 @@
 from openpyxl import load_workbook
-from components import RailwayLink, Parameter, OD, Path
+from components import RailwayLink, RoadwayLink, Parameter, OD, Path
 
 
 class BaseXlLoad():
@@ -56,9 +56,17 @@ class XlLoadLink(BaseXlLoad):
 
                 # create link if all parameters are true
                 if id_link and distance and gauge:
-                    link = RailwayLink(id_link, distance, gauge)
+                    link = self.LINK_CLASS(id_link, distance, gauge)
 
                     yield link
+
+
+class XlLoadRailwayLink(XlLoadLink):
+    LINK_CLASS = RailwayLink
+
+
+class XlLoadRoadwayLink(XlLoadLink):
+    LINK_CLASS = RoadwayLink
 
 
 class XlLoadParam(BaseXlLoad):

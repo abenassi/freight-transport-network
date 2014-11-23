@@ -31,7 +31,7 @@ class FreightNetworkTestCase(unittest.TestCase):
         # check out tons left in road and increased in rail
         final_ton = self.fn.rail.get_od("1-3", 1).get_ton()
         self.assertEqual(start_ton + coeff * road_ton, final_ton)
-        self.assertEqual((1- coeff) * road_ton, od_road.get_ton())
+        self.assertEqual((1 - coeff) * road_ton, od_road.get_ton())
 
     def test_get_derivation_coefficient(self):
         expected_coefficient = 0.51405340750397721
@@ -40,6 +40,18 @@ class FreightNetworkTestCase(unittest.TestCase):
         categ = 1
         coefficient = self.fn._get_derivation_coefficient(tons, dist, categ)
         self.assertAlmostEqual(coefficient, expected_coefficient)
+
+    def test_consistent_result(self):
+
+        self.fn.derive_all_to_railway()
+        self.fn.cost_network()
+        total_cost_1 = self.fn.get_total_cost()
+
+        self.fn.derive_all_to_railway()
+        self.fn.cost_network()
+        total_cost_2 = self.fn.get_total_cost()
+
+        self.assertEqual(total_cost_1, total_cost_2)
 
 
 if __name__ == '__main__':

@@ -440,30 +440,21 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         # initialize return value
         RV = {}
-        RV["eac_detour"] = 0
-        RV["eac_track"] = 0
-        RV["maintenance"] = 0
+        RV["eac_detour"] = 0.0
+        RV["eac_track"] = 0.0
+        RV["maintenance"] = 0.0
 
         # init object to cost infrastructure
         ric = RailwayInfrastructureCost(self.rn)
-
-        # take parameters
-        wagon_capacity = self.rn.params["wagon_capacity"].value
-        wagon_weight = self.rn.params["wagon_weight"].value
-        locomotive_capacity = self.rn.params["locomotive_capacity"].value
-        locomotive_weight = self.rn.params["locomotive_weight"].value
 
         # calculate gross ton_km and infrastructure cost for each link
         for link in self.rn.iter_links():
 
             # check if there is load on that link
-            if link.get_ton() > 0:
+            if link.get_ton() > 0.0:
 
                 # calculate gross ton-km carried by the link
-                gross_tk = link.get_gross_ton_km(wagon_capacity,
-                                                 wagon_weight,
-                                                 locomotive_capacity,
-                                                 locomotive_weight)
+                gross_tk = link.get_gross_ton_km()
 
                 # ask to the railway network if this is a main track
                 main_track = self.rn.is_main_track(gross_tk, link.get_dist())
@@ -497,7 +488,7 @@ class RailwayNetworkCost(BaseNetworkCost):
         # divide all costs to express them in terms of ton-km
         for infrast_cost in RV:
             if ric.total_ton_km > 0.1:
-                RV[infrast_cost] = RV[infrast_cost] / ric.total_ton_km
+                RV[infrast_cost] = RV[infrast_cost] / self.total_ton_km
             else:
                 RV[infrast_cost] = 0.0
 

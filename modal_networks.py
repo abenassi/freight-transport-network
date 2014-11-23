@@ -340,7 +340,6 @@ class BaseModalNetwork(object):
 
         # create report object
         rep = self.REPORT_CLASS(xl_report, description, append_report)
-
         # ask for excel report passing RailNetwork object itself
         rep.report_to_excel(self)
 
@@ -426,7 +425,9 @@ class RoadwayNetwork(BaseModalNetwork):
         """Cost infrastructure and mobility of the network."""
 
         self.calc_mobility_cost()
+
         self.calc_infrastructure_cost()
+
 
     # PRIVATE
     def _reset_network(self):
@@ -556,7 +557,8 @@ class RailwayNetwork(BaseModalNetwork):
 
         It uses de best cost approach (optimized mobility cost)."""
 
-        self.calc_optimized_mobility_cost()
+        # self.calc_optimized_mobility_cost()
+        self.calc_simple_mobility_cost()
         self.calc_infrastructure_cost()
         self.cost_time()
 

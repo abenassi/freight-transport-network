@@ -282,7 +282,7 @@ class RailwayNetworkReport(BaseReport):
 
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
-
+        rn.get_link("66-77", "angosta")
         if self.append_report:
             try:
                 # open the last report

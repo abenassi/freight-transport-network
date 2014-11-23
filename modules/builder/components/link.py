@@ -57,6 +57,9 @@ class Link(Tons):
         else:
             self.main_track = "B"
 
+    def set_net_to_gross_factor(self, net_to_gross_factor):
+        self.net_to_gross_factor = net_to_gross_factor
+
     def reset(self):
         self.eac_track = None
         self.maintenance = None
@@ -71,7 +74,14 @@ class RoadwayLink(Link):
 
     TODO: It still needs to be implemented, for the moment RailwayLink is
     used as its good enough to act as a RoadwayLink as it is."""
-    pass
+
+    FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
+              "tons", "gross ton-km"]
+
+    def get_attributes(self):
+        return [self.id, self.gauge, self.dist, self.get_original_ton(),
+                self.get_derived_ton(), self.get_ton(),
+                self.get_gross_ton_km()]
 
 
 class RailwayLink(Link):
@@ -142,41 +152,33 @@ class RailwayLink(Link):
         """Returns idle capacity in ton-km, that can not be removed."""
         return self.idle_capacity_no_regroup
 
-    def get_gross_ton_km(self, wagon_capacity=None, wagon_weight=None,
-                         locomotive_capacity=None, locomotive_weight=None):
-        """Take rolling material parameters and calculate gross ton_km.
+    def get_gross_ton_km(self):
+        """Calculate gross ton-km of a railway link.
 
-        If rolling material parameters are not provided, call super class
-        method wich is an aproximation to the real calculation."""
+        Overrides super class method to take into account idle capacity."""
 
-        if not (wagon_capacity and wagon_weight and
-                locomotive_capacity and locomotive_weight):
+        full_capacity_ton = self.get_ton() + self.get_idle_cap()
 
-            gross_tk = super(RailwayLink, self).get_gross_ton_km()
+        if full_capacity_ton and full_capacity_ton > 0.0:
+
+            gross_ton = (full_capacity_ton * self.net_to_gross_factor -
+                         self.get_idle_cap())
+
+            gross_tk = gross_ton * self.get_dist()
 
         else:
-            # wagons weight
-            num_wagons = self.get_ton() / wagon_capacity
-            wagons_weight = num_wagons * wagon_weight
+            gross_tk = 0.0
 
-            # locomotives weight
-            num_locoms = (self.get_ton() +
-                          self.get_idle_cap()) / locomotive_capacity
-            locoms_weight = num_locoms * locomotive_weight
-
-            # calculate gross ton-km
-            gross_tk = (wagons_weight + locoms_weight +
-                        self.get_ton()) * self.dist
-
-            return gross_tk
+        return gross_tk
 
     def get_number_of_detours(self):
         """Calculate number of detours needed at the link."""
 
+        gross_tk = self.get_gross_ton_km()
+
         # check if there is traffic
-        if self.get_gross_ton_km() > 0.0:
-            num_detours = self._calc_number_of_detours(self.get_gross_ton_km(),
-                                                       self.get_dist())
+        if gross_tk > 0.1:
+            num_detours = self._calc_number_of_detours(gross_tk, self.get_dist())
         else:
             num_detours = 0
 
@@ -215,6 +217,17 @@ class RailwayLink(Link):
         """Regain idle capacity passed in ton."""
         self.idle_capacity_regroup += idle_capacity_ton
 
+    def reset(self):
+        self.eac_track = None
+        self.maintenance = None
+
+        self.idle_capacity_regroup = 0.0
+        self.idle_capacity_no_regroup = 0.0
+        self.eac_detour = 0.0
+
+        # check stored values of tons are significant
+        self.clean_insignificant_ton_values(0.01)
+
     # PRIVATE
     def _calc_number_of_detours(self, gross_tk, dist):
         """Calculate number of detours needed in a certain track."""
@@ -223,6 +236,7 @@ class RailwayLink(Link):
         max_turnout_distance = self.turnout_freq
         max_turnout_density = self.turnout_freq_max_density
         t_distance = max_turnout_distance
+        # print max_turnout_distance, max_turnout_density, self.get_id()
 
         # calculate density
         density = gross_tk / dist

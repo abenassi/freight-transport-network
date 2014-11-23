@@ -1,8 +1,10 @@
-from xl_input import XlLoadParam, XlLoadOD, XlLoadLink, XlLoadPath
+from xl_input import XlLoadParam, XlLoadOD, XlLoadRailwayLink, XlLoadPath
+from xl_input import XlLoadRoadwayLink
 from components import RollingMaterial, OD
 
 
 class BaseModalNetworkBuilder(object):
+
     """Base builder of a modal network.
 
     It must be subclassed to build up a RailwayNetwork or a RoadwayNetwork."""
@@ -55,9 +57,6 @@ class BaseModalNetworkBuilder(object):
 
         # calculate distance of od pairs from link distances data
         self._calculate_od_distances(mn)
-
-        # set links parameters
-        self._set_links_parameters(mn)
 
         # calculate tons carried by each link
         self._calculate_link_tons(mn)
@@ -128,19 +127,6 @@ class BaseModalNetworkBuilder(object):
                 curr_od = od_pairs[od_pair.get_id()][od_pair.get_category()]
                 curr_od.add_original_ton(od_pair.get_ton())
 
-    def _load_links_from_xl(self, links):
-        """Iterate an excel with data using a specific loader_class and storing
-        results to output_dict."""
-
-        for link in XlLoadLink(self.xl_links):
-
-            # add link.id entry if not already in output dict
-            if link.id not in links:
-                links[link.get_id()] = {}
-
-            # add the link using id and gauge as keys
-            links[link.id][link.gauge] = link
-
     def _find_paths(self, mn):
         """Iterate through od_pairs looking for path if not already passed."""
 
@@ -194,11 +180,6 @@ class BaseModalNetworkBuilder(object):
                                od.get_gauge(), " for od pair ", od.get_id(),
                                " with path: ", od.get_path()))
 
-    def _set_links_parameters(self, mn):
-
-        for link in mn.iter_links():
-            link.net_to_gross_factor = mn.params["net_to_gross_factor"].value
-
 
 class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
@@ -216,7 +197,30 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
         super(RoadwayNetworkBuilder, self).build(rn)
 
+        self._set_link_parameters(rn)
+
         print "RoadwayNetwork object has been succesfully built.\n"
+
+    def _set_link_parameters(self, rn):
+        """Set parameters to calculate number of detours needed per link."""
+
+        for link in rn.iter_links():
+
+            link.set_net_to_gross_factor(
+                rn.params["net_to_gross_factor"].value)
+
+    def _load_links_from_xl(self, links):
+        """Iterate an excel with data using a specific loader_class and storing
+        results to output_dict."""
+
+        for link in XlLoadRoadwayLink(self.xl_links):
+
+            # add link.id entry if not already in output dict
+            if link.id not in links:
+                links[link.get_id()] = {}
+
+            # add the link using id and gauge as keys
+            links[link.id][link.gauge] = link
 
 
 class RailwayNetworkBuilder(BaseModalNetworkBuilder):
@@ -239,10 +243,23 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         # set rolling material parameters
         self._set_rolling_material_parameters(rn)
 
-        # set link detour parameters
-        self._set_link_detour_parameters(rn)
+        # set link parameters
+        self._set_link_parameters(rn)
 
         print "RailwayNetwork object has been succesfully built.\n"
+
+    def _load_links_from_xl(self, links):
+        """Iterate an excel with data using a specific loader_class and storing
+        results to output_dict."""
+
+        for link in XlLoadRailwayLink(self.xl_links):
+
+            # add link.id entry if not already in output dict
+            if link.id not in links:
+                links[link.get_id()] = {}
+
+            # add the link using id and gauge as keys
+            links[link.id][link.gauge] = link
 
     # PRIVATE
     def _set_rolling_material_parameters(self, rn):
@@ -273,7 +290,7 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         rn.locoms.turnout_freq = rn.params["turnout_freq"].value
         rn.locoms.regroup_time = rn.params["regroup_time"].value
 
-    def _set_link_detour_parameters(self, rn):
+    def _set_link_parameters(self, rn):
         """Set parameters to calculate number of detours needed per link."""
 
         for link in rn.iter_links():
@@ -282,3 +299,6 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
 
             turnout_max_density = rn.params["turnout_freq_max_density"].value
             link.set_turnout_max_density(turnout_max_density)
+
+            link.set_net_to_gross_factor(
+                rn.params["net_to_gross_factor"].value)
