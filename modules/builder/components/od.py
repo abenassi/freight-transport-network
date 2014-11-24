@@ -166,10 +166,12 @@ class OD(BasePath):
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
                "Ton: " + self.NF.format(self.get_ton()).ljust(15) + \
-               "Path: " + str(self.path).ljust(60) + \
                "Gauge:" + str(self.gauge).ljust(15) + \
                "Distance:" + str(self.dist).ljust(15) + \
                "Category:" + str(self.rail_category)
+
+    def __lt__(self, other):
+        return self.get_ton() < other.get_ton()
 
     # PUBLIC
     # GET methods

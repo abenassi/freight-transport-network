@@ -1,7 +1,6 @@
 from modal_networks import RailwayNetwork, RoadwayNetwork
-import sys
 import numpy as np
-from optimization import WeakLinksAggregator
+from optimization import WeakLinksAggregator, WeakOdsAggregator
 
 """
     This is the main module that will be visible to the user. Exposes
@@ -12,48 +11,9 @@ from optimization import WeakLinksAggregator
 """
 
 
-class FreightNetwork():
-
-    """Represents a freight network with rail and road modes of transport.
-
-    FreightNetwork uses RailwayNetwork and RoadNetwork objects to represent a
-    bimodal freight transport network. It uses those classes to cost all
-    freight network and can derive traffic from one mode of transport to the
-    other, exploring changes in overall cost of different traffic
-    configurations."""
-
-    LINKS_OPTIMIZATION_CLASS = WeakLinksAggregator
-
-    def __init__(self, railway_network=None, roadway_network=None):
-        self.rail = railway_network or RailwayNetwork()
-        self.road = roadway_network or RoadwayNetwork()
-        self.min_cost = sys.maxint
-        self.max_cost = 0.0
+class DerivationMethods():
 
     # PUBLIC
-    # iters and getters
-    def iter_rail_links(self, sorted_by=None):
-
-        # iterate rail links with no order
-        if not sorted_by:
-            for rail_link in self.rail.iter_links():
-                yield rail_link
-
-        # iterate rail links ordering them by an attribute
-        else:
-            for rail_link in sorted(self.rail.iter_links()):
-                yield rail_link
-
-    def get_total_cost(self):
-        return self.rail.get_total_cost() + self.road.get_total_cost()
-
-    # costing methods
-    def cost_network(self):
-        """Cost total freight transport network."""
-        self.rail.cost_network()
-        self.road.cost_network()
-
-    # deriving methods
     def derive_all_to_railway(self):
         """Derive all possible road od pairs from road mode to rail mode."""
 
@@ -194,44 +154,6 @@ class FreightNetwork():
 
         return road_od_derivations
 
-    # optimizing strategies
-    def min_network_cost_deriving_links(self):
-        """Find the modal split with minimum overall cost.
-
-        Derive traffic from one mode to the other looking for the minimum
-        overall cost of freight transportation.
-
-        The algorithm starts with maximum possible traffic derivation to
-        railway and then move back all the traffic of one link at a time, from
-        railway to roadway, looking to reduce overall cost of the entire
-        bimodal network by disabling railway tracks (ie, the links).
-
-        At first sight, there is no way to know what combination of freed
-        railway links will reduce the overall cost from the scenario of maximum
-        traffic derivation to railway."""
-
-        self.derive_all_to_railway()
-        self.cost_network()
-        self.LINKS_OPTIMIZATION_CLASS(self).optimize()
-
-    # report methods
-    def report_to_excel(self, description=None, append_report=False):
-        """Make a report of RailwayNetwork and RoadNetwork results.
-
-        At any moment, freeze the status of RailwayNetwork and RoadNetwork
-        into excel reports.
-
-        Args:
-            description: Description of the scenario result being reported.
-            append_report: If False, new report replace previous one (excel
-                file is being replaced). If True, new report is appended inside
-                the old one.
-        """
-        self.rail.report_to_excel(description=description,
-                                  append_report=append_report)
-        self.road.report_to_excel(description=description,
-                                  append_report=append_report)
-
     # PRIVATE
     def _derive_od(self, from_od, to_od, coeff, from_mode, to_mode):
 
@@ -290,7 +212,8 @@ class FreightNetwork():
 
         # check if od pair meet minimum tons adn distance to be derivable
         min_ton = orig_road_ton > self.rail.params["min_tons_to_derive"].value
-        min_dist = road_od.get_dist() > self.rail.params["min_dist_to_derive"].value
+        min_dist = road_od.get_dist() > self.rail.params[
+            "min_dist_to_derive"].value
 
         # check if railway path distance is not excesively longer than road
         max_diff = self.rail.params["max_path_difference"].value
@@ -369,6 +292,117 @@ class FreightNetwork():
         return deriv_coefficient
 
 
+class FreightNetwork(DerivationMethods):
+
+    """Represents a freight network with rail and road modes of transport.
+
+    FreightNetwork uses RailwayNetwork and RoadNetwork objects to represent a
+    bimodal freight transport network. It uses those classes to cost all
+    freight network and can derive traffic from one mode of transport to the
+    other, exploring changes in overall cost of different traffic
+    configurations."""
+
+    LINKS_OPTIMIZATION_CLASS = WeakLinksAggregator
+    ODS_OPTIMIZATION_CLASS = WeakOdsAggregator
+
+    def __init__(self, railway_network=None, roadway_network=None):
+        self.rail = railway_network or RailwayNetwork()
+        self.road = roadway_network or RoadwayNetwork()
+
+    # PUBLIC
+    # iters and getters
+    def iter_rail_links(self, sorted_by=None):
+
+        # iterate rail links with no order
+        if not sorted_by:
+            for rail_link in self.rail.iter_links():
+                yield rail_link
+
+        # iterate rail links ordering them by an attribute
+        else:
+            for rail_link in sorted(self.rail.iter_links()):
+                yield rail_link
+
+    def iter_rail_ods(self, sorted_by=None):
+
+        # iterate rail links with no order
+        if not sorted_by:
+            for rail_od in self.rail.iter_od_pairs():
+                yield rail_od
+
+        # iterate rail links ordering them by an attribute
+        else:
+            for rail_od in sorted(self.rail.iter_od_pairs()):
+                yield rail_od
+
+    def get_total_cost(self):
+        return self.rail.get_total_cost() + self.road.get_total_cost()
+
+    # costing methods
+    def cost_network(self):
+        """Cost total freight transport network."""
+        self.rail.cost_network()
+        self.road.cost_network()
+
+    # optimizing strategies
+    def min_network_cost_deriving_links(self):
+        """Find the modal split with minimum overall cost.
+
+        Derive traffic from one mode to the other looking for the minimum
+        overall cost of freight transportation.
+
+        The algorithm starts with maximum possible traffic derivation to
+        railway and then move back all the traffic of one link at a time, from
+        railway to roadway, looking to reduce overall cost of the entire
+        bimodal network by disabling railway tracks (ie, the links).
+
+        At first sight, there is no way to know what combination of freed
+        railway links will reduce the overall cost from the scenario of maximum
+        traffic derivation to railway."""
+
+        self.derive_all_to_railway()
+        self.cost_network()
+        self.LINKS_OPTIMIZATION_CLASS(self).optimize()
+
+    def min_network_cost_deriving_ods(self):
+        """Find the modal split with minimum overall cost.
+
+        Derive traffic from one mode to the other looking for the minimum
+        overall cost of freight transportation.
+
+        The algorithm starts with maximum possible traffic derivation to
+        railway and then move back all the traffic of one od pair at a time,
+        from railway to roadway, looking to reduce overall cost of the entire
+        bimodal network by moving back those od pairs less convinient to the
+        railway mode.
+
+        At first sight, there is no way to know what combination of freed
+        railway links will reduce the overall cost from the scenario of maximum
+        traffic derivation to railway."""
+
+        self.derive_all_to_railway()
+        self.cost_network()
+        self.ODS_OPTIMIZATION_CLASS(self).optimize()
+
+    # report methods
+    def report_to_excel(self, description=None, append_report=False):
+        """Make a report of RailwayNetwork and RoadNetwork results.
+
+        At any moment, freeze the status of RailwayNetwork and RoadNetwork
+        into excel reports.
+
+        Args:
+            description: Description of the scenario result being reported.
+            append_report: If False, new report replace previous one (excel
+                file is being replaced). If True, new report is appended inside
+                the old one.
+        """
+        self.rail.report_to_excel(description=description,
+                                  append_report=append_report)
+        self.road.report_to_excel(description=description,
+                                  append_report=append_report)
+
+
 def main():
     """Some methods used here still does not work. Further design and
     implementation points to support this main method wich represent the user
@@ -394,6 +428,21 @@ def main():
     scenario = "derive all to railway but some links"
     print "Costing", scenario
     fn.min_network_cost_deriving_links()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all but some od pairs
+    scenario = "derive all to railway but some ods"
+    print "Costing", scenario
+    fn.min_network_cost_deriving_ods()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all but some links and some od pairs
+    scenario = "derive all to railway but some links and ods"
+    print "Costing", scenario
+    fn.min_network_cost_deriving_links()
+    fn.min_network_cost_deriving_ods()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
