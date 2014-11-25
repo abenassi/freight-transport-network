@@ -102,7 +102,8 @@ class RailwayLink(Link):
     FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
               "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
               "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
-              "num_detours", "track_type"]
+              "num_detours", "track_type", "category_1", "category_2",
+              "category_3", "category_4", "category_5"]
 
     def __init__(self, id, distance, gauge):
 
@@ -131,10 +132,12 @@ class RailwayLink(Link):
     # getters
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
-                self.get_derived_ton(), self.get_ton(), self.idle_capacity_regroup,
+                self.get_derived_ton(), self.get_ton(),
+                self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.get_gross_ton_km(),
-                self.get_number_of_detours(), self.main_track]
+                self.get_number_of_detours(),
+                self.main_track] + self.get_ton_by_category()
 
     def get_idle_cap(self):
         """Returns idle capacity in tons."""

@@ -559,11 +559,10 @@ class RailwayNetwork(BaseModalNetwork):
         self.costs["inf"] = network_cost.cost_infrast()
 
     def cost_time(self):
+        """Cost time related requirements in the railway network."""
 
-        # create a railway network cost object
+        self.find_lowest_scale_links()
         network_cost = self.COST_CLASS(self)
-
-        # calculate and store time costs
         self.costs["time"] = network_cost.cost_time()
 
     def cost_network(self):

@@ -218,6 +218,16 @@ class LinkTons(BaseTons):
         """Returns tons derived from another transport mode."""
         return self.get_ton(categories, id_ods, modes="derived")
 
+    def get_ton_by_category(self):
+        """Return list of tons ordered by category."""
+
+        ton_by_category = []
+
+        for category in xrange(1, 6):
+            ton_by_category.append(self.get_ton(categories=category))
+
+        return ton_by_category
+
     # add methods
     def add_original_ton(self, ton, categories, id_ods):
         """Add original tons to the link."""
