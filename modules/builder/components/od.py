@@ -1,8 +1,11 @@
+from tons import OdTons
+
 """Path and OD classes are used either by Railway or Roadway networks."""
 
 
 class BasePath(object):
 
+    # PUBLIC
     def get_links(self):
         return self.links
 
@@ -34,6 +37,7 @@ class BasePath(object):
 
         return dist
 
+    # PRIVATE
     def _create_links_list(self):
         """Create list with all links used by OD path."""
 
@@ -125,7 +129,41 @@ class Path(BasePath):
                "Gauge: " + str(self.gauge)
 
 
-class OD(BasePath):
+class OdCostData():
+
+    def __init__(self):
+        self.deposit = None
+        self.short_freight = None
+        self.immo_value = None
+
+
+class OdCostMethods():
+
+    def __init__(self):
+        self.cost = OdCostData()
+
+    # getters
+    def get_deposit_cost(self):
+        return self.cost.deposit
+
+    def get_short_freight_cost(self):
+        return self.cost.short_freight
+
+    def get_immo_value_cost(self):
+        return self.cost.immo_value
+
+    # setters
+    def set_deposit_cost(self, deposit_cost):
+        self.cost.deposit = deposit_cost
+
+    def set_short_freight_cost(self, short_freight_cost):
+        self.cost.short_freight = short_freight_cost
+
+    def set_immo_value_cost(self, immo_value_cost):
+        self.cost.immo_value = immo_value_cost
+
+
+class OD(OdTons, BasePath, OdCostMethods):
 
     """Represents an od pair in a railway or roadway network.
 
@@ -141,6 +179,9 @@ class OD(BasePath):
     def __init__(self, id, ton, path=None, gauge=None, dist=None,
                  rail_category=None):
 
+        # call constructors of superclasses
+        super(OD, self).__init__()
+
         # identification properties
         self.id = self._get_safe_id(id)
         self.nodes = [int(i) for i in self.id.split("-")]
@@ -153,15 +194,11 @@ class OD(BasePath):
         self.links = self._create_links_list()
 
         # traffic properties
-        self.original_ton = ton
-        self.derived_ton = 0.0
+        self.add_original_ton(ton)
         self.rail_category = rail_category
         self.lowest_link = None
 
-        # cost properties
-        self.deposit_cost = None
-        self.short_freight_cost = None
-        self.immo_value_cost = None
+        self.cost = OdCostData()
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
@@ -174,19 +211,7 @@ class OD(BasePath):
         return self.get_ton() < other.get_ton()
 
     # PUBLIC
-    # GET methods
-    def get_original_ton(self):
-        """Get tons that are originally transported by the transport mode."""
-        return self.original_ton
-
-    def get_derived_ton(self):
-        """Get tons that are derived from other freight transport mode."""
-        return self.derived_ton
-
-    def get_ton(self):
-        """Get total tons of od pair, original and derived freight."""
-        return self.get_original_ton() + self.get_derived_ton()
-
+    # getters
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(), self.get_category(),
@@ -226,70 +251,11 @@ class OD(BasePath):
         else:
             return None
 
-    def get_deposit_cost(self):
-        return self.deposit_cost
-
-    def get_short_freight_cost(self):
-        return self.short_freight_cost
-
-    def get_immo_value_cost(self):
-        return self.immo_value_cost
-
+    # cost getters
     def calc_distance(self, network_links):
         self.dist = super(OD, self).calc_distance(network_links)
 
-    # SET and ADD methods
-    def add_original_ton(self, ton):
-        """Add original tons to OD pair."""
-        self.original_ton += ton
-
-    def derive_ton(self, other, coeff=1.0):
-        """Derive tons to another freight transport mode.
-
-        It derives tons to an OD pair object coming from another transport mode
-        but with the same id. Only original tons of the od pair are subject to
-        derivation coefficient (coeff), while previously derivated tons are
-        just returned completely
-
-        Args:
-            other: OD object from another transport mode that will receive
-                derived tons from self OD object.
-            coeff (opt): Coefficient of tons that will be derived. The default
-                is to derive all tons (1.0)
-
-        Raise:
-            DerivationError: Trying to derive tons to an other od pair with
-                different id will raise an error. Derivation must occur with an
-                od pair with the same origin and destination (ie, same id)
-        """
-
-        # check od pairs have same id and category
-        msg = "OD pairs are different: {} != {}".format(self.get_id(),
-                                                        other.get_id())
-        assert (self.get_id() == other.get_id() and
-                self.get_category() == other.get_category()), msg
-
-        # calculate original tons from both od pairs
-        self_original_ton = self.get_original_ton() + other.get_derived_ton()
-
-        # calculate tons should be derived
-        ton_should_be_derived = self_original_ton * coeff
-        ton_already_derived = other.get_derived_ton()
-        ton_to_derive = ton_should_be_derived - ton_already_derived
-
-        # get tons to be returned (derived from "other" previously)
-        ton_to_return = self.get_derived_ton()
-
-        # remove tons from self od pair
-        self.original_ton -= ton_to_derive
-        self.derived_ton -= ton_to_return
-
-        # add tons to other od pair
-        other.derived_ton += ton_to_derive
-        other.original_ton += ton_to_return
-
-        return (ton_to_derive, ton_to_return)
-
+    # setters
     def set_path(self, path, gauge):
         """Take a path and gauge and set it to the od pair."""
 
@@ -306,15 +272,6 @@ class OD(BasePath):
 
     def set_lowest_scale_link(self, link):
         self.lowest_link = link
-
-    def set_deposit_cost(self, deposit_cost):
-        self.deposit_cost = deposit_cost
-
-    def set_short_freight_cost(self, short_freight_cost):
-        self.short_freight_cost = short_freight_cost
-
-    def set_immo_value_cost(self, immo_value_cost):
-        self.immo_value_cost = immo_value_cost
 
     # BOOL methods
     def has_declared_path(self):

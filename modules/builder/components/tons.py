@@ -1,6 +1,147 @@
-class Tons(object):
+"""Management for adding, removing and getting tons in Links and ODs."""
 
-    """Keeps information about tons.
+
+class BaseTons(object):
+
+    def __init__(self):
+        self.tons = {"original": None, "derived": None}
+
+
+class OdTons(BaseTons):
+
+    """Keeps information about tons in an OD pair.
+
+    OdTons object knows the original transport mode of the tons in an OD pair.
+    It can add and remove tons keeping track of its original transport mode.
+
+    Data is stored in a dictionary that has the follwing structure:
+
+    self.tons = {"original": 150000,
+                 "derived":  20000}
+    """
+
+    # PUBLIC
+    # getters
+    def get_original_ton(self):
+        """Get tons that are originally transported by the transport mode."""
+        return self.tons["original"]
+
+    def get_derived_ton(self):
+        """Get tons that are derived from other freight transport mode."""
+        return self.tons["derived"]
+
+    def get_ton(self, mode=None):
+        """Get tons of od pair.
+
+        Args:
+            mode: Mode of tons to be returned (original, derived or none for
+                total tons)."""
+
+        if mode:
+            ton = self.tons[mode]
+
+        else:
+            ton = self.get_original_ton() + self.get_derived_ton()
+
+        return ton
+
+    # add and derive methods
+    def add_original_ton(self, ton):
+        """Add original tons to OD pair."""
+        self._add_ton(ton, "original")
+
+    def derive_ton(self, other, coeff=1.0):
+        """Derive tons to another freight transport mode.
+
+        It derives tons to an OD pair object coming from another transport mode
+        but with the same id. Only original tons of the od pair are subject to
+        derivation coefficient (coeff), while previously derivated tons are
+        just returned completely
+
+        Args:
+            other: OD object from another transport mode that will receive
+                derived tons from self OD object.
+            coeff (opt): Coefficient of tons that will be derived. The default
+                is to derive all tons (1.0)
+
+        Raise:
+            DerivationError: Trying to derive tons to an other od pair with
+                different id will raise an error. Derivation must occur with an
+                od pair with the same origin and destination (ie, same id)
+        """
+
+        # check od pairs have same id and category
+        msg = "OD pairs are different: {} != {}".format(self.get_id(),
+                                                        other.get_id())
+        assert (self.get_id() == other.get_id() and
+                self.get_category() == other.get_category()), msg
+
+        # calculate original tons from both od pairs
+        self_original_ton = self.get_original_ton() + other.get_derived_ton()
+
+        # calculate tons should be derived
+        ton_should_be_derived = self_original_ton * coeff
+        ton_already_derived = other.get_derived_ton()
+        ton_to_derive = ton_should_be_derived - ton_already_derived
+
+        # get tons to be returned (derived from "other" previously)
+        ton_to_return = self.get_derived_ton()
+
+        # remove tons from self od pair
+        self._remove_original_ton(ton_to_derive)
+        self._remove_derived_ton(ton_to_return)
+
+        # add tons to other od pair
+        other._add_derived_ton(ton_to_derive)
+        other.add_original_ton(ton_to_return)
+
+        return (ton_to_derive, ton_to_return)
+
+    # PRIVATE
+    # add methods
+    def _add_ton(self, ton, mode):
+        """Add tons to od pair.
+
+        Args:
+            ton: Tons to be added.
+            mode: Mode (original or derived) to wich adding tons."""
+
+        if not self.get_ton(mode):
+            self.tons[mode] = ton
+
+        else:
+            self.tons[mode] += ton
+
+    def _add_derived_ton(self, ton):
+        """Add derived tons to OD pair."""
+        self._add_ton(ton, "derived")
+
+    # remove methods
+    def _remove_ton(self, ton, mode):
+        """Remove tons from OD pair.
+
+        Args:
+            ton: Tons to be removed.
+            mode: Mode (original or derived) from where to remove tons."""
+
+        msg = "Can't remove more " + mode + " tons than existent ones: " + \
+            str(ton) + " > " + str(self.get_original_ton())
+        assert ton <= self.get_ton(mode), msg
+
+        self.tons[mode] -= ton
+
+    def _remove_derived_ton(self, ton):
+        """Remove derived tons from OD pair."""
+        self._remove_ton(ton, "derived")
+
+    def _remove_original_ton(self, ton):
+        """Remove original tons from OD pair."""
+        self._remove_ton(ton, "original")
+
+
+class LinkTons(BaseTons):
+
+    """Keeps information about tons in a Link.
 
     Tons object knows the category, original transport mode and current od
     pairs of all tons in its domain. It can add and remove tons keeping track
@@ -21,43 +162,8 @@ class Tons(object):
                  }
     """
 
-    def __init__(self):
-        self.tons = {"original": {}, "derived": {}}
-
     # PUBLIC
-    # add and remove methods
-    def add_original_ton(self, ton, categories, id_ods):
-        """Add original tons to the link."""
-        self._add_ton(ton, categories, id_ods, "original")
-
-    def add_derived_ton(self, ton, categories, id_ods):
-        """Add derived tons to the link."""
-        self._add_ton(ton, categories, id_ods, "derived")
-
-    def remove_original_ton(self, ton, categories, id_ods):
-        """Remove original tons from the link."""
-        self._remove_ton(ton, categories, id_ods, "original")
-
-    def remove_derived_ton(self, ton, categories, id_ods):
-        """Remove derived tons from the link."""
-        self._remove_ton(ton, categories, id_ods, "derived")
-
-    def remove_ton(self, ton, categories, id_ods):
-        """Remove tons from the link."""
-
-        # remove tons from link
-        if ton < self.get_derived_ton(categories, id_ods):
-            self._remove_ton(ton, categories, id_ods, "derived")
-
-        elif self.get_derived_ton(categories, id_ods) == 0.0:
-            self._remove_ton(ton, categories, id_ods, "original")
-
-        else:
-            removing_orig_ton = ton - self.get_derived_ton(categories, id_ods)
-            self._remove_all_ton(categories, id_ods, "derived")
-            self._remove_ton(removing_orig_ton, categories, id_ods, "original")
-
-    # get methods
+    # getters
     def get_ton(self, categories=None, id_ods=None, modes=None):
         """Return tons of the link, filtering by category, id_od and mode."""
 
@@ -110,6 +216,39 @@ class Tons(object):
         """Returns tons derived from another transport mode."""
         return self.get_ton(categories, id_ods, modes="derived")
 
+    # add methods
+    def add_original_ton(self, ton, categories, id_ods):
+        """Add original tons to the link."""
+        self._add_ton(ton, categories, id_ods, "original")
+
+    def add_derived_ton(self, ton, categories, id_ods):
+        """Add derived tons to the link."""
+        self._add_ton(ton, categories, id_ods, "derived")
+
+    # remove methods
+    def remove_original_ton(self, ton, categories, id_ods):
+        """Remove original tons from the link."""
+        self._remove_ton(ton, categories, id_ods, "original")
+
+    def remove_derived_ton(self, ton, categories, id_ods):
+        """Remove derived tons from the link."""
+        self._remove_ton(ton, categories, id_ods, "derived")
+
+    def remove_ton(self, ton, categories, id_ods):
+        """Remove tons from the link."""
+
+        # remove tons from link
+        if ton < self.get_derived_ton(categories, id_ods):
+            self._remove_ton(ton, categories, id_ods, "derived")
+
+        elif self.get_derived_ton(categories, id_ods) == 0.0:
+            self._remove_ton(ton, categories, id_ods, "original")
+
+        else:
+            removing_orig_ton = ton - self.get_derived_ton(categories, id_ods)
+            self._remove_all_ton(categories, id_ods, "derived")
+            self._remove_ton(removing_orig_ton, categories, id_ods, "original")
+
     # other methods
     def clean_insignificant_ton_values(self, significance):
         """Checks stored values are significant."""
@@ -130,7 +269,7 @@ class Tons(object):
     def _safe_dict_keys(self, category, id_od, mode):
         """Create necessary dicts to ensure all keys can be called."""
 
-        if mode not in self.tons:
+        if (mode not in self.tons) or (not self.tons[mode]):
             self.tons[mode] = {}
 
         if category not in self.tons[mode]:
@@ -182,5 +321,3 @@ class Tons(object):
 
         # delete item
         del(self.tons[mode][category][id_od])
-
-    

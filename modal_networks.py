@@ -123,25 +123,6 @@ class BaseModalNetwork(object):
 
         return self.od_pairs[id_od][category_od]
 
-    def has_od(self, id_od, category_od):
-        """Returns true if od pair exists in the network.
-
-        Args:
-            id_od: the origin-destination id (eg. "1-3")
-            category_od: the railway category of the freight transported.
-        """
-
-        # check if od pair is in the network
-        if (id_od in self.od_pairs) and (category_od in self.od_pairs[id_od]):
-            has_od = True
-        else:
-            has_od = False
-
-        return has_od
-
-    def has_od_pairs(self):
-        return len(self.od_pairs) > 0
-
     def get_total_ton_km(self):
         """Sum all ton_km from all od_pairs used in the model."""
         total_tk_link = 0.0
@@ -249,15 +230,6 @@ class BaseModalNetwork(object):
     def get_total_cost(self):
         return self.get_total_cost_tk() * self.get_total_ton_km()
 
-    def is_regroupable(self, category):
-        """Returns True if category can be regrouped and False otherwise."""
-
-        if "regroup_" + str(category) in self.params:
-            return self.params["regroup_" + str(category)].value == 1
-
-        else:
-            return False
-
     def get_regrouping_categories(self):
         """Return a list with all the categories that can be regrouped."""
 
@@ -310,6 +282,35 @@ class BaseModalNetwork(object):
             # store a reference to lowest link in th od pair object
             od.set_lowest_scale_link(lowest_link)
 
+    # booleans
+    def has_od(self, id_od, category_od):
+        """Returns true if od pair exists in the network.
+
+        Args:
+            id_od: the origin-destination id (eg. "1-3")
+            category_od: the railway category of the freight transported.
+        """
+
+        # check if od pair is in the network
+        if (id_od in self.od_pairs) and (category_od in self.od_pairs[id_od]):
+            has_od = True
+        else:
+            has_od = False
+
+        return has_od
+
+    def has_od_pairs(self):
+        return len(self.od_pairs) > 0
+
+    def is_regroupable(self, category):
+        """Returns True if category can be regrouped and False otherwise."""
+
+        if "regroup_" + str(category) in self.params:
+            return self.params["regroup_" + str(category)].value == 1
+
+        else:
+            return False
+
     def is_main_track(self, gross_tk, dist):
         """Check if this is a main track.
 
@@ -348,15 +349,6 @@ class BaseModalNetwork(object):
         rep = self.REPORT_CLASS()
         rep.print_costs_report(self)
 
-    def report_to_excel(self, xl_report=None, description=None,
-                        append_report=None):
-        """Make a report of modal network results in excel."""
-
-        # create report object
-        rep = self.REPORT_CLASS(xl_report, description, append_report)
-        # ask for excel report passing RailNetwork object itself
-        rep.report_to_excel(self)
-
     def links_by_od_to_excel(self, xl_links_by_od=None):
         """Write table of links by possible od pair to excel."""
 
@@ -365,6 +357,15 @@ class BaseModalNetwork(object):
 
         # ask for excel report passing RailNetwork object itself
         rep.links_by_od_to_excel(self.get_paths(), xl_links_by_od)
+
+    def report_to_excel(self, xl_report=None, description=None,
+                        append_report=None):
+        """Make a report of modal network results in excel."""
+
+        # create report object
+        rep = self.REPORT_CLASS(xl_report, description, append_report)
+        # ask for excel report passing RailNetwork object itself
+        rep.report_to_excel(self)
 
     # PRIVATE
     def _create_od_pair(self, id_od, category_od):
@@ -441,7 +442,6 @@ class RoadwayNetwork(BaseModalNetwork):
         self.calc_mobility_cost()
 
         self.calc_infrastructure_cost()
-
 
     # PRIVATE
     def _reset_network(self):
@@ -720,70 +720,3 @@ class RailwayNetwork(BaseModalNetwork):
         self._reset_links()
         self._clean_od_pairs()
         self.is_simple_costed = False
-
-
-def test_railway_network():
-
-    # initiate object
-    rail_network = RailwayNetwork()
-    description = "situacion base"
-
-    # print firsts reports, without costs calculations
-    # rail_network.links_by_od_to_excel()
-    rail_network.print_objects_report()
-
-
-    # CALCULATE SIMPLE MOBILITY COSTS and its INFRASTRUCTURE COSTS
-    print "\n***********************************"
-    print "Calculate simple mobility cost."
-    print "***********************************"
-    rail_network.calc_simple_mobility_cost()
-    rail_network.print_rolling_material_report()
-    rail_network.print_global_results_report()
-
-    print "\n***********************************"
-    print "Calculate infrastructure cost."
-    print "***********************************"
-    rail_network.calc_infrastructure_cost()
-    rail_network.print_costs_report()
-
-    # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - sin reagrupamiento",
-                                 append_report=False)
-
-
-    # CALCULATE OPTIMIZED MOBILITY COSTS and its INFRASTRUCTURE COSTS
-    print "\n***********************************"
-    print "Calculate optimized mobility cost."
-    print "***********************************"
-    rail_network.calc_optimized_mobility_cost()
-    rail_network.print_rolling_material_report()
-    rail_network.print_global_results_report()
-
-    print "\n***********************************"
-    print "Calculate infrastructure cost."
-    print "***********************************"
-    rail_network.calc_infrastructure_cost()
-    rail_network.print_costs_report()
-
-    # MAKE EXCEL COMPLETE REPORT
-    rail_network.report_to_excel("reports/railway_report.xlsx",
-                                 description + " - con reagrupamiento",
-                                 append_report=True)
-
-
-def test_roadway_network():
-
-    roadway_network = RoadwayNetwork()
-    roadway_network.print_objects_report()
-    roadway_network.print_global_results_report()
-
-
-if __name__ == '__main__':
-
-    print "\n*****MANUAL TEST OF RAILWAY NETWORK*****\n"
-    test_railway_network()
-
-    # print "\n*****MANUAL TEST OF ROADWAY NETWORK*****\n"
-    # test_roadway_network()

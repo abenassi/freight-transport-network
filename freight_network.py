@@ -13,6 +13,11 @@ from optimization import WeakLinksAggregator, WeakOdsAggregator
 
 class DerivationMethods():
 
+    """Railway/Roadway derivation methods to be inherited by FreightNetwork.
+
+    This class is used just to separate a bunch of strongly related methods
+    used by FreightNetwork class."""
+
     # PUBLIC
     def derive_all_to_railway(self):
         """Derive all possible road od pairs from road mode to rail mode."""

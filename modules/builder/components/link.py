@@ -1,7 +1,7 @@
-from tons import Tons
+from tons import LinkTons
 
 
-class Link(Tons):
+class Link(LinkTons):
 
     """Base class for a link in a freight transport network."""
 
@@ -40,7 +40,7 @@ class Link(Tons):
     def __lt__(self, other):
         return self.get_ton() < other.get_ton()
 
-    # PUBLIC
+    # getters
     def get_dist(self):
         return self.dist
 
@@ -56,6 +56,7 @@ class Link(Tons):
     def get_gauge(self):
         return self.gauge
 
+    # setters
     def set_main_track(self, main_track):
         """Set track category between main (A) and secondary (B)."""
         if main_track:
@@ -66,6 +67,7 @@ class Link(Tons):
     def set_net_to_gross_factor(self, net_to_gross_factor):
         self.net_to_gross_factor = net_to_gross_factor
 
+    # others
     def reset(self):
         self.eac_track = None
         self.maintenance = None
