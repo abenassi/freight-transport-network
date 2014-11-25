@@ -4,7 +4,7 @@
 class BaseTons(object):
 
     def __init__(self):
-        self.tons = {"original": None, "derived": None}
+        self.tons = {"original": {}, "derived": {}}
 
 
 class OdTons(BaseTons):
@@ -19,6 +19,8 @@ class OdTons(BaseTons):
     self.tons = {"original": 150000,
                  "derived":  20000}
     """
+    def __init__(self):
+        self.tons = {"original": 0.0, "derived": 0.0}
 
     # PUBLIC
     # getters

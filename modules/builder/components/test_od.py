@@ -1,6 +1,7 @@
 import unittest
 from link import Link
-from od import OD, Path
+from od import OD
+from path import Path
 
 
 class ODTestCase(unittest.TestCase):

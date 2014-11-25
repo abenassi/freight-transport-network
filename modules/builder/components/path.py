@@ -1,6 +1,7 @@
 class BasePath(object):
 
     # PUBLIC
+    # getters
     def get_links(self):
         return self.links
 
@@ -13,6 +14,7 @@ class BasePath(object):
     def get_gauge(self):
         return self.gauge
 
+    # others
     def calc_distance(self, network_links):
         """Takes a dictionary with all network links and sum distance of od
         links to calculate distance of od pair."""
