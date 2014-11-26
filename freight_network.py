@@ -310,9 +310,14 @@ class FreightNetwork(DerivationMethods):
     LINKS_OPTIMIZATION_CLASS = WeakLinksAggregator
     ODS_OPTIMIZATION_CLASS = WeakOdsAggregator
 
-    def __init__(self, railway_network=None, roadway_network=None):
-        self.rail = railway_network or RailwayNetwork()
-        self.road = roadway_network or RoadwayNetwork()
+    def __init__(self, railway_network=None, roadway_network=None,
+                 projection_factor=1.0):
+
+        self.rail = railway_network or RailwayNetwork(
+            projection_factor=projection_factor)
+
+        self.road = roadway_network or RoadwayNetwork(
+            projection_factor=projection_factor)
 
     # PUBLIC
     # iters and getters
@@ -365,7 +370,6 @@ class FreightNetwork(DerivationMethods):
         railway links will reduce the overall cost from the scenario of maximum
         traffic derivation to railway."""
 
-        self.derive_all_to_railway()
         self.cost_network()
         self.LINKS_OPTIMIZATION_CLASS(self).optimize()
 
@@ -385,9 +389,13 @@ class FreightNetwork(DerivationMethods):
         railway links will reduce the overall cost from the scenario of maximum
         traffic derivation to railway."""
 
-        self.derive_all_to_railway()
         self.cost_network()
         self.ODS_OPTIMIZATION_CLASS(self).optimize()
+
+    def min_network_cost(self):
+        self.derive_all_to_railway()
+        self.min_network_cost_deriving_links()
+        self.min_network_cost_deriving_ods()
 
     # report methods
     def report_to_excel(self, description=None, append_report=False):
@@ -409,12 +417,9 @@ class FreightNetwork(DerivationMethods):
 
 
 def main():
-    """Some methods used here still does not work. Further design and
-    implementation points to support this main method wich represent the user
-    case."""
 
-    # initialize freight transport networks
-    fn = FreightNetwork()
+    # initialize freight transport network
+    fn = FreightNetwork(projection_factor=1.0)
 
     # cost network at current situation
     scenario = "current situation"
@@ -429,25 +434,10 @@ def main():
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
-    # cost network deriving all but some links to railway
-    scenario = "derive all to railway but some links"
-    print "Costing", scenario
-    fn.min_network_cost_deriving_links()
-    fn.cost_network()
-    fn.report_to_excel(scenario, append_report=True)
-
-    # cost network deriving all but some od pairs
-    scenario = "derive all to railway but some ods"
-    print "Costing", scenario
-    fn.min_network_cost_deriving_ods()
-    fn.cost_network()
-    fn.report_to_excel(scenario, append_report=True)
-
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods"
     print "Costing", scenario
-    fn.min_network_cost_deriving_links()
-    fn.min_network_cost_deriving_ods()
+    fn.min_network_cost()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 

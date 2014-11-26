@@ -21,6 +21,7 @@ class OdTons(BaseTons):
     """
     def __init__(self):
         self.tons = {"original": 0.0, "derived": 0.0}
+        self.projection_factor = 1.0
 
     # PUBLIC
     # getters
@@ -98,6 +99,20 @@ class OdTons(BaseTons):
         other.add_original_ton(ton_to_return)
 
         return (ton_to_derive, ton_to_return)
+
+    def project(self, projection_factor):
+        """Multiply all tons of the od pair by projecton factor."""
+
+        self.projection_factor = projection_factor
+        self.tons["original"] = self.get_original_ton() * projection_factor
+        self.tons["derived"] = self.get_derived_ton() * projection_factor
+
+    def revert_project(self):
+        """Revert previous projection of all tons."""
+
+        self.tons["original"] = self.get_original_ton() / self.projection_factor
+        self.tons["derived"] = self.get_derived_ton() / self.projection_factor
+        self.projection_factor = 1.0
 
     # PRIVATE
     # add methods

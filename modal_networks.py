@@ -78,6 +78,9 @@ class BaseModalNetwork(object):
                 yield link_gauge
 
     # getters
+    def get_projection_factor(self):
+        return self.projection_factor
+
     def get_path(self, od):
         return self.paths[od.get_id()]
 
@@ -401,8 +404,9 @@ class RoadwayNetwork(BaseModalNetwork):
     COST_CLASS = RoadwayNetworkCost
     BUILDER_CLASS = RoadwayNetworkBuilder
 
-    def __init__(self, builder=None):
+    def __init__(self, builder=None, projection_factor=1.0):
 
+        self.projection_factor = projection_factor
         self.trucks = None
         super(RoadwayNetwork, self).__init__()
 
@@ -461,8 +465,9 @@ class RailwayNetwork(BaseModalNetwork):
     COST_CLASS = RailwayNetworkCost
     BUILDER_CLASS = RailwayNetworkBuilder
 
-    def __init__(self, builder=None):
+    def __init__(self, builder=None, projection_factor=1.0):
 
+        self.projection_factor = projection_factor
         self.wagons = None
         self.locoms = None
         super(RailwayNetwork, self).__init__()
@@ -570,8 +575,7 @@ class RailwayNetwork(BaseModalNetwork):
 
         It uses de best cost approach (optimized mobility cost)."""
 
-        # self.calc_optimized_mobility_cost()
-        self.calc_simple_mobility_cost()
+        self.calc_optimized_mobility_cost()
         self.calc_infrastructure_cost()
         self.cost_time()
 

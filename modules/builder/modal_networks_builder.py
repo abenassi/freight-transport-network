@@ -46,7 +46,7 @@ class BaseModalNetworkBuilder(object):
         print "Loading parameters..."
         self._load_from_xl(XlLoadParam, self.xl_parameters, mn.params)
         print "Loading od pairs..."
-        self._load_od_pairs_from_xl(mn.od_pairs)
+        self._load_od_pairs_from_xl(mn.od_pairs, mn.get_projection_factor())
         print "Loading links..."
         self._load_links_from_xl(mn.links)
         print "Loading paths..."
@@ -108,11 +108,13 @@ class BaseModalNetworkBuilder(object):
                 repeated_counter += 1
                 print "Warning", element.id, "is repeated in", xl_name
 
-    def _load_od_pairs_from_xl(self, od_pairs):
+    def _load_od_pairs_from_xl(self, od_pairs, projection_factor):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
         for od_pair in XlLoadOD(self.xl_od_pairs):
+
+            od_pair.project(projection_factor)
 
             # add id if its not in output_dict
             if od_pair.get_id() not in od_pairs:

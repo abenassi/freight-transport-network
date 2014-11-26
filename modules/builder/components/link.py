@@ -12,6 +12,7 @@ class Link(LinkTons):
 
         # identification properties
         self.id = id
+        self.id_link_gauge = id + "_" + gauge
         self.gauge = gauge
         self.nodes = [int(i) for i in id.split("-")]
 
@@ -50,8 +51,13 @@ class Link(LinkTons):
     def get_gross_ton_km(self):
         return self.get_ton_km() * self.net_to_gross_factor
 
-    def get_id(self):
-        return self.id
+    def get_id(self, with_gauge=False):
+
+        if with_gauge:
+            return self.id_link_gauge
+
+        else:
+            return self.id
 
     def get_gauge(self):
         return self.gauge
@@ -99,11 +105,12 @@ class RailwayLink(Link):
     It keeps track of tons passing and idle capacity of tons that could be
     supported with the same rolling material currently running."""
 
-    FIELDS = ["id_link", "gauge", "distance", "original_tons", "derived_tons",
+    FIELDS = ["id_link_gauge", "id_link", "gauge", "distance", "original_tons",
+              "derived_tons",
               "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
               "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
               "num_detours", "track_type", "category_1", "category_2",
-              "category_3", "category_4", "category_5"]
+              "category_3", "category_4", "category_5", "net_to_gross_factor"]
 
     def __init__(self, id, distance, gauge):
 
@@ -131,13 +138,14 @@ class RailwayLink(Link):
     # PUBLIC
     # getters
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.get_original_ton(),
+        return [self.get_id(True), self.get_id(), self.gauge, self.dist,
+                self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(),
                 self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.get_gross_ton_km(),
                 self.get_number_of_detours(),
-                self.main_track] + self.get_ton_by_category()
+                self.main_track] + self.get_ton_by_category() + [self.net_to_gross_factor]
 
     def get_idle_cap(self):
         """Returns idle capacity in tons."""
@@ -168,12 +176,12 @@ class RailwayLink(Link):
 
         Overrides super class method to take into account idle capacity."""
 
-        full_capacity_ton = self.get_ton() + self.get_idle_cap()
+        # full_capacity_ton = self.get_ton() + self.get_idle_cap()
+        full_capacity_ton = self.get_ton()
 
         if full_capacity_ton and full_capacity_ton > 0.0:
 
-            gross_ton = (full_capacity_ton * self.net_to_gross_factor -
-                         self.get_idle_cap())
+            gross_ton = (full_capacity_ton * self.net_to_gross_factor)
 
             gross_tk = gross_ton * self.get_dist()
 

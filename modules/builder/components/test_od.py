@@ -61,6 +61,15 @@ class OdTonsTestCase(unittest.TestCase):
         self.od.add_original_ton(1000)
         self.assertEqual(self.od.get_original_ton(), 2000)
 
+    def test_project(self):
+        self.od.project(2.0)
+        self.assertEqual(self.od.get_original_ton(), 2000)
+
+    def test_revert_project(self):
+        self.od.project(2.0)
+        self.od.revert_project()
+        self.assertEqual(self.od.get_original_ton(), 1000)
+
 
 class PathTestCase(unittest.TestCase):
 
