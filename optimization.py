@@ -1,5 +1,7 @@
 class OptimizationStrategy():
 
+    ALLOW_ORIGINAL = False
+
     def __init__(self, fn):
         self.fn = fn
 
@@ -26,7 +28,8 @@ class WeakLinksAggregator(OptimizationStrategy):
                 rail_link_id = rail_link.get_id()
                 rail_link_gauge = rail_link.get_gauge()
                 deriv_ods = self.fn.derive_link_to_roadway(rail_link_id,
-                                                           rail_link_gauge)
+                                                           rail_link_gauge,
+                                                           self.ALLOW_ORIGINAL)
 
                 # revert derivation if overall cost has increased
                 self.fn.cost_network()
@@ -60,7 +63,8 @@ class WeakOdsAggregator(OptimizationStrategy):
                 curr_cost = self.fn.get_total_cost()
 
                 # derive rail od pair to roadway mode
-                road_od = self.fn.derive_to_roadway(rail_od)
+                road_od = self.fn.derive_to_roadway(rail_od, None,
+                                                    self.ALLOW_ORIGINAL)
 
                 # revert derivation if overall cost has increased
                 self.fn.cost_network()

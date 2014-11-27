@@ -53,7 +53,7 @@ class OdTons(BaseTons):
         """Add original tons to OD pair."""
         self._add_ton(ton, "original")
 
-    def derive_ton(self, other, coeff=1.0):
+    def derive_ton(self, other, coeff=1.0, allow_original=True):
         """Derive tons to another freight transport mode.
 
         It derives tons to an OD pair object coming from another transport mode
@@ -89,6 +89,10 @@ class OdTons(BaseTons):
 
         # get tons to be returned (derived from "other" previously)
         ton_to_return = self.get_derived_ton()
+
+        # check if allowed to derive original tons
+        if not allow_original:
+            ton_to_derive = 0.0
 
         # remove tons from self od pair
         self._remove_original_ton(ton_to_derive)
