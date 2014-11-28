@@ -1,6 +1,7 @@
 from modal_networks import RailwayNetwork, RoadwayNetwork
 import numpy as np
 from optimization import WeakLinksAggregator, WeakOdsAggregator
+from modules import BaseReport
 
 """
     This is the main module that will be visible to the user. Exposes
@@ -420,6 +421,9 @@ class FreightNetwork(DerivationMethods):
                 file is being replaced). If True, new report is appended inside
                 the old one.
         """
+        if not append_report:
+            BaseReport.create_new_global_report()
+
         self.rail.report_to_excel(description=description,
                                   append_report=append_report)
         self.road.report_to_excel(description=description,

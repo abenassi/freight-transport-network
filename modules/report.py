@@ -10,6 +10,8 @@ class BaseReport():
 
     It must be subclassed for RoadwayReport or RailwayReport to be used."""
 
+    XL_GLOBAL_REPORT = "reports/freight_network_report.xlsx"
+    WS_GLOBAL_NAME = "global_results"
     ALIGN = Alignment(vertical='center')
     ALIGN_HEADER = Alignment(horizontal='center', vertical='center',
                              wrap_text=True)
@@ -88,6 +90,14 @@ class BaseReport():
 
         # save excel report
         wb.save(xl_links_by_od or self.XL_LINKS_BY_OD)
+
+    @classmethod
+    def create_new_global_report(self):
+        """Create new workbook for global report."""
+
+        wb = Workbook(write_only=True)
+        wb.create_sheet(title=self.WS_GLOBAL_NAME)
+        wb.save(self.XL_GLOBAL_REPORT)
 
     # PRIVATE
     def _report_links_to_xl(self, rn, wb, ws_name):
@@ -230,14 +240,80 @@ class BaseReport():
         for cell in ws.rows[0]:
             cell.style = self.HEADER_STYLE
 
+    def _get_wb_freight_network_report(self):
+        """Return worksheet with freight network report."""
+
+        # open or create the wb global report
+        try:
+            wb = load_workbook(self.XL_GLOBAL_REPORT)
+        except:
+            wb = Workbook(write_only=True)
+
+        return wb
+
+    def _make_freight_network_report(self, rn):
+        """Make summary report into the global results report."""
+
+        wb_fn = self._get_wb_freight_network_report()
+        try:
+            ws_fn = wb_fn.active
+        except:
+            ws_fn = wb_fn.create_sheet(title=self.WS_GLOBAL_NAME)
+
+        # get row and column to copy values
+        i_col = ws_fn.max_column + 1
+        i_row = 3
+
+        # write report description
+        ws_fn.cell(row=1, column=i_col).value = self.description
+        ws_fn.cell(row=2, column=i_col).value = rn.MODE_NAME
+
+        # get values to be written
+        values = [("Mobility", rn.get_costs_tk()["mob"]["total_mobility"]),
+                  ("Infrastructure",
+                   rn.get_costs_tk()["inf"]["total_infrastructure"]),
+                  ("Time", rn.get_costs_tk()["time"]["total_time"]),
+                  ("Total", rn.get_total_cost_tk()),
+                  ("", ""),
+                  ("Tons", rn.get_total_tons()),
+                  ("Ton-km", rn.get_total_ton_km()),
+                  ("Total modal cost", rn.get_total_cost()),
+                  ("", ""),
+                  ("", ""),
+                  ("", ""),
+                  ("Wagons per locomotive", rn.get_wagons_per_locomotive()),
+                  ("Average distance", rn.get_average_distance()),
+                  ("Total network dimension", rn.get_dimensions()["total"]),
+                  ("Average density", rn.get_density())]
+
+        for value in values:
+
+            # write field names if they are not written
+            if i_col == 2:
+                ws_fn.cell(row=i_row, column=1).value = value[0]
+
+            ws_fn.cell(row=i_row, column=i_col).value = value[1]
+
+            i_row += 1
+
+        wb_fn.save(self.XL_GLOBAL_REPORT)
+
 
 class RoadwayNetworkReport(BaseReport):
 
     XL_REPORT = "reports/roadway_report.xlsx"
     XL_LINKS_BY_OD = "reports/roadway_links_by_od.xlsx"
 
+    # PUBLIC
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
+
+        self._make_railway_network_report(rn)
+        self._make_freight_network_report(rn)
+
+    # PRIVATE
+    def _make_railway_network_report(self, rn):
+        """Make the complete report of roadway network results in excel."""
 
         if self.append_report:
             try:
@@ -283,7 +359,14 @@ class RailwayNetworkReport(BaseReport):
 
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
-        rn.get_link("66-77", "angosta")
+
+        self._make_railway_network_report(rn)
+        self._make_freight_network_report(rn)
+
+    # PRIVATE
+    def _make_railway_network_report(self, rn):
+        """Make the complete report of railway network results in excel."""
+
         if self.append_report:
             try:
                 # open the last report

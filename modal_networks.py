@@ -41,7 +41,7 @@ class BaseModalNetwork(object):
         self.od_pairs = {}
         self.links = {}
         self.paths = {}
-        self.costs = {"mob": None, "inf": None}
+        self.costs = {"mob": None, "inf": None, "time": None}
         self.is_simple_costed = False
 
     def __iter__(self):
@@ -403,6 +403,7 @@ class RoadwayNetwork(BaseModalNetwork):
     REPORT_CLASS = RoadwayNetworkReport
     COST_CLASS = RoadwayNetworkCost
     BUILDER_CLASS = RoadwayNetworkBuilder
+    MODE_NAME = "Roadway"
 
     def __init__(self, builder=None, projection_factor=1.0):
 
@@ -440,12 +441,22 @@ class RoadwayNetwork(BaseModalNetwork):
         # calculate and store infrastructure costs
         self.costs["inf"] = network_cost.cost_infrast()
 
+    def calc_time_cost(self):
+        """Calculates time cost for current mobility requirements."""
+        self.costs["time"] = {"total_time": 0.0}
+
     def cost_network(self):
         """Cost infrastructure and mobility of the network."""
 
         self.calc_mobility_cost()
 
         self.calc_infrastructure_cost()
+
+        self.calc_time_cost()
+
+    def get_wagons_per_locomotive(self):
+        """Dummy method to match railway interface for reporting."""
+        return None
 
     # PRIVATE
     def _reset_network(self):
@@ -464,6 +475,7 @@ class RailwayNetwork(BaseModalNetwork):
     REPORT_CLASS = RailwayNetworkReport
     COST_CLASS = RailwayNetworkCost
     BUILDER_CLASS = RailwayNetworkBuilder
+    MODE_NAME = "Railway"
 
     def __init__(self, builder=None, projection_factor=1.0):
 
@@ -605,6 +617,13 @@ class RailwayNetwork(BaseModalNetwork):
 
         rep = self.REPORT_CLASS()
         rep.print_rolling_material_report(self)
+
+    def get_wagons_per_locomotive(self):
+        """Calculate average number of wagons per locomotive."""
+        if self.locoms.running > 0.0:
+            return self.wagons.running / self.locoms.running
+        else:
+            return 0.0
 
     # PRIVATE
     def _calc_mobility_cost(self):
