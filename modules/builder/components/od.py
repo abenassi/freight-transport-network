@@ -50,19 +50,19 @@ class OD(BasePath):
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
-               "Ton: " + self.NF.format(self.get_ton()).ljust(15) + \
+               "Ton: " + self.NF.format(self.tons.get()).ljust(15) + \
                "Gauge:" + str(self.gauge).ljust(15) + \
                "Distance:" + str(self.dist).ljust(15) + \
                "Category:" + str(self.rail_category)
 
     def __lt__(self, other):
-        return self.get_ton() < other.get_ton()
+        return self.tons.get() < other.tons.get()
 
     # PUBLIC
     # getters
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.tons.get_original(),
-                self.tons.get_derived(), self.get_ton(), self.tons.category,
+                self.tons.get_derived(), self.tons.get(), self.tons.category,
                 self.path, self.get_lowest_link_id(),
                 self.get_lowest_link_scale(), self.cost.deposit,
                 self.cost.short_freight, self.cost.immo_value]
@@ -75,7 +75,7 @@ class OD(BasePath):
         in terms of the scale reached."""
 
         if self.lowest_link:
-            return self.lowest_link.get_ton()
+            return self.lowest_link.tons.get()
 
         else:
             return None

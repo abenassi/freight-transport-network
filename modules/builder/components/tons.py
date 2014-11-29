@@ -188,7 +188,7 @@ class LinkTons(BaseTons):
 
     # PUBLIC
     # getters
-    def get_ton(self, categories=None, id_ods=None, modes=None):
+    def get(self, categories=None, id_ods=None, modes=None):
         """Return tons of the link, filtering by category, id_od and mode."""
 
         # convert no list parameters into lists
@@ -232,54 +232,54 @@ class LinkTons(BaseTons):
 
         return filtered_tons
 
-    def get_original_ton(self, categories=None, id_ods=None):
+    def get_original(self, categories=None, id_ods=None):
         """Returns tons of the original transport mode."""
-        return self.get_ton(categories, id_ods, modes="original")
+        return self.get(categories, id_ods, modes="original")
 
-    def get_derived_ton(self, categories=None, id_ods=None):
+    def get_derived(self, categories=None, id_ods=None):
         """Returns tons derived from another transport mode."""
-        return self.get_ton(categories, id_ods, modes="derived")
+        return self.get(categories, id_ods, modes="derived")
 
-    def get_ton_by_category(self):
+    def get_by_category(self):
         """Return list of tons ordered by category."""
 
         ton_by_category = []
 
         for category in xrange(1, 6):
-            ton_by_category.append(self.get_ton(categories=category))
+            ton_by_category.append(self.get(categories=category))
 
         return ton_by_category
 
     # add methods
-    def add_original_ton(self, ton, categories, id_ods):
+    def add_original(self, ton, categories, id_ods):
         """Add original tons to the link."""
         self._add_ton(ton, categories, id_ods, "original")
 
-    def add_derived_ton(self, ton, categories, id_ods):
+    def add_derived(self, ton, categories, id_ods):
         """Add derived tons to the link."""
         self._add_ton(ton, categories, id_ods, "derived")
 
     # remove methods
-    def remove_original_ton(self, ton, categories, id_ods):
+    def remove_original(self, ton, categories, id_ods):
         """Remove original tons from the link."""
         self._remove_ton(ton, categories, id_ods, "original")
 
-    def remove_derived_ton(self, ton, categories, id_ods):
+    def remove_derived(self, ton, categories, id_ods):
         """Remove derived tons from the link."""
         self._remove_ton(ton, categories, id_ods, "derived")
 
-    def remove_ton(self, ton, categories, id_ods):
+    def remove(self, ton, categories, id_ods):
         """Remove tons from the link."""
 
         # remove tons from link
-        if ton < self.get_derived_ton(categories, id_ods):
+        if ton < self.get_derived(categories, id_ods):
             self._remove_ton(ton, categories, id_ods, "derived")
 
-        elif self.get_derived_ton(categories, id_ods) == 0.0:
+        elif self.get_derived(categories, id_ods) == 0.0:
             self._remove_ton(ton, categories, id_ods, "original")
 
         else:
-            removing_orig_ton = ton - self.get_derived_ton(categories, id_ods)
+            removing_orig_ton = ton - self.get_derived(categories, id_ods)
             self._remove_all_ton(categories, id_ods, "derived")
             self._remove_ton(removing_orig_ton, categories, id_ods, "original")
 

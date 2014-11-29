@@ -451,7 +451,7 @@ class RailwayNetworkCost(BaseNetworkCost):
         for link in self.rn.iter_links():
 
             # check if there is load on that link
-            if link.get_ton() > 0.0:
+            if link.tons.get() > 0.0:
 
                 # calculate gross ton-km carried by the link
                 gross_tk = link.get_gross_ton_km()
@@ -460,7 +460,7 @@ class RailwayNetworkCost(BaseNetworkCost):
                 main_track = self.rn.is_main_track(gross_tk, link.dist)
 
                 # store the result to the link
-                link.set_main_track(main_track)
+                link.main_track = main_track
 
                 # calculate costs of link infrastructure
                 eac_detour = ric._cost_detour(gross_tk, link.dist)
@@ -579,10 +579,10 @@ class RoadwayNetworkCost(BaseNetworkCost):
         for link in self.rn.iter_links():
 
             # check if there is load on that link
-            if link.get_ton() > 0:
+            if link.tons.get() > 0:
 
                 # calculate costs of link infrastructure
-                eac_track = ric._cost_eac_track(link.get_ton(),
+                eac_track = ric._cost_eac_track(link.tons.get(),
                                                 link.dist)
 
                 # update RV cost category with traffic of the link

@@ -163,7 +163,7 @@ class BaseModalNetworkBuilder(object):
 
         # iterate links of od pair
         exception_counter = 0
-        MAX_EXCEPTIONS = 50
+        MAX_EXCEPTIONS = 20
         for id_link in od.links:
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
@@ -171,7 +171,7 @@ class BaseModalNetworkBuilder(object):
             # try to update tons of a link_gauge
             try:
                 link = mn.links[id_link][od.gauge]
-                link.add_original_ton(ton=od.tons.get(),
+                link.tons.add_original(ton=od.tons.get(),
                                       categories=od.tons.category,
                                       id_ods=od.id)
 

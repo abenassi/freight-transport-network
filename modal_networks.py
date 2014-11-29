@@ -125,7 +125,7 @@ class BaseModalNetwork(object):
         # iterate through all links adding ton * dist
         for link in self.links.values():
             for link_gauge in link.values():
-                total_tk_link += link_gauge.get_ton() * link_gauge.dist
+                total_tk_link += link_gauge.tons.get() * link_gauge.dist
 
         # iterate throught all ods adding ton * dist
         for od in self.iter_od_pairs():
@@ -182,7 +182,7 @@ class BaseModalNetwork(object):
         """
         # calculate total dimension
         total_dimension = sum([link.dist for link in self.iter_links()
-                               if link.get_ton() > 0.0])
+                               if link.tons.get() > 0.0])
 
         # calculate average density
         if total_dimension > 0.1:
@@ -193,12 +193,12 @@ class BaseModalNetwork(object):
         # calculate high density dimension
         high_density = average_density * 2
         high_dimension = sum([link.dist for link in self.iter_links()
-                              if link.get_ton() > high_density])
+                              if link.tons.get() > high_density])
 
         # calculate low density dimension
         low_density = average_density * 2
         low_dimension = sum([link.dist for link in self.iter_links()
-                             if link.get_ton() < low_density])
+                             if link.tons.get() < low_density])
 
         dimensions = {"total": total_dimension,
                       "high": high_dimension,
@@ -265,7 +265,7 @@ class BaseModalNetwork(object):
 
                 # get lowest scale link of od pair, based con regrouping categ
                 lowest_link_id = min(od.links,
-                                     key=lambda x: self.get_link(x, gauge).get_ton(categories=categories))
+                                     key=lambda x: self.get_link(x, gauge).tons.get(categories=categories))
                 lowest_link = self.get_link(lowest_link_id, gauge)
 
             else:
@@ -438,9 +438,7 @@ class RoadwayNetwork(BaseModalNetwork):
         """Cost infrastructure and mobility of the network."""
 
         self.calc_mobility_cost()
-
         self.calc_infrastructure_cost()
-
         self.calc_time_cost()
 
     def get_wagons_per_locomotive(self):

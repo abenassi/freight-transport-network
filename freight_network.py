@@ -187,22 +187,22 @@ class DerivationMethods():
         # remove tons from road links used by road od_pair
         for id_from_link in from_od.links:
             from_link = from_mode.get_link(id_from_link, from_od.gauge)
-            from_link.remove_original_ton(ton=orig_ton_derived,
+            from_link.tons.remove_original(ton=orig_ton_derived,
+                                           categories=category,
+                                           id_ods=id_od)
+            from_link.tons.remove_derived(ton=returned_ton,
                                           categories=category,
                                           id_ods=id_od)
-            from_link.remove_derived_ton(ton=returned_ton,
-                                         categories=category,
-                                         id_ods=id_od)
 
         # add derived tons to rail links, used by rail od_pair
         for id_to_link in to_od.links:
             to_link = to_mode.get_link(id_to_link, to_od.gauge)
-            to_link.add_original_ton(ton=returned_ton,
+            to_link.tons.add_original(ton=returned_ton,
+                                      categories=category,
+                                      id_ods=id_od)
+            to_link.tons.add_derived(ton=orig_ton_derived,
                                      categories=category,
                                      id_ods=id_od)
-            to_link.add_derived_ton(ton=orig_ton_derived,
-                                    categories=category,
-                                    id_ods=id_od)
 
     def _road_od_pair_is_derivable(self, road_od):
         """Indicate if an od pair is derivable or not.

@@ -1,5 +1,5 @@
 import unittest
-from link import Link
+from link import BaseLink
 from od import OD
 from path import Path
 
@@ -77,8 +77,8 @@ class PathTestCase(unittest.TestCase):
 
     def setUp(self):
         self.path = Path("68-70", "068-069-070", "unica")
-        self.links = {"68-69": {"unica": Link("68-69", 100, "unica")},
-                      "69-70": {"unica": Link("68-69", 200, "unica")}}
+        self.links = {"68-69": {"unica": BaseLink("68-69", 100, "unica")},
+                      "69-70": {"unica": BaseLink("68-69", 200, "unica")}}
 
     def test_calc_distance(self):
         distance = self.path.calc_distance(self.links)

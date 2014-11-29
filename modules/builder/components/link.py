@@ -1,14 +1,11 @@
 from tons import LinkTons
 
 
-class Link(LinkTons):
+class BaseLink(object):
 
     """Base class for a link in a freight transport network."""
 
     def __init__(self, id, distance, gauge):
-
-        # call superclass constructor first
-        super(Link, self).__init__()
 
         # identification properties
         self.id = id
@@ -20,7 +17,7 @@ class Link(LinkTons):
         self.dist = float(distance)  # Km
 
         # traffic parameters
-        self.main_track = None
+        self._main_track = None
 
         # track costs
         self.eac_track = None
@@ -29,32 +26,38 @@ class Link(LinkTons):
         # other parameters
         self.net_to_gross_factor = None
 
+        self.tons = LinkTons()
+
     def __repr__(self):
         return "Link: " + str(self.id).ljust(10) + \
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
-               "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
+               "Ton: {:,.1f}".format(self.tons.get()).ljust(20)
 
     def __len__(self):
         return self.dist
 
     def __lt__(self, other):
-        return self.get_ton() < other.get_ton()
+        return self.tons.get() < other.tons.get()
 
     # getters
     def get_ton_km(self):
-        return self.get_ton() * self.dist
+        return self.tons.get() * self.dist
 
     def get_gross_ton_km(self):
         return self.get_ton_km() * self.net_to_gross_factor
 
-    # setters
-    def set_main_track(self, main_track):
+    @property
+    def main_track(self):
+        return self._main_track
+
+    @main_track.setter
+    def main_track(self, main_track):
         """Set track category between main (A) and secondary (B)."""
         if main_track:
-            self.main_track = "A"
+            self._main_track = "A"
         else:
-            self.main_track = "B"
+            self._main_track = "B"
 
     # others
     def reset(self):
@@ -62,10 +65,10 @@ class Link(LinkTons):
         self.maintenance = None
 
         # check stored values of tons are significant
-        self.clean_insignificant_ton_values(0.01)
+        self.tons.clean_insignificant_ton_values(0.01)
 
 
-class RoadwayLink(Link):
+class RoadwayLink(BaseLink):
 
     """Represents a link in a roadway network.
 
@@ -76,12 +79,12 @@ class RoadwayLink(Link):
               "tons", "gross ton-km"]
 
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.get_original_ton(),
-                self.get_derived_ton(), self.get_ton(),
+        return [self.id, self.gauge, self.dist, self.tons.get_original(),
+                self.tons.get_derived(), self.tons.get(),
                 self.get_gross_ton_km()]
 
 
-class RailwayLink(Link):
+class RailwayLink(BaseLink):
 
     """Represents a link in a railway network.
 
@@ -115,15 +118,15 @@ class RailwayLink(Link):
         return "Link: " + str(self.id).ljust(10) + \
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
-               "Ton: {:,.1f}".format(self.get_ton()).ljust(20) + \
+               "Ton: {:,.1f}".format(self.tons.get()).ljust(20) + \
                "Idle capacity: {:,.1f}".format(self.get_idle_cap()).ljust(30)
 
     # PUBLIC
     # getters
     def get_attributes(self):
         return [self.get_id(True), self.id, self.gauge, self.dist,
-                self.get_original_ton(),
-                self.get_derived_ton(), self.get_ton(),
+                self.tons.get_original(),
+                self.tons.get_derived(), self.tons.get(),
                 self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.get_gross_ton_km(),
@@ -159,8 +162,8 @@ class RailwayLink(Link):
 
         Overrides super class method to take into account idle capacity."""
 
-        # full_capacity_ton = self.get_ton() + self.get_idle_cap()
-        full_capacity_ton = self.get_ton()
+        # full_capacity_ton = self.tons.get() + self.get_idle_cap()
+        full_capacity_ton = self.tons.get()
 
         if full_capacity_ton and full_capacity_ton > 0.0:
 
@@ -221,7 +224,7 @@ class RailwayLink(Link):
         self.eac_detour = 0.0
 
         # check stored values of tons are significant
-        self.clean_insignificant_ton_values(0.01)
+        self.tons.clean_insignificant_ton_values(0.01)
 
     # PRIVATE
     def _calc_number_of_detours(self, gross_tk, dist):
