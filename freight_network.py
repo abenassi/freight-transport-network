@@ -67,8 +67,8 @@ class DerivationMethods():
         rail_od = self.fn.rail.get_od(id_od, category)
 
         # get tons that have already been derived to rail
-        ton_derived = rail_od.get_derived_ton()
-        ton_derivable = road_od.get_original_ton()
+        ton_derived = rail_od.tons.get_derived()
+        ton_derivable = road_od.tons.get_original()
 
         # assign default value if none coeff is passed
         if not coeff:
@@ -130,7 +130,7 @@ class DerivationMethods():
                 # calculate proportion of tons to be derived
                 rail_od = self.fn.rail.get_od(road_od.get_id(),
                                               road_od.get_category())
-                od_ton = road_od.get_original_ton() + rail_od.get_derived_ton()
+                od_ton = road_od.tons.get_original() + rail_od.tons.get_derived()
                 distance = road_od.get_dist()
                 category = road_od.get_category()
                 coeff = self._get_derivation_coefficient(od_ton, distance,
@@ -224,10 +224,10 @@ class DerivationMethods():
         category_od = road_od.get_category()
         if self.fn.rail.has_od(id_od, category_od):
             rail_od = self.fn.rail.get_od(id_od, category_od)
-            orig_road_ton = (road_od.get_original_ton() +
-                             rail_od.get_derived_ton())
+            orig_road_ton = (road_od.tons.get_original() +
+                             rail_od.tons.get_derived())
         else:
-            orig_road_ton = road_od.get_original_ton()
+            orig_road_ton = road_od.tons.get_original()
 
         # check if od pair meet minimum tons adn distance to be derivable
         min_ton = orig_road_ton > self.fn.rail.params[

@@ -19,7 +19,7 @@ class FreightNetworkTestCase(unittest.TestCase):
 
         # check out tons already in rail mode
         if "1-3" in self.fn.rail.od_pairs:
-            start_ton = self.fn.rail.get_od("1-3", 1).get_ton()
+            start_ton = self.fn.rail.get_od("1-3", 1).tons.get()
         else:
             start_ton = 0.0
 
@@ -28,9 +28,9 @@ class FreightNetworkTestCase(unittest.TestCase):
         self.fn.derive.od_to_railway(od_road, coeff)
 
         # check out tons left in road and increased in rail
-        final_ton = self.fn.rail.get_od("1-3", 1).get_ton()
+        final_ton = self.fn.rail.get_od("1-3", 1).tons.get()
         self.assertEqual(start_ton + coeff * road_ton, final_ton)
-        self.assertEqual((1 - coeff) * road_ton, od_road.get_ton())
+        self.assertEqual((1 - coeff) * road_ton, od_road.tons.get())
 
     def test_get_derivation_coefficient(self):
         expected_coefficient = 0.41124272600318179

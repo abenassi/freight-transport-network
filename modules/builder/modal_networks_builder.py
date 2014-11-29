@@ -127,7 +127,7 @@ class BaseModalNetworkBuilder(object):
             # if category already exist, udpate tons rather than replace elemen
             else:
                 curr_od = od_pairs[od_pair.get_id()][od_pair.get_category()]
-                curr_od.add_original_ton(od_pair.get_ton())
+                curr_od.tons.add_original(od_pair.tons.get())
 
     def _find_paths(self, mn):
         """Iterate through od_pairs looking for path if not already passed."""
@@ -171,7 +171,7 @@ class BaseModalNetworkBuilder(object):
             # try to update tons of a link_gauge
             try:
                 link = mn.get_links()[id_link][od.get_gauge()]
-                link.add_original_ton(ton=od.get_ton(),
+                link.add_original_ton(ton=od.tons.get(),
                                       categories=od.get_category(),
                                       id_ods=od.get_id())
 

@@ -4,7 +4,7 @@ from path import BasePath
 """OD classes are used either by Railway or Roadway networks."""
 
 
-class OdCostData():
+class OdCost():
 
     def __init__(self):
         self.deposit = None
@@ -12,33 +12,7 @@ class OdCostData():
         self.immo_value = None
 
 
-class OdCostMethods():
-
-    def __init__(self):
-        self.cost = OdCostData()
-
-    # getters
-    def get_deposit_cost(self):
-        return self.cost.deposit
-
-    def get_short_freight_cost(self):
-        return self.cost.short_freight
-
-    def get_immo_value_cost(self):
-        return self.cost.immo_value
-
-    # setters
-    def set_deposit_cost(self, deposit_cost):
-        self.cost.deposit = deposit_cost
-
-    def set_short_freight_cost(self, short_freight_cost):
-        self.cost.short_freight = short_freight_cost
-
-    def set_immo_value_cost(self, immo_value_cost):
-        self.cost.immo_value = immo_value_cost
-
-
-class OD(OdTons, BasePath, OdCostMethods):
+class OD(BasePath):
 
     """Represents an od pair in a railway or roadway network.
 
@@ -69,11 +43,11 @@ class OD(OdTons, BasePath, OdCostMethods):
         self.links = self._create_links_list()
 
         # traffic properties
-        self.add_original_ton(ton)
         self.rail_category = rail_category
         self.lowest_link = None
 
-        self.cost = OdCostData()
+        self.tons = OdTons(ton)
+        self.cost = OdCost()
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \
@@ -160,3 +134,40 @@ class OD(OdTons, BasePath, OdCostMethods):
     def has_operable_path(self):
         """Has a positive path that can be operated."""
         return self.has_declared_path() and self.path_nodes
+
+    def project(self, projection_factor=1.0):
+        self.tons.project(projection_factor)
+
+    def revert_project(self):
+        self.tons.revert_project()
+
+    def derive_ton(self, other, coeff=1.0, allow_original=True):
+        """Derive tons to another freight transport mode.
+
+        It derives tons to an OD pair object coming from another transport mode
+        but with the same id. Only original tons of the od pair are subject to
+        derivation coefficient (coeff), while previously derivated tons are
+        just returned completely
+
+        Args:
+            other: OD object from another transport mode that will receive
+                derived tons from self OD object.
+            coeff (opt): Coefficient of tons that will be derived. The default
+                is to derive all tons (1.0)
+
+        Raise:
+            DerivationError: Trying to derive tons to an other od pair with
+                different id will raise an error. Derivation must occur with an
+                od pair with the same origin and destination (ie, same id)
+        """
+
+        # check od pairs have same id and category
+        msg = "OD pairs are different: {} != {}".format(self.get_id(),
+                                                        other.get_id())
+        assert (self.get_id() == other.get_id() and
+                self.get_category() == other.get_category()), msg
+
+        ton_to_derive, ton_to_return = self.tons.derive(other.tons, coeff,
+                                                        allow_original)
+
+        return (ton_to_derive, ton_to_return)

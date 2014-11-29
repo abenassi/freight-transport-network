@@ -35,19 +35,19 @@ class OdCostTestCase(unittest.TestCase):
         self.od = OD("70-68", 1, "068-069-070", "ancha")
 
     def test_get_none_deposit_cost(self):
-        self.assertEqual(self.od.get_deposit_cost(), None)
+        self.assertEqual(self.od.cost.deposit, None)
 
     def test_set_and_get_deposit_cost(self):
-        self.od.set_deposit_cost(1000)
-        self.assertEqual(self.od.get_deposit_cost(), 1000)
+        self.od.cost.deposit = 1000
+        self.assertEqual(self.od.cost.deposit, 1000)
 
     def test_set_and_get_short_freight_cost(self):
-        self.od.set_short_freight_cost(1000)
-        self.assertEqual(self.od.get_short_freight_cost(), 1000)
+        self.od.cost.short_freight_cost = 1000
+        self.assertEqual(self.od.cost.short_freight_cost, 1000)
 
     def test_set_and_get_immo_value_cost(self):
-        self.od.set_immo_value_cost(1000)
-        self.assertEqual(self.od.get_immo_value_cost(), 1000)
+        self.od.cost.immo_value_cost = 1000
+        self.assertEqual(self.od.cost.immo_value_cost, 1000)
 
 
 class OdTonsTestCase(unittest.TestCase):
@@ -58,17 +58,17 @@ class OdTonsTestCase(unittest.TestCase):
         self.od = OD("70-68", 1000, "068-069-070", "ancha")
 
     def test_add_and_get_original_tons(self):
-        self.od.add_original_ton(1000)
-        self.assertEqual(self.od.get_original_ton(), 2000)
+        self.od.tons.add_original(1000)
+        self.assertEqual(self.od.tons.get_original(), 2000)
 
     def test_project(self):
-        self.od.project(2.0)
-        self.assertEqual(self.od.get_original_ton(), 2000)
+        self.od.tons.project(2.0)
+        self.assertEqual(self.od.tons.get_original(), 2000)
 
     def test_revert_project(self):
-        self.od.project(2.0)
-        self.od.revert_project()
-        self.assertEqual(self.od.get_original_ton(), 1000)
+        self.od.tons.project(2.0)
+        self.od.tons.revert_project()
+        self.assertEqual(self.od.tons.get_original(), 1000)
 
 
 class PathTestCase(unittest.TestCase):

@@ -138,7 +138,7 @@ class BaseModalNetwork(object):
 
         # iterate throught all ods adding ton * dist
         for od in self.iter_od_pairs():
-            total_tk_od += od.get_ton() * od.get_dist()
+            total_tk_od += od.tons.get() * od.get_dist()
 
         # control that both ways of calculate total_ton_km are the same!
         msg = "Link and OD based ways of total_ton_km calculation" + \
@@ -157,7 +157,7 @@ class BaseModalNetwork(object):
 
         # iterate through all od pairs adding its tons
         for od in self.iter_od_pairs():
-            total_tons += od.get_ton()
+            total_tons += od.tons.get()
 
         return total_tons
 
@@ -386,7 +386,7 @@ class BaseModalNetwork(object):
         # iterate od pairs looking for empty ones (ie, with no tons)
         for od in self.iter_od_pairs():
 
-            if od.get_ton() < 0.001:
+            if od.tons.get() < 0.001:
                 self.od_pairs[od.get_id()].pop(od.get_category())
 
                 # check if there is any od_pair left, of another category
@@ -651,14 +651,14 @@ class RailwayNetwork(BaseModalNetwork):
         """
 
         # check od has significant tons
-        if not od.get_ton() > 0.1:
+        if not od.tons.get() > 0.1:
             return
 
         # wagons mobility
-        self.wagons.add_freight_service(od.get_ton(), od.get_dist())
+        self.wagons.add_freight_service(od.tons.get(), od.get_dist())
 
         # locomotives mobility
-        idle_capacity_l = self.locoms.add_freight_service(od.get_ton(),
+        idle_capacity_l = self.locoms.add_freight_service(od.tons.get(),
                                                           od.get_dist())
 
         # check if od can be regroup or not (to remove idle capacity)

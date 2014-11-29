@@ -285,7 +285,7 @@ class RailwayTimeCost(BaseNetworkCost):
         total_deposit_cost = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if (od.get_ton() > 0 and od.get_category() != 1 and
+            if (od.tons.get() > 0 and od.get_category() != 1 and
                     od.get_lowest_link_scale()):
 
                 # calculate days of deposit
@@ -293,10 +293,10 @@ class RailwayTimeCost(BaseNetworkCost):
                 days_of_deposit = self._calc_deposit_days(lowest_link_scale)
 
                 # calculate od deposit cost
-                od_deposit_cost = cost_day_ton * days_of_deposit * od.get_ton()
-                od.set_deposit_cost(od_deposit_cost)
+                od.cost.deposit = (cost_day_ton * days_of_deposit *
+                                   od.tons.get())
 
-                total_deposit_cost += od_deposit_cost
+                total_deposit_cost += od.cost.deposit
 
         if self.total_ton_km > 0.1:
 
@@ -321,7 +321,7 @@ class RailwayTimeCost(BaseNetworkCost):
         total_immo_ton_days = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if (od.get_ton() > 0 and od.get_category() != 1 and
+            if (od.tons.get() > 0 and od.get_category() != 1 and
                     od.get_lowest_link_scale()):
 
                 # calculate days of deposit
@@ -333,10 +333,10 @@ class RailwayTimeCost(BaseNetworkCost):
 
                 # total immobilized days and ton-days for od pair
                 immobilized_days = days_of_deposit + days_of_travel
-                immobilized_ton_days = immobilized_days * od.get_ton()
+                immobilized_ton_days = immobilized_days * od.tons.get()
 
                 total_immo_ton_days += immobilized_ton_days
-                od.set_immo_value_cost(immobilized_ton_days * cost_ton_day)
+                od.cost.immo_value = immobilized_ton_days * cost_ton_day
 
         total_cost_immo_value = total_immo_ton_days * cost_ton_day
 
@@ -363,9 +363,9 @@ class RailwayTimeCost(BaseNetworkCost):
         total_short_freight_cost = 0.0
         for od in self.rn.iter_od_pairs():
             if od.get_category() != 1:
-                short_freight_cost = short_freight_cost_ton * od.get_ton() * 2
+                short_freight_cost = short_freight_cost_ton * od.tons.get() * 2
                 total_short_freight_cost += short_freight_cost
-                od.set_short_freight_cost(short_freight_cost)
+                od.cost.short_freight = short_freight_cost
 
         if self.total_ton_km > 0.1:
 

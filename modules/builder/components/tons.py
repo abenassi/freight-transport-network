@@ -1,10 +1,17 @@
 """Management for adding, removing and getting tons in Links and ODs."""
+from pprint import pprint
 
 
 class BaseTons(object):
 
     def __init__(self):
         self.tons = {"original": {}, "derived": {}}
+
+    def __getitem__(self, key):
+        self.tons[key]
+
+    def __repr__(self):
+        pprint(self.tons)
 
 
 class OdTons(BaseTons):
@@ -19,21 +26,21 @@ class OdTons(BaseTons):
     self.tons = {"original": 150000,
                  "derived":  20000}
     """
-    def __init__(self):
-        self.tons = {"original": 0.0, "derived": 0.0}
+    def __init__(self, original_ton=0.0):
+        self.tons = {"original": original_ton, "derived": 0.0}
         self.projection_factor = 1.0
 
     # PUBLIC
     # getters
-    def get_original_ton(self):
+    def get_original(self):
         """Get tons that are originally transported by the transport mode."""
         return self.tons["original"]
 
-    def get_derived_ton(self):
+    def get_derived(self):
         """Get tons that are derived from other freight transport mode."""
         return self.tons["derived"]
 
-    def get_ton(self, mode=None):
+    def get(self, mode=None):
         """Get tons of od pair.
 
         Args:
@@ -44,51 +51,45 @@ class OdTons(BaseTons):
             ton = self.tons[mode]
 
         else:
-            ton = self.get_original_ton() + self.get_derived_ton()
+            ton = self.get_original() + self.get_derived()
 
         return ton
 
     # add and derive methods
-    def add_original_ton(self, ton):
+    def add_original(self, ton):
         """Add original tons to OD pair."""
         self._add_ton(ton, "original")
 
-    def derive_ton(self, other, coeff=1.0, allow_original=True):
+    def derive(self, other, coeff=1.0, allow_original=True):
         """Derive tons to another freight transport mode.
 
-        It derives tons to an OD pair object coming from another transport mode
-        but with the same id. Only original tons of the od pair are subject to
-        derivation coefficient (coeff), while previously derivated tons are
-        just returned completely
+        It derives tons to another tons object coming from an OD pair from
+        another transport mode. Only original tons are subject to derivation
+        coefficient (coeff), while previously derivated tons are just returned
+        completely.
 
         Args:
-            other: OD object from another transport mode that will receive
-                derived tons from self OD object.
+            other: OdTons object from another OD pair that will receive
+                derived tons from self OdTons object.
             coeff (opt): Coefficient of tons that will be derived. The default
                 is to derive all tons (1.0)
 
-        Raise:
-            DerivationError: Trying to derive tons to an other od pair with
-                different id will raise an error. Derivation must occur with an
-                od pair with the same origin and destination (ie, same id)
+        Returns: (ton_to_derive, ton_to_return)
+            ton_to_derive: Original tons that were derived.
+            ton_to_return: Previously derived tons coming from other, that are
+                being returned to other.
         """
 
-        # check od pairs have same id and category
-        msg = "OD pairs are different: {} != {}".format(self.get_id(),
-                                                        other.get_id())
-        assert (self.get_id() == other.get_id() and
-                self.get_category() == other.get_category()), msg
-
         # calculate original tons from both od pairs
-        self_original_ton = self.get_original_ton() + other.get_derived_ton()
+        self_original_ton = self.get_original() + other.get_derived()
 
         # calculate tons should be derived
         ton_should_be_derived = self_original_ton * coeff
-        ton_already_derived = other.get_derived_ton()
+        ton_already_derived = other.get_derived()
         ton_to_derive = ton_should_be_derived - ton_already_derived
 
         # get tons to be returned (derived from "other" previously)
-        ton_to_return = self.get_derived_ton()
+        ton_to_return = self.get_derived()
 
         # check if allowed to derive original tons
         if not allow_original:
@@ -100,22 +101,23 @@ class OdTons(BaseTons):
 
         # add tons to other od pair
         other._add_derived_ton(ton_to_derive)
-        other.add_original_ton(ton_to_return)
+        other.add_original(ton_to_return)
 
         return (ton_to_derive, ton_to_return)
 
+    # tons projection methods
     def project(self, projection_factor):
         """Multiply all tons of the od pair by projecton factor."""
 
         self.projection_factor = projection_factor
-        self.tons["original"] = self.get_original_ton() * projection_factor
-        self.tons["derived"] = self.get_derived_ton() * projection_factor
+        self.tons["original"] = self.get_original() * projection_factor
+        self.tons["derived"] = self.get_derived() * projection_factor
 
     def revert_project(self):
         """Revert previous projection of all tons."""
 
-        self.tons["original"] = self.get_original_ton() / self.projection_factor
-        self.tons["derived"] = self.get_derived_ton() / self.projection_factor
+        self.tons["original"] = self.get_original() / self.projection_factor
+        self.tons["derived"] = self.get_derived() / self.projection_factor
         self.projection_factor = 1.0
 
     # PRIVATE
@@ -127,7 +129,7 @@ class OdTons(BaseTons):
             ton: Tons to be added.
             mode: Mode (original or derived) to wich adding tons."""
 
-        if not self.get_ton(mode):
+        if not self.get(mode):
             self.tons[mode] = ton
 
         else:
@@ -146,8 +148,8 @@ class OdTons(BaseTons):
             mode: Mode (original or derived) from where to remove tons."""
 
         msg = "Can't remove more " + mode + " tons than existent ones: " + \
-            str(ton) + " > " + str(self.get_original_ton())
-        assert ton <= self.get_ton(mode), msg
+            str(ton) + " > " + str(self.get_original())
+        assert ton <= self.get(mode), msg
 
         self.tons[mode] -= ton
 
