@@ -19,38 +19,41 @@ class DerivationMethods():
     This class is used just to separate a bunch of strongly related methods
     used by FreightNetwork class."""
 
+    def __init__(self, freight_network):
+        self.fn = freight_network
+
     # PUBLIC
-    def derive_all_to_railway(self):
+    def all_to_railway(self):
         """Derive all possible road od pairs from road mode to rail mode."""
 
         # iterate road od_pairs
-        for road_od in self.road.iter_od_pairs():
+        for road_od in self.fn.road.iter_od_pairs():
 
             # check if od_pair is derivable
             if self._road_od_pair_is_derivable(road_od):
 
                 # derive road tons to railway
-                self.derive_to_railway(road_od)
+                self.od_to_railway(road_od)
 
         # find lowest scale link for each od pair of the networks
-        self.rail.find_lowest_scale_links()
-        self.road.find_lowest_scale_links()
+        self.fn.rail.find_lowest_scale_links()
+        self.fn.road.find_lowest_scale_links()
 
-    def derive_all_to_roadway(self):
+    def all_to_roadway(self):
         """Derive all possible rail od pairs from rail mode to road mode."""
 
         # iterate road od_pairs
-        for rail_od in self.rail.iter_od_pairs():
+        for rail_od in self.fn.rail.iter_od_pairs():
 
             # derive road tons to railway
             COEFF = 1.0
-            self.derive_to_roadway(rail_od, COEFF)
+            self.od_to_roadway(rail_od, COEFF)
 
         # find lowest scale link for each od pair of the networks
-        self.rail.find_lowest_scale_links()
-        self.road.find_lowest_scale_links()
+        self.fn.rail.find_lowest_scale_links()
+        self.fn.road.find_lowest_scale_links()
 
-    def derive_to_railway(self, road_od, coeff=None, allow_original=True):
+    def od_to_railway(self, road_od, coeff=None, allow_original=True):
         """Derive a road od pair to railway mode.
 
         Args:
@@ -61,7 +64,7 @@ class DerivationMethods():
         # get od pair caracteristics and rail od pair that will receive freight
         id_od = road_od.get_id()
         category = road_od.get_category()
-        rail_od = self.rail.get_od(id_od, category)
+        rail_od = self.fn.rail.get_od(id_od, category)
 
         # get tons that have already been derived to rail
         ton_derived = rail_od.get_derived_ton()
@@ -76,13 +79,13 @@ class DerivationMethods():
 
         # derive road_od pair to a rail_od pair
         self._derive_od(road_od, rail_od, coeff,
-                        self.road, self.rail,
+                        self.fn.road, self.fn.rail,
                         allow_original)
 
         # returns rail_od for eventual reversion
         return rail_od
 
-    def derive_to_roadway(self, rail_od, coeff=None, allow_original=True):
+    def od_to_roadway(self, rail_od, coeff=None, allow_original=True):
         """Derive a rail od pair to roadway mode.
 
         Args:
@@ -93,7 +96,7 @@ class DerivationMethods():
         # get od pair caracteristics and rail od pair that will receive freight
         id_od = rail_od.get_id()
         category = rail_od.get_category()
-        road_od = self.road.get_od(id_od, category)
+        road_od = self.fn.road.get_od(id_od, category)
 
         # assign default value if none coeff is passed
         if not coeff:
@@ -101,23 +104,23 @@ class DerivationMethods():
 
         # derive rail_od pair to a road_od pair
         self._derive_od(rail_od, road_od, coeff,
-                        self.rail, self.road,
+                        self.fn.rail, self.fn.road,
                         allow_original)
 
         # returns road_od pair for eventual reversion
         return road_od
 
-    def derive_link_to_railway(self, id_road_link, gauge_road_link,
-                               allow_original=True):
+    def link_to_railway(self, id_road_link, gauge_road_link,
+                        allow_original=True):
         """Derive all possible road od pairs that use road_link to rail."""
 
         # list to store rail od pairs receiving derivated freight
         rail_od_derivations = []
 
         # get road link from the road network
-        road_link = self.road.get_link(id_road_link, gauge_road_link)
+        road_link = self.fn.road.get_link(id_road_link, gauge_road_link)
 
-        for road_od in self.road.iter_od_pairs():
+        for road_od in self.fn.road.iter_od_pairs():
 
             use_road_link = road_link.get_id() in road_od.get_links()
             use_same_gauge = road_link.get_gauge() == road_od.get_gauge()
@@ -125,8 +128,8 @@ class DerivationMethods():
             if use_road_link and use_same_gauge and is_derivable:
 
                 # calculate proportion of tons to be derived
-                rail_od = self.rail.get_od(road_od.get_id(),
-                                           road_od.get_category())
+                rail_od = self.fn.rail.get_od(road_od.get_id(),
+                                              road_od.get_category())
                 od_ton = road_od.get_original_ton() + rail_od.get_derived_ton()
                 distance = road_od.get_dist()
                 category = road_od.get_category()
@@ -134,25 +137,25 @@ class DerivationMethods():
                                                          category)
 
                 # derive road tons to railway
-                rail_od_derivation = self.derive_to_railway(road_od, coeff,
-                                                            allow_original)
+                rail_od_derivation = self.od_to_railway(road_od, coeff,
+                                                        allow_original)
 
                 # store reference to rail od pair derivation for reversion
                 rail_od_derivations.append(rail_od_derivation)
 
         return rail_od_derivations
 
-    def derive_link_to_roadway(self, id_rail_link, gauge_rail_link,
-                               allow_original=True):
+    def link_to_roadway(self, id_rail_link, gauge_rail_link,
+                        allow_original=True):
         """Derive all possible rail od pairs that use rail_link to road."""
 
         # list to store rail od pairs receiving derivated freight
         road_od_derivations = []
 
         # get rail link from the rail network
-        rail_link = self.rail.get_link(id_rail_link, gauge_rail_link)
+        rail_link = self.fn.rail.get_link(id_rail_link, gauge_rail_link)
 
-        for rail_od in self.rail.iter_od_pairs():
+        for rail_od in self.fn.rail.iter_od_pairs():
 
             use_rail_link = rail_link.get_id() in rail_od.get_links()
             use_same_gauge = rail_link.get_gauge() == rail_od.get_gauge()
@@ -160,8 +163,8 @@ class DerivationMethods():
 
                 # derive road tons to railway
                 COEFF = 1.0
-                road_od_derivation = self.derive_to_roadway(rail_od, COEFF,
-                                                            allow_original)
+                road_od_derivation = self.od_to_roadway(rail_od, COEFF,
+                                                        allow_original)
 
                 # store reference to road od pair derivation for reversion
                 road_od_derivations.append(road_od_derivation)
@@ -212,29 +215,30 @@ class DerivationMethods():
             return False
 
         # check if there is an operable railway path for the od pair
-        has_railway_path = self.rail.has_railway_path(road_od)
+        has_railway_path = self.fn.rail.has_railway_path(road_od)
         if not has_railway_path:
             return False
 
         # calculate original road tons
         id_od = road_od.get_id()
         category_od = road_od.get_category()
-        if self.rail.has_od(id_od, category_od):
-            rail_od = self.rail.get_od(id_od, category_od)
+        if self.fn.rail.has_od(id_od, category_od):
+            rail_od = self.fn.rail.get_od(id_od, category_od)
             orig_road_ton = (road_od.get_original_ton() +
                              rail_od.get_derived_ton())
         else:
             orig_road_ton = road_od.get_original_ton()
 
         # check if od pair meet minimum tons adn distance to be derivable
-        min_ton = orig_road_ton > self.rail.params["min_tons_to_derive"].value
-        min_dist = road_od.get_dist() > self.rail.params[
+        min_ton = orig_road_ton > self.fn.rail.params[
+            "min_tons_to_derive"].value
+        min_dist = road_od.get_dist() > self.fn.rail.params[
             "min_dist_to_derive"].value
 
         # check if railway path distance is not excesively longer than road
-        max_diff = self.rail.params["max_path_difference"].value
-        dist_rail = self.rail.get_path_distance(road_od)
-        dist_road = self.road.get_path_distance(road_od)
+        max_diff = self.fn.rail.params["max_path_difference"].value
+        dist_rail = self.fn.rail.get_path_distance(road_od)
+        dist_road = self.fn.road.get_path_distance(road_od)
         railway_path_is_plausible = abs(dist_rail / dist_road - 1) < max_diff
 
         is_derivable = min_ton and min_dist and railway_path_is_plausible
@@ -255,17 +259,17 @@ class DerivationMethods():
         """
 
         # assign parameters to short variables
-        max_dist = float(self.rail.params["dist_of_max_derivation"].value)
-        min_dist = float(self.rail.params["min_dist_to_derive"].value)
-        max_tons = float(self.rail.params["tons_of_max_derivation"].value)
-        min_tons = float(self.rail.params["min_tons_to_derive"].value)
+        max_dist = float(self.fn.rail.params["dist_of_max_derivation"].value)
+        min_dist = float(self.fn.rail.params["min_dist_to_derive"].value)
+        max_tons = float(self.fn.rail.params["tons_of_max_derivation"].value)
+        min_tons = float(self.fn.rail.params["min_tons_to_derive"].value)
 
         # get maximum derivation depending on od product category
         param_name = "max_derivation_" + str(category)
-        if param_name in self.rail.params:
-            max_deriv = float(self.rail.params[param_name].value)
+        if param_name in self.fn.rail.params:
+            max_deriv = float(self.fn.rail.params[param_name].value)
         else:
-            max_deriv = float(self.rail.params["max_derivation"].value)
+            max_deriv = float(self.fn.rail.params["max_derivation"].value)
 
         # assign max derivation if distance and tons are greater than max
         if distance >= max_dist and od_ton >= max_tons:
@@ -308,7 +312,7 @@ class DerivationMethods():
         return deriv_coefficient
 
 
-class FreightNetwork(DerivationMethods):
+class FreightNetwork():
 
     """Represents a freight network with rail and road modes of transport.
 
@@ -329,6 +333,8 @@ class FreightNetwork(DerivationMethods):
 
         self.road = roadway_network or RoadwayNetwork(
             projection_factor=projection_factor)
+
+        self.derive = DerivationMethods(self)
 
     # PUBLIC
     # iters and getters
@@ -404,7 +410,7 @@ class FreightNetwork(DerivationMethods):
         self.ODS_OPTIMIZATION_CLASS(self).optimize()
 
     def min_network_cost(self):
-        self.derive_all_to_railway()
+        self.derive.all_to_railway()
         self.min_network_cost_deriving_links()
         self.min_network_cost_deriving_ods()
 
@@ -444,7 +450,7 @@ def main():
     # cost network deriving all possible freight to railway
     scenario = "derive all to railway"
     print "Costing", scenario
-    fn.derive_all_to_railway()
+    fn.derive.all_to_railway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
@@ -458,7 +464,7 @@ def main():
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"
     print "Costing", scenario
-    fn.derive_all_to_roadway()
+    fn.derive.all_to_roadway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 

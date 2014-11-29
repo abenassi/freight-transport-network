@@ -1,15 +1,30 @@
-class OptimizationStrategy():
+class BaseOptimizationStrategy():
 
     ALLOW_ORIGINAL = False
 
     def __init__(self, fn):
         self.fn = fn
 
-    def optimize(self):
-        pass
+    def _revert_derivations(self, deriv_ods):
+
+        for road_od in deriv_ods:
+            self.fn.derive.od_to_railway(road_od)
+
+    def _cost_has_increased(self, old_cost):
+
+        self.fn.cost_network()
+        new_cost = self.fn.get_total_cost()
+
+        return new_cost > old_cost
+
+    def _get_total_cost(self):
+
+        self.fn.cost_network()
+
+        return self.fn.get_total_cost()
 
 
-class WeakLinksAggregator(OptimizationStrategy):
+class WeakLinksAggregator(BaseOptimizationStrategy):
 
     def optimize(self):
 
@@ -20,34 +35,24 @@ class WeakLinksAggregator(OptimizationStrategy):
 
                 print "Analyzing derivation of", rail_link,
 
-                # store current network cost
-                self.fn.cost_network()
-                curr_cost = self.fn.get_total_cost()
+                old_cost = self._get_total_cost()
 
                 # derive all od pairs of a link to roadway network
                 rail_link_id = rail_link.get_id()
                 rail_link_gauge = rail_link.get_gauge()
-                deriv_ods = self.fn.derive_link_to_roadway(rail_link_id,
+                deriv_ods = self.fn.derive.link_to_roadway(rail_link_id,
                                                            rail_link_gauge,
                                                            self.ALLOW_ORIGINAL)
 
-                # revert derivation if overall cost has increased
-                self.fn.cost_network()
-                new_cost = self.fn.get_total_cost()
-                if new_cost > curr_cost:
+                if self._cost_has_increased(old_cost):
                     self._revert_derivations(deriv_ods)
                     print "...ok."
 
                 else:
                     print "...DERIVED BACK TO ROADWAY!"
 
-    def _revert_derivations(self, deriv_ods):
 
-        for road_od in deriv_ods:
-            self.fn.derive_to_railway(road_od)
-
-
-class WeakOdsAggregator(OptimizationStrategy):
+class WeakOdsAggregator(BaseOptimizationStrategy):
 
     def optimize(self):
 
@@ -58,19 +63,15 @@ class WeakOdsAggregator(OptimizationStrategy):
 
                 print "Analyzing derivation of", rail_od,
 
-                # store current network cost
-                self.fn.cost_network()
-                curr_cost = self.fn.get_total_cost()
+                old_cost = self._get_total_cost()
 
                 # derive rail od pair to roadway mode
-                road_od = self.fn.derive_to_roadway(rail_od, None,
-                                                    self.ALLOW_ORIGINAL)
+                road_od = self.fn.derive.od_to_roadway(rail_od, None,
+                                                       self.ALLOW_ORIGINAL)
+                deriv_ods = [road_od]
 
-                # revert derivation if overall cost has increased
-                self.fn.cost_network()
-                new_cost = self.fn.get_total_cost()
-                if new_cost > curr_cost:
-                    self.fn.derive_to_railway(road_od)
+                if self._cost_has_increased(old_cost):
+                    self._revert_derivations(deriv_ods)
                     print "...ok."
 
                 else:

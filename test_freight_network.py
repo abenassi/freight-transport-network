@@ -25,7 +25,7 @@ class FreightNetworkTestCase(unittest.TestCase):
 
         # derive
         coeff = 0.5
-        self.fn.derive_to_railway(od_road, coeff)
+        self.fn.derive.od_to_railway(od_road, coeff)
 
         # check out tons left in road and increased in rail
         final_ton = self.fn.rail.get_od("1-3", 1).get_ton()
@@ -37,47 +37,48 @@ class FreightNetworkTestCase(unittest.TestCase):
         tons = 1412010
         dist = 216
         categ = 1
-        coefficient = self.fn._get_derivation_coefficient(tons, dist, categ)
+        coefficient = self.fn.derive._get_derivation_coefficient(tons, dist,
+                                                                 categ)
         self.assertAlmostEqual(coefficient, expected_coefficient)
 
     def test_consistent_result(self):
 
         # no overlapping on railway max derivation
-        self.fn.derive_all_to_railway()
+        self.fn.derive.all_to_railway()
         self.fn.cost_network()
         total_cost_1 = self.fn.get_total_cost()
 
-        self.fn.derive_all_to_railway()
+        self.fn.derive.all_to_railway()
         self.fn.cost_network()
         total_cost_2 = self.fn.get_total_cost()
 
         self.assertEqual(total_cost_1, total_cost_2)
 
         # no overlapping on roadway max derivation
-        self.fn.derive_all_to_roadway()
+        self.fn.derive.all_to_roadway()
         self.fn.cost_network()
         total_cost_3 = self.fn.get_total_cost()
 
-        self.fn.derive_all_to_roadway()
+        self.fn.derive.all_to_roadway()
         self.fn.cost_network()
         total_cost_4 = self.fn.get_total_cost()
 
         self.assertEqual(total_cost_3, total_cost_4)
 
         # consistency in successive derivations
-        self.fn.derive_all_to_railway()
+        self.fn.derive.all_to_railway()
         self.fn.cost_network()
         total_cost_5 = self.fn.get_total_cost()
 
-        self.fn.derive_all_to_roadway()
+        self.fn.derive.all_to_roadway()
         self.fn.cost_network()
         total_cost_6 = self.fn.get_total_cost()
 
-        self.fn.derive_all_to_railway()
+        self.fn.derive.all_to_railway()
         self.fn.cost_network()
         total_cost_7 = self.fn.get_total_cost()
 
-        self.fn.derive_all_to_roadway()
+        self.fn.derive.all_to_roadway()
         self.fn.cost_network()
         total_cost_8 = self.fn.get_total_cost()
 

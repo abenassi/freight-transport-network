@@ -224,9 +224,10 @@ class BaseModalNetwork(object):
         total_cost_tk = 0.0
 
         for cost_section in self.costs.values():
-            for cost_name in cost_section:
-                if cost_name.startswith("total_"):
-                    total_cost_tk += cost_section[cost_name]
+            if cost_section:
+                for cost_name in cost_section:
+                    if cost_name.startswith("total_"):
+                        total_cost_tk += cost_section[cost_name]
 
         return total_cost_tk
 
