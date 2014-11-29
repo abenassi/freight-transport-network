@@ -46,7 +46,7 @@ class RailwayNetworkTestCase(unittest.TestCase):
 
     def test_calc_optimized_mobility_cost(self):
         self.rn.calc_optimized_mobility_cost()
-        mobility_cost = self.rn.get_costs_tk()["mob"]["total_mobility"]
+        mobility_cost = self.rn.costs["mob"]["total_mobility"]
         self.assertAlmostEqual(mobility_cost, 0.015110249030339596, delta=0.0001)
 
     def test_calc_infrastructure_cost(self):

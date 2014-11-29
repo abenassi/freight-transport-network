@@ -12,7 +12,7 @@ class Link(LinkTons):
 
         # identification properties
         self.id = id
-        self.id_link_gauge = id + "_" + gauge
+        self.id_gauge = id + "_" + gauge
         self.gauge = gauge
         self.nodes = [int(i) for i in id.split("-")]
 
@@ -30,37 +30,23 @@ class Link(LinkTons):
         self.net_to_gross_factor = None
 
     def __repr__(self):
-        return "Link: " + str(self.get_id()).ljust(10) + \
-               "Distance: {:,.1f}".format(self.get_dist()).ljust(18) + \
-               "Gauge: " + str(self.get_gauge()).ljust(8) + \
+        return "Link: " + str(self.id).ljust(10) + \
+               "Distance: {:,.1f}".format(self.dist).ljust(18) + \
+               "Gauge: " + str(self.gauge).ljust(8) + \
                "Ton: {:,.1f}".format(self.get_ton()).ljust(20)
 
     def __len__(self):
-        return self.get_dist()
+        return self.dist
 
     def __lt__(self, other):
         return self.get_ton() < other.get_ton()
 
     # getters
-    def get_dist(self):
-        return self.dist
-
     def get_ton_km(self):
-        return self.get_ton() * self.get_dist()
+        return self.get_ton() * self.dist
 
     def get_gross_ton_km(self):
         return self.get_ton_km() * self.net_to_gross_factor
-
-    def get_id(self, with_gauge=False):
-
-        if with_gauge:
-            return self.id_link_gauge
-
-        else:
-            return self.id
-
-    def get_gauge(self):
-        return self.gauge
 
     # setters
     def set_main_track(self, main_track):
@@ -69,9 +55,6 @@ class Link(LinkTons):
             self.main_track = "A"
         else:
             self.main_track = "B"
-
-    def set_net_to_gross_factor(self, net_to_gross_factor):
-        self.net_to_gross_factor = net_to_gross_factor
 
     # others
     def reset(self):
@@ -138,7 +121,7 @@ class RailwayLink(Link):
     # PUBLIC
     # getters
     def get_attributes(self):
-        return [self.get_id(True), self.get_id(), self.gauge, self.dist,
+        return [self.get_id(True), self.id, self.gauge, self.dist,
                 self.get_original_ton(),
                 self.get_derived_ton(), self.get_ton(),
                 self.idle_capacity_regroup,
@@ -183,7 +166,7 @@ class RailwayLink(Link):
 
             gross_ton = (full_capacity_ton * self.net_to_gross_factor)
 
-            gross_tk = gross_ton * self.get_dist()
+            gross_tk = gross_ton * self.dist
 
         else:
             gross_tk = 0.0
@@ -197,18 +180,11 @@ class RailwayLink(Link):
 
         # check if there is traffic
         if gross_tk > 0.1:
-            num_detours = self._calc_number_of_detours(gross_tk, self.get_dist())
+            num_detours = self._calc_number_of_detours(gross_tk, self.dist)
         else:
             num_detours = 0
 
         return num_detours
-
-    # setters
-    def set_turnout_freq(self, turnout_freq):
-        self.turnout_freq = turnout_freq
-
-    def set_turnout_max_density(self, turnout_freq_max_density):
-        self.turnout_freq_max_density = turnout_freq_max_density
 
     # add methods
     def add_idle_cap_regroup(self, idle_capacity_ton):
@@ -255,7 +231,7 @@ class RailwayLink(Link):
         max_turnout_distance = self.turnout_freq
         max_turnout_density = self.turnout_freq_max_density
         t_distance = max_turnout_distance
-        # print max_turnout_distance, max_turnout_density, self.get_id()
+        # print max_turnout_distance, max_turnout_density, self.id
 
         # calculate density
         density = gross_tk / dist

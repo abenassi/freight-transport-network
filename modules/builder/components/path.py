@@ -1,19 +1,6 @@
 class BasePath(object):
 
     # PUBLIC
-    # getters
-    def get_links(self):
-        return self.links
-
-    def get_id(self):
-        return self.id
-
-    def get_path(self):
-        return self.path
-
-    def get_gauge(self):
-        return self.gauge
-
     # others
     def calc_distance(self, network_links):
         """Takes a dictionary with all network links and sum distance of od
@@ -26,7 +13,7 @@ class BasePath(object):
         for od_link in self.links:
 
             try:
-                dist += network_links[od_link][self.gauge].get_dist()
+                dist += network_links[od_link][self.gauge].dist
 
             except:
                 print od_link, self.gauge, "is missing in network links list!",

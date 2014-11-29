@@ -285,7 +285,7 @@ class RailwayTimeCost(BaseNetworkCost):
         total_deposit_cost = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if (od.tons.get() > 0 and od.get_category() != 1 and
+            if (od.tons.get() > 0 and od.tons.category != 1 and
                     od.get_lowest_link_scale()):
 
                 # calculate days of deposit
@@ -321,7 +321,7 @@ class RailwayTimeCost(BaseNetworkCost):
         total_immo_ton_days = 0.0
         for od in self.rn.iter_od_pairs():
 
-            if (od.tons.get() > 0 and od.get_category() != 1 and
+            if (od.tons.get() > 0 and od.tons.category != 1 and
                     od.get_lowest_link_scale()):
 
                 # calculate days of deposit
@@ -362,7 +362,7 @@ class RailwayTimeCost(BaseNetworkCost):
         # calculate short freight cost for each od pair
         total_short_freight_cost = 0.0
         for od in self.rn.iter_od_pairs():
-            if od.get_category() != 1:
+            if od.tons.category != 1:
                 short_freight_cost = short_freight_cost_ton * od.tons.get() * 2
                 total_short_freight_cost += short_freight_cost
                 od.cost.short_freight = short_freight_cost
@@ -411,7 +411,7 @@ class RailwayTimeCost(BaseNetworkCost):
         # TODO: it needs to take into account idle time during travel!!!
         # currently, only running time is being considered, temporarily running
         # time is multiplied by two to approximate total time
-        return od.get_dist() / speed / 24 * 2 * truck_to_train_time
+        return od.dist / speed / 24 * 2 * truck_to_train_time
 
 
 class RailwayNetworkCost(BaseNetworkCost):
@@ -457,17 +457,17 @@ class RailwayNetworkCost(BaseNetworkCost):
                 gross_tk = link.get_gross_ton_km()
 
                 # ask to the railway network if this is a main track
-                main_track = self.rn.is_main_track(gross_tk, link.get_dist())
+                main_track = self.rn.is_main_track(gross_tk, link.dist)
 
                 # store the result to the link
                 link.set_main_track(main_track)
 
                 # calculate costs of link infrastructure
-                eac_detour = ric._cost_detour(gross_tk, link.get_dist())
-                eac_track = ric._cost_eac_track(gross_tk, link.get_dist(),
+                eac_detour = ric._cost_detour(gross_tk, link.dist)
+                eac_track = ric._cost_eac_track(gross_tk, link.dist,
                                                 main_track)
                 maintenance = ric._cost_infrast_maint(gross_tk,
-                                                      link.get_dist())
+                                                      link.dist)
 
                 # update RV cost category with traffic of the link
                 RV["eac_detour"] += eac_detour
@@ -583,7 +583,7 @@ class RoadwayNetworkCost(BaseNetworkCost):
 
                 # calculate costs of link infrastructure
                 eac_track = ric._cost_eac_track(link.get_ton(),
-                                                link.get_dist())
+                                                link.dist)
 
                 # update RV cost category with traffic of the link
                 RV["eac_track"] += eac_track

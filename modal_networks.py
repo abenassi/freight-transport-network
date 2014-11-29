@@ -78,11 +78,8 @@ class BaseModalNetwork(object):
                 yield link_gauge
 
     # getters
-    def get_projection_factor(self):
-        return self.projection_factor
-
     def get_path(self, od):
-        return self.paths[od.get_id()]
+        return self.paths[od.id]
 
     def get_path_distance(self, od):
         """Get distance of a path.
@@ -94,13 +91,7 @@ class BaseModalNetwork(object):
         if od.is_intrazone():
             return 0.0
         else:
-            return self.get_path(od).calc_distance(self.get_links())
-
-    def get_paths(self):
-        return self.paths
-
-    def get_links(self):
-        return self.links
+            return self.get_path(od).calc_distance(self.links)
 
     def get_link(self, id_link, gauge=None):
         if gauge:
@@ -134,11 +125,11 @@ class BaseModalNetwork(object):
         # iterate through all links adding ton * dist
         for link in self.links.values():
             for link_gauge in link.values():
-                total_tk_link += link_gauge.get_ton() * link_gauge.get_dist()
+                total_tk_link += link_gauge.get_ton() * link_gauge.dist
 
         # iterate throught all ods adding ton * dist
         for od in self.iter_od_pairs():
-            total_tk_od += od.tons.get() * od.get_dist()
+            total_tk_od += od.tons.get() * od.dist
 
         # control that both ways of calculate total_ton_km are the same!
         msg = "Link and OD based ways of total_ton_km calculation" + \
@@ -190,7 +181,7 @@ class BaseModalNetwork(object):
                           "low": low_density dimension}
         """
         # calculate total dimension
-        total_dimension = sum([link.get_dist() for link in self.iter_links()
+        total_dimension = sum([link.dist for link in self.iter_links()
                                if link.get_ton() > 0.0])
 
         # calculate average density
@@ -201,12 +192,12 @@ class BaseModalNetwork(object):
 
         # calculate high density dimension
         high_density = average_density * 2
-        high_dimension = sum([link.get_dist() for link in self.iter_links()
+        high_dimension = sum([link.dist for link in self.iter_links()
                               if link.get_ton() > high_density])
 
         # calculate low density dimension
         low_density = average_density * 2
-        low_dimension = sum([link.get_dist() for link in self.iter_links()
+        low_dimension = sum([link.dist for link in self.iter_links()
                              if link.get_ton() < low_density])
 
         dimensions = {"total": total_dimension,
@@ -214,9 +205,6 @@ class BaseModalNetwork(object):
                       "low": low_dimension}
 
         return dimensions
-
-    def get_costs_tk(self):
-        return self.costs
 
     def get_total_cost_tk(self):
         """Add up all the costs."""
@@ -259,13 +247,13 @@ class BaseModalNetwork(object):
         for od in self.iter_od_pairs():
 
             # get the gauge of the link
-            gauge = od.get_gauge()
+            gauge = od.gauge
 
             # check if there are links (if the pair is not intrazone)
             if not od.is_intrazone() and od.has_operable_path():
 
                 # find wich product categories can be regrouped with this od
-                od_category = od.get_category()
+                od_category = od.tons.category
 
                 # if is regroupable, all regroupable categories can be with it
                 if self.is_regroupable(od_category):
@@ -276,7 +264,7 @@ class BaseModalNetwork(object):
                     categories = od_category
 
                 # get lowest scale link of od pair, based con regrouping categ
-                lowest_link_id = min(od.get_links(),
+                lowest_link_id = min(od.links,
                                      key=lambda x: self.get_link(x, gauge).get_ton(categories=categories))
                 lowest_link = self.get_link(lowest_link_id, gauge)
 
@@ -360,7 +348,7 @@ class BaseModalNetwork(object):
         rep = self.REPORT_CLASS()
 
         # ask for excel report passing RailNetwork object itself
-        rep.links_by_od_to_excel(self.get_paths(), xl_links_by_od)
+        rep.links_by_od_to_excel(self.paths, xl_links_by_od)
 
     def report_to_excel(self, xl_report=None, description=None,
                         append_report=None):
@@ -387,11 +375,11 @@ class BaseModalNetwork(object):
         for od in self.iter_od_pairs():
 
             if od.tons.get() < 0.001:
-                self.od_pairs[od.get_id()].pop(od.get_category())
+                self.od_pairs[od.id].pop(od.tons.category)
 
                 # check if there is any od_pair left, of another category
-                if len(self.od_pairs[od.get_id()]) == 0:
-                    self.od_pairs.pop(od.get_id())
+                if len(self.od_pairs[od.id]) == 0:
+                    self.od_pairs.pop(od.id)
 
 
 class RoadwayNetwork(BaseModalNetwork):
@@ -544,7 +532,7 @@ class RailwayNetwork(BaseModalNetwork):
             idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
 
             # regroup link
-            # print "regroup ", link.get_id()
+            # print "regroup ", link.id
             self._regroup_link(link, idle_locs)
 
             # calculate new cost with link regrouped
@@ -554,7 +542,7 @@ class RailwayNetwork(BaseModalNetwork):
             # if False:
             if new_cost >= current_cost:
                 # print "new cost:", new_cost, "current cost:", current_cost
-                # print "revert ", link.get_id()
+                # print "revert ", link.id
                 self._revert_regroup_link(link, idle_locs)
 
         # calculate and store mobility costs
@@ -601,12 +589,12 @@ class RailwayNetwork(BaseModalNetwork):
         """
 
         # check if od is in paths
-        if not od.get_id() in self.paths:
+        if not od.id in self.paths:
             return False
 
         # check the path is operable by railway
-        path = self.paths[od.get_id()].get_path()
-        gauge = self.paths[od.get_id()].get_gauge()
+        path = self.paths[od.id].path
+        gauge = self.paths[od.id].gauge
 
         has_path_and_gauge = bool(path and gauge)
         has_links = "-" in path
@@ -655,14 +643,14 @@ class RailwayNetwork(BaseModalNetwork):
             return
 
         # wagons mobility
-        self.wagons.add_freight_service(od.tons.get(), od.get_dist())
+        self.wagons.add_freight_service(od.tons.get(), od.dist)
 
         # locomotives mobility
         idle_capacity_l = self.locoms.add_freight_service(od.tons.get(),
-                                                          od.get_dist())
+                                                          od.dist)
 
         # check if od can be regroup or not (to remove idle capacity)
-        od_category = od.get_category()
+        od_category = od.tons.category
         param_name = "regroup_" + str(od_category)
         if param_name in self.params:
             can_be_regrouped = bool(self.params[param_name].value)
@@ -672,7 +660,7 @@ class RailwayNetwork(BaseModalNetwork):
         # add idle capacity of locomotives along the route used by od pair
         exception_counter = 0
         MAX_EXCEPTIONS = 50
-        for id_link in od.get_links():
+        for id_link in od.links:
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
@@ -689,8 +677,8 @@ class RailwayNetwork(BaseModalNetwork):
             except:
                 exception_counter += 1
                 print "".join(("There is no link ", id_link, " and gauge ",
-                               od.get_gauge(), " for od pair ", od.get_id(),
-                               " with path: ", od.get_path()))
+                               od.gauge, " for od pair ", od.id,
+                               " with path: ", od.path))
 
     def _regroup_link(self, link, idle_locs):
         """Eliminate some idleness in a link regrouping trains.
@@ -712,7 +700,7 @@ class RailwayNetwork(BaseModalNetwork):
         link.regroup(idle_locs * loc_capacity)
 
         # update rolling material time requirements
-        self.locoms.regroup(idle_locs, link.get_dist())
+        self.locoms.regroup(idle_locs, link.dist)
         self.wagons.add_regroup_time(wagons_regrouped)
 
     def _revert_regroup_link(self, link, idle_locs):

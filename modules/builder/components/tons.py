@@ -26,9 +26,10 @@ class OdTons(BaseTons):
     self.tons = {"original": 150000,
                  "derived":  20000}
     """
-    def __init__(self, original_ton=0.0):
+    def __init__(self, original_ton=0.0, category=None):
         self.tons = {"original": original_ton, "derived": 0.0}
         self.projection_factor = 1.0
+        self.category = category
 
     # PUBLIC
     # getters

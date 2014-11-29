@@ -26,7 +26,7 @@ class OD(BasePath):
               "immo_value_cost"]
 
     def __init__(self, id, ton, path=None, gauge=None, dist=None,
-                 rail_category=None):
+                 category=None):
 
         # call constructors of superclasses
         super(OD, self).__init__()
@@ -43,10 +43,9 @@ class OD(BasePath):
         self.links = self._create_links_list()
 
         # traffic properties
-        self.rail_category = rail_category
         self.lowest_link = None
 
-        self.tons = OdTons(ton)
+        self.tons = OdTons(ton, category)
         self.cost = OdCost()
 
     def __repr__(self):
@@ -62,17 +61,11 @@ class OD(BasePath):
     # PUBLIC
     # getters
     def get_attributes(self):
-        return [self.id, self.gauge, self.dist, self.get_original_ton(),
-                self.get_derived_ton(), self.get_ton(), self.get_category(),
+        return [self.id, self.gauge, self.dist, self.tons.get_original(),
+                self.tons.get_derived(), self.get_ton(), self.tons.category,
                 self.path, self.get_lowest_link_id(),
-                self.get_lowest_link_scale(), self.get_deposit_cost(),
-                self.get_short_freight_cost(), self.get_immo_value_cost()]
-
-    def get_dist(self):
-        return self.dist
-
-    def get_category(self):
-        return self.rail_category
+                self.get_lowest_link_scale(), self.cost.deposit,
+                self.cost.short_freight, self.cost.immo_value]
 
     def get_lowest_link_scale(self):
         """Returns the tons passing through the lowest link used by OD pair.
@@ -95,7 +88,7 @@ class OD(BasePath):
         in terms of the scale reached."""
 
         if self.lowest_link:
-            return self.lowest_link.get_id()
+            return self.lowest_link.id
 
         else:
             return None
@@ -115,9 +108,6 @@ class OD(BasePath):
         # get path nodes from new path and create links dictionary
         self.path_nodes = self._get_path_nodes()
         self.links = self._create_links_list()
-
-    def set_category(self, category_od):
-        self.rail_category = category_od
 
     def set_lowest_scale_link(self, link):
         self.lowest_link = link
@@ -162,10 +152,13 @@ class OD(BasePath):
         """
 
         # check od pairs have same id and category
-        msg = "OD pairs are different: {} != {}".format(self.get_id(),
-                                                        other.get_id())
-        assert (self.get_id() == other.get_id() and
-                self.get_category() == other.get_category()), msg
+        msg = "OD pairs are different: {} != {}".format(self.id,
+                                                        other.id)
+        assert self.id == other.id, msg
+
+        msg = "OD pairs are different: {} != {}".format(self.tons.category,
+                                                        other.tons.category)
+        assert self.tons.category == other.tons.category, msg
 
         ton_to_derive, ton_to_return = self.tons.derive(other.tons, coeff,
                                                         allow_original)

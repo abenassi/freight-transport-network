@@ -46,7 +46,7 @@ class BaseModalNetworkBuilder(object):
         print "Loading parameters..."
         self._load_from_xl(XlLoadParam, self.xl_parameters, mn.params)
         print "Loading od pairs..."
-        self._load_od_pairs_from_xl(mn.od_pairs, mn.get_projection_factor())
+        self._load_od_pairs_from_xl(mn.od_pairs, mn.projection_factor)
         print "Loading links..."
         self._load_links_from_xl(mn.links)
         print "Loading paths..."
@@ -67,23 +67,23 @@ class BaseModalNetworkBuilder(object):
     def create_od_pair(self, mn, id_od, category_od):
 
         # create od pair object
-        od_pair = OD(id_od, 0.0)
-        od_pair.set_category(category_od)
+        od = OD(id_od, 0.0)
+        od.tons.category = category_od
 
         # assign path
-        path = mn.paths[od_pair.get_id()].get_path()
-        gauge = mn.paths[od_pair.get_id()].get_gauge()
-        od_pair.set_path(path, gauge)
+        path = mn.paths[od.id].path
+        gauge = mn.paths[od.id].gauge
+        od.set_path(path, gauge)
 
         # calculate distance
-        od_pair.calc_distance(mn.links)
+        od.calc_distance(mn.links)
 
         # check od_pair id is in the network
         if id_od not in mn.od_pairs:
             mn.od_pairs[id_od] = {}
 
         # add new od pair
-        mn.od_pairs[id_od][category_od] = od_pair
+        mn.od_pairs[id_od][category_od] = od
 
     # PRIVATE
     def _load_from_xl(self, loader_class, xl_name, output_dict):
@@ -112,36 +112,36 @@ class BaseModalNetworkBuilder(object):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
-        for od_pair in XlLoadOD(self.xl_od_pairs):
+        for od in XlLoadOD(self.xl_od_pairs):
 
-            od_pair.project(projection_factor)
+            od.project(projection_factor)
 
             # add id if its not in output_dict
-            if od_pair.get_id() not in od_pairs:
-                od_pairs[od_pair.get_id()] = {}
+            if od.id not in od_pairs:
+                od_pairs[od.id] = {}
 
             # if category doesn't exist, add the od_pair
-            if od_pair.get_category() not in od_pairs[od_pair.get_id()]:
-                od_pairs[od_pair.get_id()][od_pair.get_category()] = od_pair
+            if od.tons.category not in od_pairs[od.id]:
+                od_pairs[od.id][od.tons.category] = od
 
             # if category already exist, udpate tons rather than replace elemen
             else:
-                curr_od = od_pairs[od_pair.get_id()][od_pair.get_category()]
-                curr_od.tons.add_original(od_pair.tons.get())
+                curr_od = od_pairs[od.id][od.tons.category]
+                curr_od.tons.add_original(od.tons.get())
 
     def _find_paths(self, mn):
         """Iterate through od_pairs looking for path if not already passed."""
 
         # iterate all od_pairs
-        for od_pair in mn.iter_od_pairs():
+        for od in mn.iter_od_pairs():
 
             # check if od_pair doesn't have a path and RailwayNetwork has one
-            if (not od_pair.has_declared_path()) and (od_pair.get_id() in mn.paths):
+            if (not od.has_declared_path()) and (od.id in mn.paths):
 
                 # assign path and gauge from RailwayNetwork.paths
-                path = mn.paths[od_pair.id].path
-                gauge = mn.paths[od_pair.id].gauge
-                od_pair.set_path(path, gauge)
+                path = mn.paths[od.id].path
+                gauge = mn.paths[od.id].gauge
+                od.set_path(path, gauge)
 
     def _calculate_od_distances(self, mn):
         """Uses links distances to calculate all od pair distances, storing
@@ -164,23 +164,23 @@ class BaseModalNetworkBuilder(object):
         # iterate links of od pair
         exception_counter = 0
         MAX_EXCEPTIONS = 50
-        for id_link in od.get_links():
+        for id_link in od.links:
 
             assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
             # try to update tons of a link_gauge
             try:
-                link = mn.get_links()[id_link][od.get_gauge()]
+                link = mn.links[id_link][od.gauge]
                 link.add_original_ton(ton=od.tons.get(),
-                                      categories=od.get_category(),
-                                      id_ods=od.get_id())
+                                      categories=od.tons.category,
+                                      id_ods=od.id)
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:
                 exception_counter += 1
                 print "".join(("There is no link ", id_link, " and gauge ",
-                               od.get_gauge(), " for od pair ", od.get_id(),
-                               " with path: ", od.get_path()))
+                               od.gauge, " for od pair ", od.id,
+                               " with path: ", od.path))
 
 
 class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
@@ -208,8 +208,7 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
         for link in rn.iter_links():
 
-            link.set_net_to_gross_factor(
-                rn.params["net_to_gross_factor"].value)
+            link.net_to_gross_factor = rn.params["net_to_gross_factor"].value
 
     def _load_links_from_xl(self, links):
         """Iterate an excel with data using a specific loader_class and storing
@@ -219,7 +218,7 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
             # add link.id entry if not already in output dict
             if link.id not in links:
-                links[link.get_id()] = {}
+                links[link.id] = {}
 
             # add the link using id and gauge as keys
             links[link.id][link.gauge] = link
@@ -258,7 +257,7 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
 
             # add link.id entry if not already in output dict
             if link.id not in links:
-                links[link.get_id()] = {}
+                links[link.id] = {}
 
             # add the link using id and gauge as keys
             links[link.id][link.gauge] = link
@@ -296,11 +295,8 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         """Set parameters to calculate number of detours needed per link."""
 
         for link in rn.iter_links():
-
-            link.set_turnout_freq(rn.params["turnout_freq"].value)
-
             turnout_max_density = rn.params["turnout_freq_max_density"].value
-            link.set_turnout_max_density(turnout_max_density)
 
-            link.set_net_to_gross_factor(
-                rn.params["net_to_gross_factor"].value)
+            link.turnout_max_density = turnout_max_density
+            link.turnout_freq = rn.params["turnout_freq"].value
+            link.net_to_gross_factor = rn.params["net_to_gross_factor"].value

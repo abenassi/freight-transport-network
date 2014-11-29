@@ -62,8 +62,8 @@ class DerivationMethods():
         """
 
         # get od pair caracteristics and rail od pair that will receive freight
-        id_od = road_od.get_id()
-        category = road_od.get_category()
+        id_od = road_od.id
+        category = road_od.tons.category
         rail_od = self.fn.rail.get_od(id_od, category)
 
         # get tons that have already been derived to rail
@@ -73,7 +73,7 @@ class DerivationMethods():
         # assign default value if none coeff is passed
         if not coeff:
             od_scale = ton_derived + ton_derivable
-            od_road_dist = road_od.get_dist()
+            od_road_dist = road_od.dist
             coeff = self._get_derivation_coefficient(od_scale, od_road_dist,
                                                      category)
 
@@ -94,8 +94,8 @@ class DerivationMethods():
         """
 
         # get od pair caracteristics and rail od pair that will receive freight
-        id_od = rail_od.get_id()
-        category = rail_od.get_category()
+        id_od = rail_od.id
+        category = rail_od.tons.category
         road_od = self.fn.road.get_od(id_od, category)
 
         # assign default value if none coeff is passed
@@ -122,17 +122,18 @@ class DerivationMethods():
 
         for road_od in self.fn.road.iter_od_pairs():
 
-            use_road_link = road_link.get_id() in road_od.get_links()
-            use_same_gauge = road_link.get_gauge() == road_od.get_gauge()
+            use_road_link = road_link.id in road_od.links
+            use_same_gauge = road_link.gauge == road_od.gauge
             is_derivable = self._road_od_pair_is_derivable(road_od)
             if use_road_link and use_same_gauge and is_derivable:
 
                 # calculate proportion of tons to be derived
-                rail_od = self.fn.rail.get_od(road_od.get_id(),
-                                              road_od.get_category())
-                od_ton = road_od.tons.get_original() + rail_od.tons.get_derived()
-                distance = road_od.get_dist()
-                category = road_od.get_category()
+                rail_od = self.fn.rail.get_od(road_od.id,
+                                              road_od.tons.category)
+                od_ton = (road_od.tons.get_original() +
+                          rail_od.tons.get_derived())
+                distance = road_od.dist
+                category = road_od.tons.category
                 coeff = self._get_derivation_coefficient(od_ton, distance,
                                                          category)
 
@@ -157,8 +158,8 @@ class DerivationMethods():
 
         for rail_od in self.fn.rail.iter_od_pairs():
 
-            use_rail_link = rail_link.get_id() in rail_od.get_links()
-            use_same_gauge = rail_link.get_gauge() == rail_od.get_gauge()
+            use_rail_link = rail_link.id in rail_od.links
+            use_same_gauge = rail_link.gauge == rail_od.gauge
             if use_rail_link and use_same_gauge:
 
                 # derive road tons to railway
@@ -176,16 +177,16 @@ class DerivationMethods():
                    allow_original=True):
 
         # get od pair caracteristics
-        id_od = from_od.get_id()
-        category = from_od.get_category()
+        id_od = from_od.id
+        category = from_od.tons.category
 
         # derive tons from from_od pair to to_od pair
         orig_ton_derived, returned_ton = from_od.derive_ton(to_od, coeff,
                                                             allow_original)
 
         # remove tons from road links used by road od_pair
-        for id_from_link in from_od.get_links():
-            from_link = from_mode.get_link(id_from_link, from_od.get_gauge())
+        for id_from_link in from_od.links:
+            from_link = from_mode.get_link(id_from_link, from_od.gauge)
             from_link.remove_original_ton(ton=orig_ton_derived,
                                           categories=category,
                                           id_ods=id_od)
@@ -194,8 +195,8 @@ class DerivationMethods():
                                          id_ods=id_od)
 
         # add derived tons to rail links, used by rail od_pair
-        for id_to_link in to_od.get_links():
-            to_link = to_mode.get_link(id_to_link, to_od.get_gauge())
+        for id_to_link in to_od.links:
+            to_link = to_mode.get_link(id_to_link, to_od.gauge)
             to_link.add_original_ton(ton=returned_ton,
                                      categories=category,
                                      id_ods=id_od)
@@ -211,7 +212,7 @@ class DerivationMethods():
         """
 
         # firts check origin != destination and product category derivable
-        if road_od.is_intrazone() or road_od.get_category() == 0:
+        if road_od.is_intrazone() or road_od.tons.category == 0:
             return False
 
         # check if there is an operable railway path for the od pair
@@ -220,8 +221,8 @@ class DerivationMethods():
             return False
 
         # calculate original road tons
-        id_od = road_od.get_id()
-        category_od = road_od.get_category()
+        id_od = road_od.id
+        category_od = road_od.tons.category
         if self.fn.rail.has_od(id_od, category_od):
             rail_od = self.fn.rail.get_od(id_od, category_od)
             orig_road_ton = (road_od.tons.get_original() +
@@ -232,7 +233,7 @@ class DerivationMethods():
         # check if od pair meet minimum tons adn distance to be derivable
         min_ton = orig_road_ton > self.fn.rail.params[
             "min_tons_to_derive"].value
-        min_dist = road_od.get_dist() > self.fn.rail.params[
+        min_dist = road_od.dist > self.fn.rail.params[
             "min_dist_to_derive"].value
 
         # check if railway path distance is not excesively longer than road
