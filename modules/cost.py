@@ -2,7 +2,7 @@ class BaseNetworkCost(object):
 
     def __init__(self, rn):
         self.rn = rn
-        self.total_ton_km = self.rn.get_total_ton_km()
+        self.total_ton_km = self.rn.ton_km
 
     def _market_to_shadow_prices(self, market_cost):
         """Convert market cost to shadow cost."""
@@ -525,7 +525,7 @@ class RoadwayMobilityCost(BaseNetworkCost):
         """Calculate cost of truck mobility."""
 
         mobility_cost_tk = self.rn.params["mobility_cost_tk"].value
-        mobility_cost = self.rn.get_total_ton_km() * mobility_cost_tk
+        mobility_cost = self.rn.ton_km * mobility_cost_tk
 
         # convert market cost to shadow cost
         market_cost = mobility_cost / self.total_ton_km

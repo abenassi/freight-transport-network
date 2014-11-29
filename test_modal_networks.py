@@ -28,31 +28,33 @@ class RailwayNetworkTestCase(unittest.TestCase):
         self.rn = RailwayNetwork(builder)
 
     def test_get_total_tons(self):
-        self.assertAlmostEqual(self.rn.get_total_tons(), 22036200.0)
+        self.assertAlmostEqual(self.rn.ton, 22036200.0)
 
     def test_get_total_ton_km(self):
-        self.assertAlmostEqual(self.rn.get_total_ton_km(), 11018100000.0,
+        self.assertAlmostEqual(self.rn.ton_km, 11018100000.0,
                                delta=10000)
 
+    def test_density(self):
+        self.assertAlmostEqual(self.rn.density, 728662, delta=10)
+
     def test_get_dimensions(self):
-        dimensions = self.rn.get_dimensions()
-        self.assertEqual(dimensions["total"], 15121.0)
-        self.assertEqual(dimensions["low"], 15121.0)
-        self.assertEqual(dimensions["high"], 0.0)
+        self.assertEqual(self.rn.dimension, 15121.0)
+        self.assertEqual(self.rn.high_density_dimension, 0.0)
+        self.assertEqual(self.rn.low_density_dimension, 8121.0)
 
     def test_get_average_distance(self):
-        distance = self.rn.get_average_distance()
+        distance = self.rn.average_distance
         self.assertAlmostEqual(distance, 500.0, delta=1)
 
     def test_calc_optimized_mobility_cost(self):
         self.rn.calc_optimized_mobility_cost()
         mobility_cost = self.rn.costs["mob"]["total_mobility"]
-        self.assertAlmostEqual(mobility_cost, 0.015110249030339596, delta=0.0001)
+        self.assertAlmostEqual(mobility_cost, 0.0151102490303395, delta=0.0001)
 
     def test_calc_infrastructure_cost(self):
         self.rn.calc_optimized_mobility_cost()
         self.rn.calc_infrastructure_cost()
-        self.assertAlmostEqual(self.rn.get_total_cost_tk(), 0.04060755538648914,
+        self.assertAlmostEqual(self.rn.get_total_cost_tk(), 0.0424800010113669,
                                delta=0.0002)
 
 

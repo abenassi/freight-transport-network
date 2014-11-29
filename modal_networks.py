@@ -34,6 +34,7 @@ class BaseModalNetwork(object):
         4. paths: paths for all possible od pairs in the network
         5. costs: mobility and infrastructure costs of the network
     """
+    RELATIVE_DENSITY_FACTOR = 2
 
     def __init__(self):
 
@@ -117,7 +118,8 @@ class BaseModalNetwork(object):
 
         return self.od_pairs[id_od][category_od]
 
-    def get_total_ton_km(self):
+    @property
+    def ton_km(self):
         """Sum all ton_km from all od_pairs used in the model."""
         total_tk_link = 0.0
         total_tk_od = 0.0
@@ -142,7 +144,8 @@ class BaseModalNetwork(object):
 
         return total_tk_link
 
-    def get_total_tons(self):
+    @property
+    def ton(self):
         """Sum all tons from od_pairs used in the model."""
         total_tons = 0.0
 
@@ -152,59 +155,45 @@ class BaseModalNetwork(object):
 
         return total_tons
 
-    def get_average_distance(self):
-        if self.get_total_tons() != 0:
-            return self.get_total_ton_km() / self.get_total_tons()
+    @property
+    def average_distance(self):
+        if self.ton != 0:
+            return self.ton_km / self.ton
         else:
             return 0.0
 
-    def get_density(self):
+    @property
+    def density(self):
         """Get average tons of density by km of network."""
 
-        total_network_dimension = self.get_dimensions()["total"]
-
         # check network dimension is not zero
-        if total_network_dimension and total_network_dimension > 0:
-            density = self.get_total_ton_km() / total_network_dimension
+        if self.dimension and self.dimension > 0:
+            density = self.ton_km / self.dimension
 
         else:
             density = 0
 
         return density
 
-    def get_dimensions(self):
-        """Calculate network dimensions in km.
+    @property
+    def dimension(self):
+        """Calculate network dimension in km."""
+        return sum([link.dist for link in self.iter_links()
+                    if link.tons.get() > 0.0])
 
-        Returns:
-            dimensions = {"total": total dimension,
-                          "high": high_density dimension,
-                          "low": low_density dimension}
-        """
-        # calculate total dimension
-        total_dimension = sum([link.dist for link in self.iter_links()
-                               if link.tons.get() > 0.0])
+    @property
+    def high_density_dimension(self):
+        """Calculate network high density dimension in km."""
+        high_density = self.density * self.RELATIVE_DENSITY_FACTOR
+        return sum([link.dist for link in self.iter_links()
+                    if link.tons.get() > high_density])
 
-        # calculate average density
-        if total_dimension > 0.1:
-            average_density = self.get_total_ton_km() / total_dimension
-        else:
-            average_density = 0.0
-
-        # calculate high density dimension
-        high_density = average_density * 2
-        high_dimension = sum([link.dist for link in self.iter_links()
-                              if link.tons.get() > high_density])
-
-        # calculate low density dimension
-        low_density = average_density * 2
-        low_dimension = sum([link.dist for link in self.iter_links()
-                             if link.tons.get() < low_density])
-
-        dimensions = {"total": total_dimension,
-                      "high": high_dimension,
-                      "low": low_dimension}
-
-        return dimensions
+    @property
+    def low_density_dimension(self):
+        """Calculate network low density dimension in km."""
+        low_density = self.density / self.RELATIVE_DENSITY_FACTOR
+        return sum([link.dist for link in self.iter_links()
+                    if link.tons.get() < low_density])
 
     def get_total_cost_tk(self):
         """Add up all the costs."""
@@ -220,7 +209,7 @@ class BaseModalNetwork(object):
         return total_cost_tk
 
     def get_total_cost(self):
-        return self.get_total_cost_tk() * self.get_total_ton_km()
+        return self.get_total_cost_tk() * self.ton_km
 
     def get_regrouping_categories(self):
         """Return a list with all the categories that can be regrouped."""

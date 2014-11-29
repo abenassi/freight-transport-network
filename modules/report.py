@@ -52,9 +52,9 @@ class BaseReport():
         """Print report only with global results of network."""
 
         print "\n***Global results***\n"
-        print "total tons", "{:,.2f}".format(rn.get_total_tons())
-        print "total ton-km", "{:,.2f}".format(rn.get_total_ton_km())
-        print "average distance", rn.get_total_ton_km() / rn.get_total_tons()
+        print "total tons", "{:,.2f}".format(rn.ton)
+        print "total ton-km", "{:,.2f}".format(rn.ton_km)
+        print "average distance", rn.ton_km / rn.ton
 
     def print_costs_report(self, rn):
         """Print only costs report of RailwayNetwork."""
@@ -160,14 +160,13 @@ class BaseReport():
             ws.cell(row=1, column=i_col).value = self.description
 
             # copy function calls
-            dimensions = rn.get_dimensions()
-            values = [rn.get_total_tons(),
-                      rn.get_total_ton_km(),
-                      rn.get_average_distance(),
-                      dimensions["total"],
-                      dimensions["high"],
-                      dimensions["low"],
-                      rn.get_density()]
+            values = [rn.ton,
+                      rn.ton_km,
+                      rn.average_distance,
+                      rn.dimension,
+                      rn.high_density_dimension,
+                      rn.low_density_dimension,
+                      rn.density]
 
             for value in values:
                 ws.cell(row=i_row, column=i_col).value = value
@@ -180,16 +179,15 @@ class BaseReport():
             ws.append(["variable", self.description])
 
             # copy function calls
-            ws.append(["total tons", rn.get_total_tons()])
-            ws.append(["total ton-km", rn.get_total_ton_km()])
-            ws.append(["average distance", rn.get_average_distance()])
+            ws.append(["total tons", rn.ton])
+            ws.append(["total ton-km", rn.ton_km])
+            ws.append(["average distance", rn.average_distance])
 
             # copy dimensions
-            dimensions = rn.get_dimensions()
-            ws.append(["total dimension", dimensions["total"]])
-            ws.append(["high density dimension", dimensions["high"]])
-            ws.append(["low density dimension", dimensions["low"]])
-            ws.append(["density", rn.get_density()])
+            ws.append(["total dimension", rn.dimension])
+            ws.append(["high density dimension", rn.high_density_dimension])
+            ws.append(["low density dimension", rn.low_density_dimension])
+            ws.append(["density", rn.density])
 
     def _report_costs(self, rn, wb, ws_name):
 
@@ -269,22 +267,22 @@ class BaseReport():
         ws_fn.cell(row=2, column=i_col).value = rn.MODE_NAME
 
         # get values to be written
-        values = [("Mobility", rn.get_costs_tk()["mob"]["total_mobility"]),
+        values = [("Mobility", rn.costs["mob"]["total_mobility"]),
                   ("Infrastructure",
-                   rn.get_costs_tk()["inf"]["total_infrastructure"]),
-                  ("Time", rn.get_costs_tk()["time"]["total_time"]),
+                   rn.costs["inf"]["total_infrastructure"]),
+                  ("Time", rn.costs["time"]["total_time"]),
                   ("Total", rn.get_total_cost_tk()),
                   ("", ""),
-                  ("Tons", rn.get_total_tons()),
-                  ("Ton-km", rn.get_total_ton_km()),
+                  ("Tons", rn.ton),
+                  ("Ton-km", rn.ton_km),
                   ("Total modal cost", rn.get_total_cost()),
                   ("", ""),
                   ("", ""),
                   ("", ""),
                   ("Wagons per locomotive", rn.get_wagons_per_locomotive()),
-                  ("Average distance", rn.get_average_distance()),
-                  ("Total network dimension", rn.get_dimensions()["total"]),
-                  ("Average density", rn.get_density())]
+                  ("Average distance", rn.average_distance),
+                  ("Total network dimension", rn.dimension),
+                  ("Average density", rn.density)]
 
         for value in values:
 
@@ -308,11 +306,11 @@ class RoadwayNetworkReport(BaseReport):
     def report_to_excel(self, rn):
         """Make a report of RailwayNetwork results in excel."""
 
-        self._make_railway_network_report(rn)
+        self._make_roadway_network_report(rn)
         self._make_freight_network_report(rn)
 
     # PRIVATE
-    def _make_railway_network_report(self, rn):
+    def _make_roadway_network_report(self, rn):
         """Make the complete report of roadway network results in excel."""
 
         if self.append_report:

@@ -124,14 +124,14 @@ class RailwayLink(BaseLink):
     # PUBLIC
     # getters
     def get_attributes(self):
-        return [self.get_id(True), self.id, self.gauge, self.dist,
+        return [self.id_gauge, self.id, self.gauge, self.dist,
                 self.tons.get_original(),
                 self.tons.get_derived(), self.tons.get(),
                 self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.get_gross_ton_km(),
                 self.get_number_of_detours(),
-                self.main_track] + self.get_ton_by_category() + [self.net_to_gross_factor]
+                self.main_track] + self.tons.get_by_category() + [self.net_to_gross_factor]
 
     def get_idle_cap(self):
         """Returns idle capacity in tons."""
@@ -232,15 +232,15 @@ class RailwayLink(BaseLink):
 
         # store parameters in short-name variables
         max_turnout_distance = self.turnout_freq
-        max_turnout_density = self.turnout_freq_max_density
+        max_turnout_density = self.turnout_max_density
         t_distance = max_turnout_distance
-        # print max_turnout_distance, max_turnout_density, self.id
 
         # calculate density
         density = gross_tk / dist
 
         if not density < max_turnout_density:
             t_distance = max_turnout_distance / (density / max_turnout_density)
+
 
         num_detours = dist / t_distance
 
