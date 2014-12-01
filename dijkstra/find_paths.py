@@ -102,7 +102,11 @@ class Network():
     # PRIVATE
     # main private methods
     def _find_shortest_paths(self, gauge):
-        """Find shortest paths for each possible pair of nodes."""
+        """Find shortest paths for each possible pair of nodes.
+
+        Args:
+            gauge: Name of the gauge to calculate shortest paths.
+        """
 
         # take graph of the gauge
         graph = self.graphs[gauge]
@@ -145,14 +149,95 @@ class Network():
                     paths[node_a][node_b]["distance"] = distance
                     paths[node_a][node_b]["path"] = path
 
-    def _find_multiple_gauges_shortest_paths(self, max_transshipments):
+    def _find_shortest_paths_with_restrictions(self, gauge, restricted_nodes):
+        """Find shortest paths for each pair of nodes, with restrictions.
+
+        Args:
+            gauge: String name of the gauge to calculate shortest paths.
+            restricted_nodes: List of nodes than can't be used for paths.
+        """
+
+        # take graph of the gauge and eliminate restricted nodes
+        graph = self.graphs[gauge]
+        self._remove_restricted_nodes(graph, restricted_nodes)
+
+        # create paths dictionary for the gauge
+        self.paths[gauge] = {}
+        paths = self.paths[gauge]
+
+        # get nodes with access to the gauge
+        nodes = graph.keys()
+        nodes.sort()
+
+        # calcualte total paths
+        total_paths = len(nodes) ** 2
+        print total_paths, "paths will be calculated"
+
+        for node_a in nodes:
+
+            # create dictionary for node a in paths
+            paths[node_a] = {}
+
+            for node_b in nodes:
+
+                # create dictionary for node b in node a
+                paths[node_a][node_b] = {}
+
+                # if is the same node, there is no path
+                if node_a == node_b:
+
+                    paths[node_a][node_b]["distance"] = 0.0
+                    paths[node_a][node_b]["path"] = None
+
+                # if nodes are different, find shortest path
+                else:
+
+                    # use dijkstra to calculate minimum path from a to b
+                    distance, path = dijkstra(graph, node_a, node_b)
+
+                    # store results in paths
+                    paths[node_a][node_b]["distance"] = distance
+                    paths[node_a][node_b]["path"] = path
+
+    def _find_multiple_gauges_shortest_paths_maxt(self, max_transshipments):
         """Find shortest paths allowing transshipments between gauges.
 
         Args:
             max_transshipments: Maximum number of transshipments between
-            different gauges allowed.
+                different gauges allowed.
         """
         pass
+
+    def _find_multiple_gauges_shortest_paths_costt(self, cost_transshipments):
+        """Find shortest paths allowing transshipments between gauges.
+
+        Args:
+            cost_transshipments: Cost in terms of "distance" to apply when
+                changing between gauges in a path.
+        """
+        pass
+
+    def _remove_restricted_nodes(self, graph, restricted_nodes):
+        """Remove restricted nodes and links that use them from graph.
+
+        Args:
+            graph: Graph dictionary with nodes as keys and lists of links as
+                values.
+            restricted_nodes: List of nodes that are not to be used calculating
+                paths.
+        """
+
+        for node in graph:
+
+            # check if restricted node to remove
+            if node in restricted_nodes:
+                del graph[node]
+
+            # remove links with restricted node
+            else:
+                for link in graph[node]:
+                    if node == link[0]:
+                        graph[node].remove(link)
 
     def _store_network_paths(self, wb, gauge, ws_all=None):
         """Copy paths to general worksheet and to gauge specific worksheet."""

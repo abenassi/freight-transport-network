@@ -6,7 +6,7 @@ class DijkstraTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        self.G1 = {  # Rosen, Figure 4 (pp. 559)
+        self.G1 = {
             'a': [('b', 4), ('c', 2)],
             'b': [('a', 4), ('c', 1), ('d', 5)],
             'c': [('a', 2), ('b', 1), ('d', 8), ('e', 10)],
@@ -15,7 +15,7 @@ class DijkstraTestCase(unittest.TestCase):
             'z': [('d', 6), ('e', 3)],
         }
 
-        self.G2 = {  # Rosen, Ex. 8.6-2 (pp. 562)
+        self.G2 = {
             'a': [('b', 2), ('c', 3)],
             'b': [('a', 2), ('d', 5), ('e', 2)],
             'c': [('a', 3), ('e', 5)],
@@ -25,7 +25,7 @@ class DijkstraTestCase(unittest.TestCase):
         }
 
     def test_dijkstra(self):
-        """Test dijkstra implementation return correct distance and path."""
+        """Test dijkstra implementation to return correct distance and path."""
 
         # test with graph 1
         distance, path = dijkstra(self.G1, 'a', 'z')
@@ -38,8 +38,5 @@ class DijkstraTestCase(unittest.TestCase):
         self.assertEqual(path, ['a', 'b', 'e', 'd', 'z'])
 
 
-def main():
-    unittest.main()
-
 if __name__ == '__main__':
-    main()
+    unittest.main()
