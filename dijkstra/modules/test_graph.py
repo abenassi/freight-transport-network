@@ -1,12 +1,15 @@
 import unittest
 from openpyxl import load_workbook
 from graph import Graph
+import os
 
 
 class GraphTestCase(unittest.TestCase):
 
     def setUp(self):
-        wb = load_workbook("test/test_links.xlsx")
+        XL_LINKS = os.path.join(os.path.dirname(__file__),
+                     "test/test_links.xlsx")
+        wb = load_workbook(XL_LINKS)
         ws = wb.active
         self.graph = Graph(ws)
 

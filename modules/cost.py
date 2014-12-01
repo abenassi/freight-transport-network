@@ -454,7 +454,7 @@ class RailwayNetworkCost(BaseNetworkCost):
             if link.tons.get() > 0.0:
 
                 # calculate gross ton-km carried by the link
-                gross_tk = link.get_gross_ton_km()
+                gross_tk = link.gross_ton_km
 
                 # ask to the railway network if this is a main track
                 main_track = self.rn.is_main_track(gross_tk, link.dist)

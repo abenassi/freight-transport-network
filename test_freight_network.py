@@ -46,41 +46,41 @@ class FreightNetworkTestCase(unittest.TestCase):
         # no overlapping on railway max derivation
         self.fn.derive.all_to_railway()
         self.fn.cost_network()
-        total_cost_1 = self.fn.get_total_cost()
+        total_cost_1 = self.fn.total_cost
 
         self.fn.derive.all_to_railway()
         self.fn.cost_network()
-        total_cost_2 = self.fn.get_total_cost()
+        total_cost_2 = self.fn.total_cost
 
         self.assertEqual(total_cost_1, total_cost_2)
 
         # no overlapping on roadway max derivation
         self.fn.derive.all_to_roadway()
         self.fn.cost_network()
-        total_cost_3 = self.fn.get_total_cost()
+        total_cost_3 = self.fn.total_cost
 
         self.fn.derive.all_to_roadway()
         self.fn.cost_network()
-        total_cost_4 = self.fn.get_total_cost()
+        total_cost_4 = self.fn.total_cost
 
         self.assertEqual(total_cost_3, total_cost_4)
 
         # consistency in successive derivations
         self.fn.derive.all_to_railway()
         self.fn.cost_network()
-        total_cost_5 = self.fn.get_total_cost()
+        total_cost_5 = self.fn.total_cost
 
         self.fn.derive.all_to_roadway()
         self.fn.cost_network()
-        total_cost_6 = self.fn.get_total_cost()
+        total_cost_6 = self.fn.total_cost
 
         self.fn.derive.all_to_railway()
         self.fn.cost_network()
-        total_cost_7 = self.fn.get_total_cost()
+        total_cost_7 = self.fn.total_cost
 
         self.fn.derive.all_to_roadway()
         self.fn.cost_network()
-        total_cost_8 = self.fn.get_total_cost()
+        total_cost_8 = self.fn.total_cost
 
         self.assertEqual(total_cost_5, total_cost_7)
         self.assertEqual(total_cost_6, total_cost_8)

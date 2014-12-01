@@ -78,46 +78,7 @@ class BaseModalNetwork(object):
 
                 yield link_gauge
 
-    # getters
-    def get_path(self, od):
-        return self.paths[od.id]
-
-    def get_path_distance(self, od):
-        """Get distance of a path.
-
-        Args:
-            od: od pair wich path we are looking its distance
-        """
-
-        if od.is_intrazone():
-            return 0.0
-        else:
-            return self.get_path(od).calc_distance(self.links)
-
-    def get_link(self, id_link, gauge=None):
-        if gauge:
-            return self.links[id_link][gauge]
-        else:
-            return self.links[id_link]
-
-    def get_od(self, id_od, category_od):
-        """Returns existent od pair or create a new one if it doesn't exist.
-
-        Args:
-            id_od: the origin-destination id (eg. "1-3")
-            category_od: the railway category of the freight transported.
-        """
-
-        # check if od pair is in the network
-        if id_od not in self.od_pairs:
-            self._create_od_pair(id_od, category_od)
-
-        # check if od pair has the category asked
-        if category_od not in self.od_pairs[id_od]:
-            self._create_od_pair(id_od, category_od)
-
-        return self.od_pairs[id_od][category_od]
-
+    # network properties
     @property
     def ton_km(self):
         """Sum all ton_km from all od_pairs used in the model."""
@@ -195,7 +156,8 @@ class BaseModalNetwork(object):
         return sum([link.dist for link in self.iter_links()
                     if link.tons.get() < low_density])
 
-    def get_total_cost_tk(self):
+    @property
+    def total_cost_tk(self):
         """Add up all the costs."""
 
         total_cost_tk = 0.0
@@ -208,8 +170,49 @@ class BaseModalNetwork(object):
 
         return total_cost_tk
 
-    def get_total_cost(self):
-        return self.get_total_cost_tk() * self.ton_km
+    @property
+    def total_cost(self):
+        return self.total_cost_tk * self.ton_km
+
+    # getters
+    def get_path(self, od):
+        return self.paths[od.id]
+
+    def get_path_distance(self, od):
+        """Get distance of a path.
+
+        Args:
+            od: od pair wich path we are looking its distance
+        """
+
+        if od.is_intrazone():
+            return 0.0
+        else:
+            return self.get_path(od).calc_distance(self.links)
+
+    def get_link(self, id_link, gauge=None):
+        if gauge:
+            return self.links[id_link][gauge]
+        else:
+            return self.links[id_link]
+
+    def get_od(self, id_od, category_od):
+        """Returns existent od pair or create a new one if it doesn't exist.
+
+        Args:
+            id_od: the origin-destination id (eg. "1-3")
+            category_od: the railway category of the freight transported.
+        """
+
+        # check if od pair is in the network
+        if id_od not in self.od_pairs:
+            self._create_od_pair(id_od, category_od)
+
+        # check if od pair has the category asked
+        if category_od not in self.od_pairs[id_od]:
+            self._create_od_pair(id_od, category_od)
+
+        return self.od_pairs[id_od][category_od]
 
     def get_regrouping_categories(self):
         """Return a list with all the categories that can be regrouped."""
@@ -514,7 +517,7 @@ class RailwayNetwork(BaseModalNetwork):
             current_cost = self._calc_mobility_cost()["total_mobility"]
 
             # calculate locomotives that can be eliminated
-            idle_cap_regroup = link.get_idle_cap_regroup()
+            idle_cap_regroup = link.idle_capacity_regroup
             loc_cap = self.params["locomotive_capacity"].value
             idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
 
@@ -645,27 +648,19 @@ class RailwayNetwork(BaseModalNetwork):
             can_be_regrouped = True
 
         # add idle capacity of locomotives along the route used by od pair
-        exception_counter = 0
-        MAX_EXCEPTIONS = 50
         for id_link in od.links:
-
-            assert exception_counter < MAX_EXCEPTIONS, "Too many error paths."
 
             link = self.get_link(id_link, od.gauge)
 
-            # try to update tons and idle capacity of link-gauge
-            try:
-                if can_be_regrouped:
-                    link.add_idle_cap_regroup(idle_capacity_l)
-                else:
-                    link.add_idle_cap_no_regroup(idle_capacity_l)
+            msg = "".join(("There is no link ", id_link, " and gauge ",
+                           od.gauge, " for od pair ", od.id,
+                           " with path: ", od.path))
+            assert link, msg
 
-            # if impossible, there is no link-gauge in the network for od_pair
-            except:
-                exception_counter += 1
-                print "".join(("There is no link ", id_link, " and gauge ",
-                               od.gauge, " for od pair ", od.id,
-                               " with path: ", od.path))
+            if can_be_regrouped:
+                link.idle_capacity_regroup = idle_capacity_l
+            else:
+                link.idle_capacity_no_regroup = idle_capacity_l
 
     def _regroup_link(self, link, idle_locs):
         """Eliminate some idleness in a link regrouping trains.

@@ -40,12 +40,13 @@ class BaseLink(object):
     def __lt__(self, other):
         return self.tons.get() < other.tons.get()
 
-    # getters
-    def get_ton_km(self):
+    @property
+    def ton_km(self):
         return self.tons.get() * self.dist
 
-    def get_gross_ton_km(self):
-        return self.get_ton_km() * self.net_to_gross_factor
+    @property
+    def gross_ton_km(self):
+        return self.ton_km * self.net_to_gross_factor
 
     @property
     def main_track(self):
@@ -81,7 +82,7 @@ class RoadwayLink(BaseLink):
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.tons.get_original(),
                 self.tons.get_derived(), self.tons.get(),
-                self.get_gross_ton_km()]
+                self.gross_ton_km]
 
 
 class RailwayLink(BaseLink):
@@ -129,45 +130,39 @@ class RailwayLink(BaseLink):
                 self.tons.get_derived(), self.tons.get(),
                 self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
-                self.eac_track, self.maintenance, self.get_gross_ton_km(),
+                self.eac_track, self.maintenance, self.gross_ton_km,
                 self.get_number_of_detours(),
                 self.main_track] + self.tons.get_by_category() + [self.net_to_gross_factor]
 
-    def get_idle_cap(self):
+    @property
+    def idle_capacity(self):
         """Returns idle capacity in tons."""
         return self.idle_capacity_regroup + self.idle_capacity_no_regroup
 
-    def get_idle_cap_tk(self):
+    @property
+    def idle_capacity_tk(self):
         """Returns idle capacity in ton-km."""
-        return self.get_idle_cap() * self.dist
+        return self.idle_capacity * self.dist
 
-    def get_idle_cap_regroup_tk(self):
+    @property
+    def idle_capacity_regroup_tk(self):
         """Returns idle capacity in ton-km, that can be removed."""
         return self.idle_capacity_regroup * self.dist
 
-    def get_idle_cap_no_regroup_tk(self):
+    @property
+    def idle_capacity_no_regroup_tk(self):
         """Returns idle capacity in ton-km, that can not be removed."""
         return self.idle_capacity_no_regroup * self.dist
 
-    def get_idle_cap_regroup(self):
-        """Returns idle capacity in ton-km, that can be removed."""
-        return self.idle_capacity_regroup
-
-    def get_idle_cap_no_regroup(self):
-        """Returns idle capacity in ton-km, that can not be removed."""
-        return self.idle_capacity_no_regroup
-
-    def get_gross_ton_km(self):
+    @property
+    def gross_ton_km(self):
         """Calculate gross ton-km of a railway link.
 
         Overrides super class method to take into account idle capacity."""
 
-        # full_capacity_ton = self.tons.get() + self.get_idle_cap()
-        full_capacity_ton = self.tons.get()
+        if self.tons.get() and self.tons.get() > 0.0:
 
-        if full_capacity_ton and full_capacity_ton > 0.0:
-
-            gross_ton = (full_capacity_ton * self.net_to_gross_factor)
+            gross_ton = (self.tons.get() * self.net_to_gross_factor)
 
             gross_tk = gross_ton * self.dist
 
@@ -176,27 +171,18 @@ class RailwayLink(BaseLink):
 
         return gross_tk
 
-    def get_number_of_detours(self):
+    @property
+    def number_of_detours(self):
         """Calculate number of detours needed at the link."""
 
-        gross_tk = self.get_gross_ton_km()
-
         # check if there is traffic
-        if gross_tk > 0.1:
-            num_detours = self._calc_number_of_detours(gross_tk, self.dist)
+        if self.gross_ton_km > 0.1:
+            num_detours = self._calc_number_of_detours(self.gross_ton_km,
+                                                       self.dist)
         else:
             num_detours = 0
 
         return num_detours
-
-    # add methods
-    def add_idle_cap_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton-km, that can be removed."""
-        self.idle_capacity_regroup += idle_capacity_ton
-
-    def add_idle_cap_no_regroup(self, idle_capacity_ton):
-        """Add idle capacity passed in ton-km, that can not be removed."""
-        self.idle_capacity_no_regroup += idle_capacity_ton
 
     # regroup methods
     def regroup(self, idle_capacity_ton):
@@ -240,7 +226,6 @@ class RailwayLink(BaseLink):
 
         if not density < max_turnout_density:
             t_distance = max_turnout_distance / (density / max_turnout_density)
-
 
         num_detours = dist / t_distance
 

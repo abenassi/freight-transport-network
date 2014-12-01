@@ -363,8 +363,9 @@ class FreightNetwork():
             for rail_od in sorted(self.rail.iter_od_pairs()):
                 yield rail_od
 
-    def get_total_cost(self):
-        return self.rail.get_total_cost() + self.road.get_total_cost()
+    @property
+    def total_cost(self):
+        return self.rail.total_cost + self.road.total_cost
 
     # costing methods
     def cost_network(self):

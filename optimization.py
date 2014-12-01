@@ -21,7 +21,7 @@ class BaseOptimizationStrategy():
 
         self.fn.cost_network()
 
-        return self.fn.get_total_cost()
+        return self.fn.total_cost
 
 
 class WeakLinksAggregator(BaseOptimizationStrategy):
