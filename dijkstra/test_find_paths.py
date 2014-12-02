@@ -18,7 +18,7 @@ def compare_cells(wb1, wb2):
     return True
 
 
-class FindPathsModuleTestCase(unittest.TestCase):
+class FindPathsModuleIntegrationTestCase(unittest.TestCase):
 
     """Test finding shortest paths of railway mode."""
 
@@ -51,7 +51,19 @@ class ShortestPathsMethodsTestCase(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_find_shortest_paths_with_restrictions(self):
+    def test_find_shortest_paths(self):
+        pass
+
+    def test_find_shortest_paths_with_node_restrictions(self):
+        pass
+
+    def test_find_shortest_paths_with_link_restrictions(self):
+        pass
+
+    def test_find_multiple_gauges_shortest_paths_maxt(self):
+        pass
+
+    def test_find_multiple_gauges_shortest_paths_costt(self):
         pass
 
 

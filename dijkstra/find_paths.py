@@ -100,7 +100,7 @@ class Network():
         print "Finished."
 
     # PRIVATE
-    # main private methods
+    # find paths methods
     def _find_shortest_paths(self, gauge):
         """Find shortest paths for each possible pair of nodes.
 
@@ -149,7 +149,8 @@ class Network():
                     paths[node_a][node_b]["distance"] = distance
                     paths[node_a][node_b]["path"] = path
 
-    def _find_shortest_paths_with_restrictions(self, gauge, restricted_nodes):
+    def _find_shortest_paths_with_node_restrictions(self, gauge,
+                                                    restricted_nodes):
         """Find shortest paths for each pair of nodes, with restrictions.
 
         Args:
@@ -199,6 +200,16 @@ class Network():
                     paths[node_a][node_b]["distance"] = distance
                     paths[node_a][node_b]["path"] = path
 
+    def _find_shortest_paths_with_link_restrictions(self, gauge,
+                                                    restricted_links):
+        """Find shortest paths for each pair of nodes, with restrictions.
+
+        Args:
+            gauge: String name of the gauge to calculate shortest paths.
+            restricted_links: List of links than can't be used for paths.
+        """
+        pass
+
     def _find_multiple_gauges_shortest_paths_maxt(self, max_transshipments):
         """Find shortest paths allowing transshipments between gauges.
 
@@ -239,6 +250,7 @@ class Network():
                     if node == link[0]:
                         graph[node].remove(link)
 
+    # reporting methods
     def _store_network_paths(self, wb, gauge, ws_all=None):
         """Copy paths to general worksheet and to gauge specific worksheet."""
 
@@ -273,7 +285,7 @@ class Network():
                 if ws_all:
                     ws_all.append(data)
 
-    # secondary private methods
+    # auxiliar private methods
     def _report_time(self, time_spend, activity):
         print "{} took {:.2} seconds".format(activity, time_spend)
 
