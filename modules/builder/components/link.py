@@ -131,7 +131,7 @@ class RailwayLink(BaseLink):
                 self.idle_capacity_regroup,
                 self.idle_capacity_no_regroup, self.eac_detour,
                 self.eac_track, self.maintenance, self.gross_ton_km,
-                self.get_number_of_detours(),
+                self.number_of_detours,
                 self.main_track] + self.tons.get_by_category() + [self.net_to_gross_factor]
 
     @property

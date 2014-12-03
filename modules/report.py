@@ -37,7 +37,7 @@ class BaseReport():
         pprint(list(rn.iter_od_pairs(10)))
 
         print "\nFirst 10 od_pairs links"
-        pprint([od_pair.get_links() for od_pair in rn.iter_od_pairs(10)])
+        pprint([od_pair.links for od_pair in rn.iter_od_pairs(10)])
 
         print "\nFirst 10 links ids"
         pprint(rn.links.keys()[:10])
@@ -83,9 +83,9 @@ class BaseReport():
         for path in paths.values():
 
             # iterate links
-            for link in path.get_links():
+            for link in path.links:
 
-                row = [path.get_id(), link]
+                row = [path.id, link]
                 ws.append(row)
 
         # save excel report
@@ -271,11 +271,11 @@ class BaseReport():
                   ("Infrastructure",
                    rn.costs["inf"]["total_infrastructure"]),
                   ("Time", rn.costs["time"]["total_time"]),
-                  ("Total", rn.get_total_cost_tk()),
+                  ("Total", rn.total_cost_tk),
                   ("", ""),
                   ("Tons", rn.ton),
                   ("Ton-km", rn.ton_km),
-                  ("Total modal cost", rn.get_total_cost()),
+                  ("Total modal cost", rn.total_cost),
                   ("", ""),
                   ("", ""),
                   ("", ""),
