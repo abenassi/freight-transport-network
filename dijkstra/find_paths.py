@@ -3,7 +3,7 @@
 import sys
 import time
 from openpyxl import load_workbook, Workbook
-from modules import dijkstra, Graph
+from modules import Graph, get_path_finder_strategy
 
 """
     This module is meant to be visible for the user and to be used directly
@@ -42,41 +42,32 @@ class Network():
                    "gauge"]
 
     def __init__(self):
-        self.gauge_names = []
         self.graphs = {}
-        self.paths = {}
 
     # PUBLIC
     def create_graphs_from_excel(self, wb):
         """Create graphs from lists of links in excel."""
 
-        # iterate through each worksheet
         for ws in wb:
-
-            # worksheet name is gauge name
             gauge = ws.title
-            self.gauge_names.append(gauge)
-
-            # create graph
             self.graphs[gauge] = Graph(ws)
 
-    def find_shortest_paths(self):
+    def find_shortest_paths(self, strategy_name, argument):
         """Find shortest paths for each possible pair of nodes, by gauge."""
 
         # start total networks timer
         total_timer_start = time.time()
 
-        # iterate through each gauge
-        for gauge in self.gauge_names:
-
-            # find paths for the gauge
-            self._find_shortest_paths(gauge)
+        path_finder = get_path_finder_strategy(strategy_name)
+        paths = path_finder.find_shortest_paths(self.graphs, argument)
 
         # stop total networks timer
         elapsed = (time.time() - total_timer_start)
         self._report_time(elapsed, "all gauges")
 
-    def store_paths_in_excel(self, xl_output=None):
+        return paths
+
+    def store_paths_in_excel(self, paths, xl_output=None):
         """Store found paths in excel."""
 
         print "\n Saving results in excel..."
@@ -91,8 +82,9 @@ class Network():
         ws_all.append(self.PATH_FIELDS)
 
         # store paths for each network
-        for gauge in self.paths:
-            self._store_network_paths(wb, gauge, ws_all)
+        for gauge in paths:
+            gauge_paths = paths[gauge]
+            self._store_network_paths(wb, gauge, gauge_paths, ws_all)
 
         # save workbook
         wb.save(xl_output or self.XL_OUTPUT)
@@ -100,167 +92,14 @@ class Network():
         print "Finished."
 
     # PRIVATE
-    # find paths methods
-    def _find_shortest_paths(self, gauge):
-        """Find shortest paths for each possible pair of nodes.
-
-        Args:
-            gauge: Name of the gauge to calculate shortest paths.
-        """
-
-        # take graph of the gauge
-        graph = self.graphs[gauge]
-
-        # create paths dictionary for the gauge
-        self.paths[gauge] = {}
-        paths = self.paths[gauge]
-
-        # get nodes with access to the gauge
-        nodes = graph.keys()
-        nodes.sort()
-
-        # calcualte total paths
-        total_paths = len(nodes) ** 2
-        print total_paths, "paths will be calculated"
-
-        for node_a in nodes:
-
-            # create dictionary for node a in paths
-            paths[node_a] = {}
-
-            for node_b in nodes:
-
-                # create dictionary for node b in node a
-                paths[node_a][node_b] = {}
-
-                # if is the same node, there is no path
-                if node_a == node_b:
-
-                    paths[node_a][node_b]["distance"] = 0.0
-                    paths[node_a][node_b]["path"] = None
-
-                # if nodes are different, find shortest path
-                else:
-
-                    # use dijkstra to calculate minimum path from a to b
-                    distance, path = dijkstra(graph, node_a, node_b)
-
-                    # store results in paths
-                    paths[node_a][node_b]["distance"] = distance
-                    paths[node_a][node_b]["path"] = path
-
-    def _find_shortest_paths_with_node_restrictions(self, gauge,
-                                                    restricted_nodes):
-        """Find shortest paths for each pair of nodes, with restrictions.
-
-        Args:
-            gauge: String name of the gauge to calculate shortest paths.
-            restricted_nodes: List of nodes than can't be used for paths.
-        """
-
-        # take graph of the gauge and eliminate restricted nodes
-        graph = self.graphs[gauge]
-        self._remove_restricted_nodes(graph, restricted_nodes)
-
-        # create paths dictionary for the gauge
-        self.paths[gauge] = {}
-        paths = self.paths[gauge]
-
-        # get nodes with access to the gauge
-        nodes = graph.keys()
-        nodes.sort()
-
-        # calcualte total paths
-        total_paths = len(nodes) ** 2
-        print total_paths, "paths will be calculated"
-
-        for node_a in nodes:
-
-            # create dictionary for node a in paths
-            paths[node_a] = {}
-
-            for node_b in nodes:
-
-                # create dictionary for node b in node a
-                paths[node_a][node_b] = {}
-
-                # if is the same node, there is no path
-                if node_a == node_b:
-
-                    paths[node_a][node_b]["distance"] = 0.0
-                    paths[node_a][node_b]["path"] = None
-
-                # if nodes are different, find shortest path
-                else:
-
-                    # use dijkstra to calculate minimum path from a to b
-                    distance, path = dijkstra(graph, node_a, node_b)
-
-                    # store results in paths
-                    paths[node_a][node_b]["distance"] = distance
-                    paths[node_a][node_b]["path"] = path
-
-    def _find_shortest_paths_with_link_restrictions(self, gauge,
-                                                    restricted_links):
-        """Find shortest paths for each pair of nodes, with restrictions.
-
-        Args:
-            gauge: String name of the gauge to calculate shortest paths.
-            restricted_links: List of links than can't be used for paths.
-        """
-        pass
-
-    def _find_multiple_gauges_shortest_paths_maxt(self, max_transshipments):
-        """Find shortest paths allowing transshipments between gauges.
-
-        Args:
-            max_transshipments: Maximum number of transshipments between
-                different gauges allowed.
-        """
-        pass
-
-    def _find_multiple_gauges_shortest_paths_costt(self, cost_transshipments):
-        """Find shortest paths allowing transshipments between gauges.
-
-        Args:
-            cost_transshipments: Cost in terms of "distance" to apply when
-                changing between gauges in a path.
-        """
-        pass
-
-    def _remove_restricted_nodes(self, graph, restricted_nodes):
-        """Remove restricted nodes and links that use them from graph.
-
-        Args:
-            graph: Graph dictionary with nodes as keys and lists of links as
-                values.
-            restricted_nodes: List of nodes that are not to be used calculating
-                paths.
-        """
-
-        for node in graph:
-
-            # check if restricted node to remove
-            if node in restricted_nodes:
-                del graph[node]
-
-            # remove links with restricted node
-            else:
-                for link in graph[node]:
-                    if node == link[0]:
-                        graph[node].remove(link)
-
     # reporting methods
-    def _store_network_paths(self, wb, gauge, ws_all=None):
+    def _store_network_paths(self, wb, gauge, paths, ws_all=None):
         """Copy paths to general worksheet and to gauge specific worksheet."""
 
         # create worksheet and write field names
         ws = wb.create_sheet()
         ws.title = gauge + "_" + self.PATH_SHEET_SUFFIX
         ws.append(self.PATH_FIELDS)
-
-        # get paths of the gauge
-        paths = self.paths[gauge]
 
         # get nodes to iterate them
         nodes = sorted(paths.keys())
@@ -305,7 +144,7 @@ class Network():
         return str(node_a) + "-" + str(node_b)
 
 
-def main(xl_input, xl_output):
+def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
     """Find shortest paths between all nodes of a network, by gauge.
 
     Args:
@@ -322,8 +161,8 @@ def main(xl_input, xl_output):
 
     # create graphs from links, find shortest paths and store then in excel
     network.create_graphs_from_excel(wb)
-    network.find_shortest_paths()
-    network.store_paths_in_excel(xl_output)
+    paths = network.find_shortest_paths(strategy_name, argument)
+    network.store_paths_in_excel(paths, xl_output)
 
     # return network object, in case of the user wants to use it
     return network

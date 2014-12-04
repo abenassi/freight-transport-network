@@ -53,7 +53,7 @@ class OD(BasePath):
                "Ton: " + self.NF.format(self.tons.get()).ljust(15) + \
                "Gauge:" + str(self.gauge).ljust(15) + \
                "Distance:" + str(self.dist).ljust(15) + \
-               "Category:" + str(self.rail_category)
+               "Category:" + str(self.tons.category)
 
     def __lt__(self, other):
         return self.tons.get() < other.tons.get()

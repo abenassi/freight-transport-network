@@ -13,7 +13,7 @@ class BaseOptimizationStrategy():
     def _cost_has_increased(self, old_cost):
 
         self.fn.cost_network()
-        new_cost = self.fn.get_total_cost()
+        new_cost = self.fn.total_cost
 
         return new_cost > old_cost
 
@@ -31,15 +31,15 @@ class WeakLinksAggregator(BaseOptimizationStrategy):
         for rail_link in self.fn.iter_rail_links(sorted_by=True):
 
             # only check links that has more than zero tons
-            if rail_link.get_ton() > 0.0:
+            if rail_link.tons.get() > 0.0:
 
                 print "Analyzing derivation of", rail_link,
 
                 old_cost = self._get_total_cost()
 
                 # derive all od pairs of a link to roadway network
-                rail_link_id = rail_link.get_id()
-                rail_link_gauge = rail_link.get_gauge()
+                rail_link_id = rail_link.id
+                rail_link_gauge = rail_link.gauge
                 deriv_ods = self.fn.derive.link_to_roadway(rail_link_id,
                                                            rail_link_gauge,
                                                            self.ALLOW_ORIGINAL)
@@ -59,7 +59,7 @@ class WeakOdsAggregator(BaseOptimizationStrategy):
         for rail_od in self.fn.iter_rail_ods(sorted_by=True):
 
             # only check links that has more than zero tons
-            if rail_od.get_ton() > 0.0:
+            if rail_od.tons.get() > 0.0:
 
                 print "Analyzing derivation of", rail_od,
 

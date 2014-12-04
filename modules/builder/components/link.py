@@ -120,7 +120,7 @@ class RailwayLink(BaseLink):
                "Distance: {:,.1f}".format(self.dist).ljust(18) + \
                "Gauge: " + str(self.gauge).ljust(8) + \
                "Ton: {:,.1f}".format(self.tons.get()).ljust(20) + \
-               "Idle capacity: {:,.1f}".format(self.get_idle_cap()).ljust(30)
+               "Idle capacity: {:,.1f}".format(self.idle_capacity).ljust(30)
 
     # PUBLIC
     # getters
