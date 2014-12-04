@@ -18,6 +18,7 @@ def compare_cells(wb1, wb2):
     return True
 
 
+@unittest.skip("integration skipped")
 class FindPathsModuleIntegrationTestCase(unittest.TestCase):
 
     """Test finding shortest paths of railway mode."""
@@ -46,25 +47,37 @@ class FindPathsModuleIntegrationTestCase(unittest.TestCase):
         self.assertTrue(compare_cells(wb1, wb2))
 
 
-class ShortestPathsMethodsTestCase(unittest.TestCase):
+class IsolatedGaugesStrategyTestCase(unittest.TestCase):
 
     def setUp(self):
-        pass
 
-    def test_find_shortest_paths(self):
-        pass
+        G1 = {
+            'a': [('b', 4), ('c', 2)],
+            'b': [('a', 4), ('c', 1), ('d', 5)],
+            'c': [('a', 2), ('b', 1), ('d', 8), ('e', 10)],
+            'd': [('b', 5), ('c', 8), ('e', 2), ('z', 6)],
+            'e': [('c', 10), ('d', 2), ('z', 3)],
+            'z': [('d', 6), ('e', 3)],
+        }
 
-    def test_find_shortest_paths_with_node_restrictions(self):
-        pass
+        self.network = find_paths.Network()
+        self.network.graphs = {"unique": G1}
 
-    def test_find_shortest_paths_with_link_restrictions(self):
-        pass
+    def test_isolated_gauges(self):
+        paths = self.network.find_shortest_paths("isolated_gauges")
+        az_path = paths["unique"]["a"]["z"]["path"]
+        self.assertEqual(az_path, ['a', 'c', 'b', 'd', 'e', 'z'])
 
-    def test_find_multiple_gauges_shortest_paths_maxt(self):
-        pass
+    def test_restricted_nodes(self):
+        paths = self.network.find_shortest_paths("isolated_gauges", ["e"])
+        az_path = paths["unique"]["a"]["z"]["path"]
+        self.assertEqual(az_path, ['a', 'c', 'b', 'd', 'z'])
 
-    def test_find_multiple_gauges_shortest_paths_costt(self):
-        pass
+    def test_restricted_links(self):
+        paths = self.network.find_shortest_paths("isolated_gauges",
+                                                 [("d", "e")])
+        az_path = paths["unique"]["a"]["z"]["path"]
+        self.assertEqual(az_path, ['a', 'c', 'b', 'd', 'z'])
 
 
 if __name__ == '__main__':

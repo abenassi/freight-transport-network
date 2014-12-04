@@ -52,7 +52,7 @@ class Network():
             gauge = ws.title
             self.graphs[gauge] = Graph(ws)
 
-    def find_shortest_paths(self, strategy_name, argument):
+    def find_shortest_paths(self, strategy_name, argument=None):
         """Find shortest paths for each possible pair of nodes, by gauge."""
 
         # start total networks timer
