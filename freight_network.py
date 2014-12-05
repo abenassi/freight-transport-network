@@ -33,7 +33,7 @@ class DerivationMethods():
             if self._road_od_pair_is_derivable(road_od):
 
                 # derive road tons to railway
-                self.od_to_railway(road_od)
+                self.od_to_railway(road_od, allow_original=True)
 
         # find lowest scale link for each od pair of the networks
         self.fn.rail.find_lowest_scale_links()
@@ -47,7 +47,7 @@ class DerivationMethods():
 
             # derive road tons to railway
             COEFF = 1.0
-            self.od_to_roadway(rail_od, COEFF)
+            self.od_to_roadway(rail_od, COEFF, allow_original=True)
 
         # find lowest scale link for each od pair of the networks
         self.fn.rail.find_lowest_scale_links()
@@ -85,7 +85,7 @@ class DerivationMethods():
         # returns rail_od for eventual reversion
         return rail_od
 
-    def od_to_roadway(self, rail_od, coeff=None, allow_original=True):
+    def od_to_roadway(self, rail_od, coeff=None, allow_original=False):
         """Derive a rail od pair to roadway mode.
 
         Args:
@@ -181,10 +181,16 @@ class DerivationMethods():
         category = from_od.tons.category
 
         # derive tons from from_od pair to to_od pair
+        from_mode.remove_mobility_requirements(from_od)
+        to_mode.remove_mobility_requirements(to_od)
+
         orig_ton_derived, returned_ton = from_od.derive_ton(to_od, coeff,
                                                             allow_original)
 
-        # remove tons from road links used by road od_pair
+        from_mode.increase_mobility_requirements(from_od)
+        to_mode.increase_mobility_requirements(to_od)
+
+        # remove tons from "from_mode" links used by "from_od"
         for id_from_link in from_od.links:
             from_link = from_mode.get_link(id_from_link, from_od.gauge)
             from_link.tons.remove_original(ton=orig_ton_derived,
@@ -193,8 +199,12 @@ class DerivationMethods():
             from_link.tons.remove_derived(ton=returned_ton,
                                           categories=category,
                                           id_ods=id_od)
+        # regroup links from "from_mode", if necessary
+        for id_from_link in from_od.links:
+            from_link = from_mode.get_link(id_from_link, from_od.gauge)
+            from_mode.regroup_link(from_link)
 
-        # add derived tons to rail links, used by rail od_pair
+        # add derived tons to "to_mode" links, used by "to_od"
         for id_to_link in to_od.links:
             to_link = to_mode.get_link(id_to_link, to_od.gauge)
             to_link.tons.add_original(ton=returned_ton,
@@ -203,6 +213,11 @@ class DerivationMethods():
             to_link.tons.add_derived(ton=orig_ton_derived,
                                      categories=category,
                                      id_ods=id_od)
+
+        # regroup links from "to_mode", if necessary
+        for id_to_link in to_od.links:
+            to_link = to_mode.get_link(id_to_link, to_od.gauge)
+            to_mode.regroup_link(to_link)
 
     def _road_od_pair_is_derivable(self, road_od):
         """Indicate if an od pair is derivable or not.

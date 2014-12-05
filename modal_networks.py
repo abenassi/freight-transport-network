@@ -86,9 +86,8 @@ class BaseModalNetwork(object):
         total_tk_od = 0.0
 
         # iterate through all links adding ton * dist
-        for link in self.links.values():
-            for link_gauge in link.values():
-                total_tk_link += link_gauge.tons.get() * link_gauge.dist
+        for link in self.iter_links():
+            total_tk_link += link.tons.get() * link.dist
 
         # iterate throught all ods adding ton * dist
         for od in self.iter_od_pairs():
@@ -437,6 +436,15 @@ class RoadwayNetwork(BaseModalNetwork):
         """Dummy method to match railway interface for reporting."""
         return None
 
+    def increase_mobility_requirements(self, od):
+        pass
+
+    def remove_mobility_requirements(self, od):
+        pass
+
+    def regroup_link(self, link):
+        pass
+
     # PRIVATE
     def _reset_network(self):
         self._reset_links()
@@ -482,7 +490,7 @@ class RailwayNetwork(BaseModalNetwork):
         for od in self.iter_od_pairs():
 
             # calculate mobility requirements to run rail service for od
-            self._calculate_mobility_od(od)
+            self.increase_mobility_requirements(od)
 
     def calc_simple_mobility_cost(self):
         """Calculates mobility cost of running each origin-destination rail
@@ -512,28 +520,7 @@ class RailwayNetwork(BaseModalNetwork):
 
         # iterate through all links
         for link in self.iter_links():
-
-            # store current cost of network
-            current_cost = self._calc_mobility_cost()["total_mobility"]
-
-            # calculate locomotives that can be eliminated
-            idle_cap_regroup = link.idle_capacity_regroup
-            loc_cap = self.params["locomotive_capacity"].value
-            idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
-
-            # regroup link
-            # print "regroup ", link.id
-            self._regroup_link(link, idle_locs)
-
-            # calculate new cost with link regrouped
-            new_cost = self._calc_mobility_cost()["total_mobility"]
-
-            # if new cost is not lower, revert regroup of link
-            # if False:
-            if new_cost >= current_cost:
-                # print "new cost:", new_cost, "current cost:", current_cost
-                # print "revert ", link.id
-                self._revert_regroup_link(link, idle_locs)
+            self.regroup_link(link)
 
         # calculate and store mobility costs
         self.costs["mob"] = self._calc_mobility_cost()
@@ -604,19 +591,7 @@ class RailwayNetwork(BaseModalNetwork):
         else:
             return 0.0
 
-    # PRIVATE
-    def _calc_mobility_cost(self):
-        """Calculates mobility cost for current mobility requirements.
-
-        Creates a railway NetworkCost() object to cost mobility for a network
-        described by current parameters, locomotives, wagons and links data."""
-
-        # create a railway network cost object
-        network_cost = self.COST_CLASS(self)
-
-        return network_cost.cost_mobility()
-
-    def _calculate_mobility_od(self, od):
+    def increase_mobility_requirements(self, od):
         """Takes an OD object and calculate its mobility requirements.
 
         Update the rolling material objects (wagons and locomotives) with the
@@ -632,14 +607,137 @@ class RailwayNetwork(BaseModalNetwork):
         if not od.tons.get() > 0.1:
             return
 
-        # wagons mobility
-        self.wagons.add_freight_service(od.tons.get(), od.dist)
+        # increase material requirements and store idle capacity generated
+        idle_cap_l, idle_cap_w = self._increase_rolling_material(od.tons.get(),
+                                                                 od.dist)
+        can_be_regrouped = self._can_od_be_regrouped(od)
 
-        # locomotives mobility
-        idle_capacity_l = self.locoms.add_freight_service(od.tons.get(),
-                                                          od.dist)
+        # add idle capacity of locomotives along the route used by od pair
+        for id_link in od.links:
+            link = self.get_link(id_link, od.gauge)
 
-        # check if od can be regroup or not (to remove idle capacity)
+            # check that every link used by od exists in the network
+            msg = "".join(("There is no link ", id_link, " and gauge ",
+                           od.gauge, " for od pair ", od.id,
+                           " with path: ", od.path))
+            assert link, msg
+
+            # classify idle capacity differently if can be regrouped
+            if can_be_regrouped:
+                link.idle_capacity_regroup += idle_cap_l
+            else:
+                link.idle_capacity_no_regroup += idle_cap_w
+
+    def remove_mobility_requirements(self, od):
+        """Takes an OD object and remove mobility requirements from network.
+
+        Update the rolling material objects (wagons and locomotives) removing
+        a freight service required (od pair) object and the links used by od
+        pair route with the idle remaining freight transport capacity in
+        locomotives.
+
+        Args:
+            od: OD pair with tons that were carried by rolling material
+        """
+
+        # check od has significant tons
+        if not od.tons.get() > 0.1:
+            return
+
+        # increase material requirements and store idle capacity generated
+        idle_cap_l, idle_cap_w = self._remove_rolling_material(od.tons.get(),
+                                                               od.dist)
+        can_be_regrouped = self._can_od_be_regrouped(od)
+
+        # add idle capacity of locomotives along the route used by od pair
+        for id_link in od.links:
+            link = self.get_link(id_link, od.gauge)
+
+            # check that every link used by od exists in the network
+            msg = "".join(("There is no link ", id_link, " and gauge ",
+                           od.gauge, " for od pair ", od.id,
+                           " with path: ", od.path))
+            assert link, msg
+
+            # classify idle capacity differently if can be regrouped
+            if can_be_regrouped:
+                pass
+            else:
+                link.idle_capacity_no_regroup -= idle_cap_w
+
+    # PRIVATE
+    def regroup_link(self, link):
+
+        # store current cost of network
+        current_cost = self._calc_mobility_cost()["total_mobility"]
+
+        # regroup link
+        # print "regroup ", link.id
+        self._regroup_link(link)
+
+        # calculate new cost with link regrouped
+        new_cost = self._calc_mobility_cost()["total_mobility"]
+
+        if new_cost >= current_cost:
+            self._revert_regroup_link(link)
+
+    def _calc_mobility_cost(self):
+        """Calculates mobility cost for current mobility requirements.
+
+        Creates a railway NetworkCost() object to cost mobility for a network
+        described by current parameters, locomotives, wagons and links data."""
+
+        # create a railway network cost object
+        network_cost = self.COST_CLASS(self)
+
+        return network_cost.cost_mobility()
+
+    def _increase_rolling_material(self, ton, dist):
+        """Increase rolling material requirements, adding a new service.
+
+        Args:
+            ton: Tons carried in the new freight service.
+            dist: Distance run by the new freight service.
+
+        Return:
+            A tuple (idle_cap_l, idle_cap_w) of idle capacity due to an
+                increase in rolling material capable of manage more tons than
+                needed.
+            idle_cap_l: Idle capacity in locomotives.
+            idle_cap_w: Idle capacity in wagons.
+        """
+
+        idle_cap_l = self.locoms.add_freight_service(ton, dist)
+        idle_cap_w = self.wagons.add_freight_service(ton, dist)
+
+        return (idle_cap_l, idle_cap_w)
+
+    def _remove_rolling_material(self, ton, dist):
+        """Remove rolling material requirements, taking out a service.
+
+        Args:
+            ton: Tons carried in the old freight service.
+            dist: Distance run by the old freight service.
+
+        Return:
+            A tuple (idle_cap_l, idle_cap_w) of idle capacity that has been
+                removed by taking out a service.
+            idle_cap_l: Idle capacity in locomotives.
+            idle_cap_w: Idle capacity in wagons.
+        """
+
+        idle_cap_l = self.locoms.remove_freight_service(ton, dist)
+        idle_cap_w = self.wagons.remove_freight_service(ton, dist)
+
+        return (idle_cap_l, idle_cap_w)
+
+    def _can_od_be_regrouped(self, od):
+        """Check if the category of an od is one that can be regrouped.
+
+        Args:
+            od: Od pair to check if it can be regrouped.
+        """
+
         od_category = od.tons.category
         param_name = "regroup_" + str(od_category)
         if param_name in self.params:
@@ -647,22 +745,9 @@ class RailwayNetwork(BaseModalNetwork):
         else:
             can_be_regrouped = True
 
-        # add idle capacity of locomotives along the route used by od pair
-        for id_link in od.links:
+        return can_be_regrouped
 
-            link = self.get_link(id_link, od.gauge)
-
-            msg = "".join(("There is no link ", id_link, " and gauge ",
-                           od.gauge, " for od pair ", od.id,
-                           " with path: ", od.path))
-            assert link, msg
-
-            if can_be_regrouped:
-                link.idle_capacity_regroup = idle_capacity_l
-            else:
-                link.idle_capacity_no_regroup = idle_capacity_l
-
-    def _regroup_link(self, link, idle_locs):
+    def _regroup_link(self, link):
         """Eliminate some idleness in a link regrouping trains.
 
         Args:
@@ -670,6 +755,11 @@ class RailwayNetwork(BaseModalNetwork):
                 locomotives
             idle_locs: number of idle locomotives
         """
+
+        # calculate locomotives that can be eliminated
+        idle_cap_regroup = link.idle_capacity_regroup
+        loc_cap = self.params["locomotive_capacity"].value
+        idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
 
         # store parameters to be used in short variables
         loc_capacity = self.params["locomotive_capacity"].value
@@ -685,13 +775,18 @@ class RailwayNetwork(BaseModalNetwork):
         self.locoms.regroup(idle_locs, link.dist)
         self.wagons.add_regroup_time(wagons_regrouped)
 
-    def _revert_regroup_link(self, link, idle_locs):
+    def _revert_regroup_link(self, link):
         """Revert previously regrouping of trains restoring idleness.
 
         Args:
             link: a previously regrouped link that has eliminated some idleness
             idle_locs: number of idle locomotives
         """
+
+        # calculate locomotives that can be eliminated
+        idle_cap_regroup = link.idle_capacity_regroup
+        loc_cap = self.params["locomotive_capacity"].value
+        idle_locs = math.floor(float(idle_cap_regroup) / float(loc_cap))
 
         # store parameters to be used in short variables
         loc_capacity = self.params["locomotive_capacity"].value

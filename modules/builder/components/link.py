@@ -105,8 +105,8 @@ class RailwayLink(BaseLink):
         super(RailwayLink, self).__init__(id, distance, gauge)
 
         # traffic parameters
-        self.idle_capacity_regroup = 0.0  # ton-km
-        self.idle_capacity_no_regroup = 0.0  # ton-km
+        self.idle_capacity_regroup = 0.0
+        self.idle_capacity_no_regroup = 0.0
 
         # detour parameters
         self.turnout_freq = None
