@@ -181,14 +181,14 @@ class DerivationMethods():
         category = from_od.tons.category
 
         # derive tons from from_od pair to to_od pair
-        from_mode.remove_mobility_requirements(from_od)
-        to_mode.remove_mobility_requirements(to_od)
+        # from_mode.remove_mobility_requirements(from_od)
+        # to_mode.remove_mobility_requirements(to_od)
 
         orig_ton_derived, returned_ton = from_od.derive_ton(to_od, coeff,
                                                             allow_original)
 
-        from_mode.increase_mobility_requirements(from_od)
-        to_mode.increase_mobility_requirements(to_od)
+        # from_mode.increase_mobility_requirements(from_od)
+        # to_mode.increase_mobility_requirements(to_od)
 
         # remove tons from "from_mode" links used by "from_od"
         for id_from_link in from_od.links:
@@ -200,9 +200,9 @@ class DerivationMethods():
                                           categories=category,
                                           id_ods=id_od)
         # regroup links from "from_mode", if necessary
-        for id_from_link in from_od.links:
-            from_link = from_mode.get_link(id_from_link, from_od.gauge)
-            from_mode.regroup_link(from_link)
+        # for id_from_link in from_od.links:
+        #     from_link = from_mode.get_link(id_from_link, from_od.gauge)
+        #     from_mode.regroup_link(from_link)
 
         # add derived tons to "to_mode" links, used by "to_od"
         for id_to_link in to_od.links:
@@ -215,9 +215,9 @@ class DerivationMethods():
                                      id_ods=id_od)
 
         # regroup links from "to_mode", if necessary
-        for id_to_link in to_od.links:
-            to_link = to_mode.get_link(id_to_link, to_od.gauge)
-            to_mode.regroup_link(to_link)
+        # for id_to_link in to_od.links:
+        #     to_link = to_mode.get_link(id_to_link, to_od.gauge)
+        #     to_mode.regroup_link(to_link)
 
     def _road_od_pair_is_derivable(self, road_od):
         """Indicate if an od pair is derivable or not.

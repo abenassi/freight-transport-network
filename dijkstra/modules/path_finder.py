@@ -24,6 +24,26 @@ class IsolatedGaugesStrategy(object):
 
         return paths
 
+    def find_shortest_path(self, node_a, node_b, graphs, restrictions=None):
+        """Find shortest paths for each possible pair of nodes, by gauge."""
+
+        paths = {}
+
+        gauge_names = graphs.keys()
+        for gauge in gauge_names:
+
+            # prepare graph removing restrictions
+            graph = graphs[gauge]
+            self._remove_restricted_nodes_and_links(graph, restrictions)
+
+            # find shortest path for the gauge
+            distance, path = dijkstra(graph, node_a, node_b)
+            paths[gauge] = {}
+            paths[gauge]["distance"] = distance
+            paths[gauge]["path"] = path
+
+        return paths
+
     # PRIVATE
     def _find_shortest_paths(self, gauge, graph):
         """Find shortest paths for each possible pair of nodes.

@@ -79,6 +79,11 @@ class IsolatedGaugesStrategyTestCase(unittest.TestCase):
         az_path = paths["unique"]["a"]["z"]["path"]
         self.assertEqual(az_path, ['a', 'c', 'b', 'd', 'z'])
 
+    def test_find_shortest_path(self):
+        paths = self.network.find_shortest_path("a-z", "isolated_gauges")
+        az_path = paths["unique"]["path"]
+        self.assertEqual(az_path, ['a', 'c', 'b', 'd', 'e', 'z'])
+
 
 if __name__ == '__main__':
     unittest.main()

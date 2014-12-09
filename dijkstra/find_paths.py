@@ -67,6 +67,16 @@ class Network():
 
         return paths
 
+    def find_shortest_path(self, id_od, strategy_name, argument=None):
+        """Find shortest paths for each possible pair of nodes, by gauge."""
+
+        path_finder = get_path_finder_strategy(strategy_name)
+        node_a, node_b = self._id_od_to_nodes(id_od)
+        paths = path_finder.find_shortest_path(node_a, node_b, self.graphs,
+                                               argument)
+
+        return paths
+
     def store_paths_in_excel(self, paths, xl_output=None):
         """Store found paths in excel."""
 
@@ -142,6 +152,9 @@ class Network():
 
     def _nodes_to_id_od(self, node_a, node_b):
         return str(node_a) + "-" + str(node_b)
+
+    def _id_od_to_nodes(self, id_od):
+        return id_od.split("-")
 
 
 def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
