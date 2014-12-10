@@ -3,7 +3,7 @@
 import sys
 import time
 from openpyxl import load_workbook, Workbook
-from modules import Graph, get_path_finder_strategy
+from modules import get_graph_builder, get_path_finder_strategy
 
 """
     This module is meant to be visible for the user and to be used directly
@@ -45,12 +45,21 @@ class Network():
         self.graphs = {}
 
     # PUBLIC
-    def create_graphs_from_excel(self, wb):
-        """Create graphs from lists of links in excel."""
+    def create_graphs(self, links):
+        """Create graphs from lists of links.
 
-        for ws in wb:
-            gauge = ws.title
-            self.graphs[gauge] = Graph(ws)
+        Links argument may be a Workbook with link tables or a dictionary with
+        Link objects.
+
+        Args:
+            links (workbook): A workbook containing one worksheet per gauge or
+                all gauges in a single worksheet.
+            links (dictionary): A dictionary with gauges, and link ids as keys
+                to access Link objects. links[gauge][id_link] = Link()
+        """
+
+        graph_builder = get_graph_builder(links)
+        self.graphs = graph_builder.get_graphs(links)
 
     def find_shortest_paths(self, strategy_name, argument=None):
         """Find shortest paths for each possible pair of nodes, by gauge."""
@@ -173,7 +182,7 @@ def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
     network = Network()
 
     # create graphs from links, find shortest paths and store then in excel
-    network.create_graphs_from_excel(wb)
+    network.create_graphs(wb)
     paths = network.find_shortest_paths(strategy_name, argument)
     network.store_paths_in_excel(paths, xl_output)
 
