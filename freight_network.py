@@ -342,13 +342,13 @@ class FreightNetwork():
     ODS_OPTIMIZATION_CLASS = WeakOdsAggregator
 
     def __init__(self, railway_network=None, roadway_network=None,
-                 projection_factor=1.0):
+                 projection_factor=1.0, restrictions=False):
 
         self.rail = railway_network or RailwayNetwork(
-            projection_factor=projection_factor)
+            projection_factor=projection_factor, restrictions=restrictions)
 
         self.road = roadway_network or RoadwayNetwork(
-            projection_factor=projection_factor)
+            projection_factor=projection_factor, restrictions=restrictions)
 
         self.derive = DerivationMethods(self)
 
@@ -456,7 +456,7 @@ class FreightNetwork():
 def main():
 
     # initialize freight transport network
-    fn = FreightNetwork(projection_factor=1.0)
+    fn = FreightNetwork(projection_factor=1.0, restrictions=True)
 
     # cost network at current situation
     scenario = "current situation"
@@ -473,10 +473,10 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods"
-    print "Costing", scenario
-    fn.min_network_cost()
-    fn.cost_network()
-    fn.report_to_excel(scenario, append_report=True)
+    # print "Costing", scenario
+    # fn.min_network_cost()
+    # fn.cost_network()
+    # fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"

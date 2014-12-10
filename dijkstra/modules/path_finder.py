@@ -37,10 +37,12 @@ class IsolatedGaugesStrategy(object):
             self._remove_restricted_nodes_and_links(graph, restrictions)
 
             # find shortest path for the gauge
-            distance, path = dijkstra(graph, node_a, node_b)
-            paths[gauge] = {}
-            paths[gauge]["distance"] = distance
-            paths[gauge]["path"] = path
+            if (node_a in graph) and (node_b in graph):
+
+                distance, path = dijkstra(graph, node_a, node_b)
+                paths[gauge] = {}
+                paths[gauge]["distance"] = distance
+                paths[gauge]["path"] = path
 
         return paths
 

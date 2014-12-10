@@ -37,36 +37,68 @@ class Graph(dict):
             self[node_a].append(weighted_edge)
 
 
-class SingleWorksheet():
+class BaseGraphBuilder(object):
+
+    """docstring for BaseGraphBuilder"""
+
+    @classmethod
+    def _are_nodes_in_one_column(self, first_cell_value):
+        return "-" in first_cell_value
+
+    def _split_nodes(self, node_a, node_b=None):
+
+        if self._are_nodes_in_one_column(node_a):
+            return (node_a.split("-")[0], node_a.split("-")[1])
+
+        else:
+            return (node_a, node_b)
+
+
+class SingleWorksheet(BaseGraphBuilder):
 
     @classmethod
     def accepts(self, ws_links):
-        return type(ws_links) == worksheet.worksheet.Worksheet
+
+        has_gauges = None
+        is_ws = (type(ws_links) == worksheet.worksheet.Worksheet)
+
+        if is_ws:
+            first_cell_value = ws_links.cell(column=1, row=2).value
+            if self._are_nodes_in_one_column(first_cell_value):
+                gauge_value = ws_links.cell(column=3, row=2).value
+            else:
+                gauge_value = ws_links.cell(column=4, row=2).value
+
+            has_gauges = (gauge_value and gauge_value != "")
+
+        return is_ws and not has_gauges
 
     def get_graphs(self, ws):
-        return self._build_graph(ws)
-
-    def _build_graph(self, ws):
         """Build graph from an excel list of links."""
 
         graph = Graph()
 
-        # load first row with data of a link
+        # check the columns where nodes are
         cell_node_a = ws.cell(column=1, row=2)
-        cell_node_b = ws.cell(column=2, row=2)
-        cell_weight = ws.cell(column=3, row=2)
+        if self._are_nodes_in_one_column(cell_node_a.value):
+            cell_node_b = ws.cell(column=1, row=2)
+            cell_weight = ws.cell(column=2, row=2)
+
+        else:
+            cell_node_b = ws.cell(column=2, row=2)
+            cell_weight = ws.cell(column=3, row=2)
 
         # parse data of each link into the Graph
         while cell_node_a.value:
 
             # store data of the row
-            node_a = cell_node_a.value
-            node_b = cell_node_b.value
+            node_a, node_b = self._split_nodes(cell_node_a.value,
+                                               cell_node_b.value)
             weight = cell_weight.value
 
             # adds link in both ways (a to b, b to a)
-            graph.add_link(node_a, node_b, weight)
-            graph.add_link(node_b, node_a, weight)
+            graph.add_edge(node_a, node_b, weight)
+            graph.add_edge(node_b, node_a, weight)
 
             # move on to the next row
             cell_node_a = cell_node_a.offset(row=1, column=0)
@@ -76,7 +108,89 @@ class SingleWorksheet():
         return graph
 
 
-class MultipleWorksheets():
+class SingleWorksheetWithGauges(BaseGraphBuilder):
+
+    @classmethod
+    def accepts(self, ws_links):
+
+        has_gauges = None
+        is_ws = (type(ws_links) == worksheet.worksheet.Worksheet)
+
+        if is_ws:
+            first_cell_value = ws_links.cell(column=1, row=2).value
+            if self._are_nodes_in_one_column(first_cell_value):
+                gauge_value = ws_links.cell(column=3, row=2).value
+            else:
+                gauge_value = ws_links.cell(column=4, row=2).value
+
+            has_gauges = (gauge_value and gauge_value != "")
+
+        return is_ws and has_gauges
+
+    def get_graphs(self, ws):
+        """Build graph from an excel list of links."""
+
+        graphs = {}
+
+        # check the columns where nodes are
+        cell_node_a = ws.cell(column=1, row=2)
+        if self._are_nodes_in_one_column(cell_node_a.value):
+            cell_node_b = ws.cell(column=1, row=2)
+            cell_weight = ws.cell(column=2, row=2)
+            cell_gauge = ws.cell(column=3, row=2)
+
+        else:
+            cell_node_b = ws.cell(column=2, row=2)
+            cell_weight = ws.cell(column=3, row=2)
+            cell_gauge = ws.cell(column=4, row=2)
+
+        # parse data of each link into the Graph
+        while cell_node_a.value:
+
+            # store data of the row
+            node_a, node_b = self._split_nodes(cell_node_a.value,
+                                               cell_node_b.value)
+            weight = cell_weight.value
+            gauge = cell_gauge.value
+
+            graph = self._get_graph(graphs, gauge)
+
+            # adds link in both ways (a to b, b to a)
+            graph.add_edge(node_a, node_b, weight)
+            graph.add_edge(node_b, node_a, weight)
+
+            # move on to the next row
+            cell_node_a = cell_node_a.offset(row=1, column=0)
+            cell_node_b = cell_node_b.offset(row=1, column=0)
+            cell_weight = cell_weight.offset(row=1, column=0)
+            cell_gauge = cell_gauge.offset(row=1, column=0)
+
+        return graphs
+
+    def _get_graph(self, graphs, gauge):
+
+        if not gauge in graphs:
+            graphs[gauge] = Graph()
+
+        return graphs[gauge]
+
+
+class WorkbookSingleWorksheet(BaseGraphBuilder):
+
+    """docstring for WorkbookWithGauges"""
+    @classmethod
+    def accepts(self, wb_links):
+        return type(wb_links) == Workbook and len(wb_links.worksheets) == 1
+
+    def get_graphs(self, wb_links):
+
+        ws = wb_links.active
+        graph_builder = get_graph_builder(ws)
+
+        return graph_builder.get_graphs(ws)
+
+
+class MultipleWorksheets(BaseGraphBuilder):
 
     @classmethod
     def accepts(self, wb_links):
@@ -93,17 +207,40 @@ class MultipleWorksheets():
         return graphs
 
 
-class LinksDictionary():
+class LinksDictionary(BaseGraphBuilder):
 
     @classmethod
     def accepts(self, dict_links):
-        return type(dict_links) == dict
+
+        is_dict = (type(dict_links) == dict)
+        has_dict = (type(dict_links.values()[0]) == dict)
+
+        return is_dict and has_dict
 
     def get_graphs(self, dict_links):
-        return self._build_graph(dict_links)
+
+        graphs = {}
+
+        for id_link in dict_links:
+            for gauge in dict_links[id_link]:
+
+                if not gauge in graphs:
+                    graphs[gauge] = Graph()
+                graph = graphs[gauge]
+
+                link = dict_links[id_link][gauge]
+                node_a = str(link.nodes[0])
+                node_b = str(link.nodes[1])
+                weight = link.dist
+
+                graph.add_edge(node_a, node_b, weight)
+                graph.add_edge(node_b, node_a, weight)
+
+        return graphs
 
 
-BUILDERS = [SingleWorksheet, MultipleWorksheets, LinksDictionary]
+BUILDERS = [SingleWorksheet, SingleWorksheetWithGauges,
+            WorkbookSingleWorksheet, MultipleWorksheets, LinksDictionary]
 
 
 def get_graph_builder(links):
@@ -113,5 +250,6 @@ def get_graph_builder(links):
     for builder in BUILDERS:
         if builder.accepts(links):
             RV = builder()
+            break
 
     return RV

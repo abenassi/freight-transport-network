@@ -2,7 +2,10 @@
 from modules import RailwayNetworkBuilder, RoadwayNetworkBuilder
 from modules import RailwayNetworkCost, RoadwayNetworkCost
 from modules import RailwayNetworkReport, RoadwayNetworkReport
+from modules.builder.components.path import Path
 import math
+from dijkstra import find_paths
+import sys
 
 """
     This module is used by freight_network. It exposes classes for the two
@@ -40,6 +43,7 @@ class BaseModalNetwork(object):
 
         self.params = {}
         self.od_pairs = {}
+        self.restricted_links = {}
         self.links = {}
         self.paths = {}
         self.costs = {"mob": None, "inf": None, "time": None}
@@ -64,11 +68,16 @@ class BaseModalNetwork(object):
 
                 yield od_pair_category
 
-    def iter_links(self, limit=None):
+    def iter_links(self, limit=None, restricted=False):
         """Iterate links with an optional limit in number of results."""
 
+        if not restricted:
+            links_dict = self.links
+        else:
+            links_dict = self.restricted_links
+
         counter = 0
-        for link in self.links.values():
+        for link in links_dict.values():
             for link_gauge in link.values():
 
                 # check if limit is reached
@@ -175,7 +184,21 @@ class BaseModalNetwork(object):
 
     # getters
     def get_path(self, od):
-        return self.paths[od.id]
+
+        # take id of od pair
+        if type(od) == str:
+            id_od = od
+        else:
+            id_od = od.id
+
+        # look if path is already calculated
+        if id_od in self.paths and self._use_existent_links(self.paths[id_od]):
+            RV = self.paths[id_od]
+
+        else:
+            RV = self.find_shortest_path(id_od)
+
+        return RV
 
     def get_path_distance(self, od):
         """Get distance of a path.
@@ -195,6 +218,13 @@ class BaseModalNetwork(object):
         else:
             return self.links[id_link]
 
+    def remove_link(self, id_link, gauge=None):
+
+        if gauge:
+            del self.links[id_link][gauge]
+        else:
+            del self.links[id_link]
+
     def get_od(self, id_od, category_od):
         """Returns existent od pair or create a new one if it doesn't exist.
 
@@ -212,6 +242,13 @@ class BaseModalNetwork(object):
             self._create_od_pair(id_od, category_od)
 
         return self.od_pairs[id_od][category_od]
+
+    def remove_od(self, id_od, category_od=None):
+
+        if category_od:
+            del self.od_pairs[id_od][category_od]
+        else:
+            del self.od_pairs[id_od]
 
     def get_regrouping_categories(self):
         """Return a list with all the categories that can be regrouped."""
@@ -264,6 +301,43 @@ class BaseModalNetwork(object):
 
             # store a reference to lowest link in th od pair object
             od.set_lowest_scale_link(lowest_link)
+
+    def find_shortest_path(self, id_od, gauge_priority=True):
+
+        paths_network = find_paths.Network()
+        paths_network.create_graphs(self.links)
+        paths = paths_network.find_shortest_path(id_od)
+
+        # select path by gauge priority
+        if gauge_priority:
+
+            if "ancha" in paths:
+                path_nodes = paths["ancha"]["path"]
+                gauge = "ancha"
+            elif "media" in paths:
+                path_nodes = paths["media"]["path"]
+                gauge = "media"
+            elif "angosta" in paths:
+                path_nodes = paths["angosta"]["path"]
+                gauge = "angosta"
+            else:
+                raise Exception("No path has been found for " + id_od)
+
+        # select path by distance
+        else:
+
+            max_distance = sys.maxint
+            for possible_gauge in paths:
+
+                distance = paths[possible_gauge]["distance"]
+                if distance < max_distance:
+                    max_distance = distance
+                    path_nodes = paths[possible_gauge]["path"]
+                    gauge = possible_gauge
+
+        path = "-".join(path_nodes)
+
+        return Path(id_od, path, gauge)
 
     # booleans
     def has_od(self, id_od, category_od):
@@ -351,6 +425,18 @@ class BaseModalNetwork(object):
         rep.report_to_excel(self)
 
     # PRIVATE
+    def _use_existent_links(self, path):
+
+        RV = True
+        for id_link in path.links:
+            if ((not id_link in self.links) or
+                    (not path.gauge in self.links[id_link])):
+
+                RV = False
+                break
+
+        return RV
+
     def _create_od_pair(self, id_od, category_od):
         network_builder = self.BUILDER_CLASS()
         network_builder.create_od_pair(self, id_od, category_od)
@@ -385,9 +471,11 @@ class RoadwayNetwork(BaseModalNetwork):
     BUILDER_CLASS = RoadwayNetworkBuilder
     MODE_NAME = "Roadway"
 
-    def __init__(self, builder=None, projection_factor=1.0):
+    def __init__(self, builder=None, projection_factor=1.0,
+                 restrictions=False):
 
         self.projection_factor = projection_factor
+        self.restrictions = restrictions
         self.trucks = None
         super(RoadwayNetwork, self).__init__()
 
@@ -464,9 +552,11 @@ class RailwayNetwork(BaseModalNetwork):
     BUILDER_CLASS = RailwayNetworkBuilder
     MODE_NAME = "Railway"
 
-    def __init__(self, builder=None, projection_factor=1.0):
+    def __init__(self, builder=None, projection_factor=1.0,
+                 restrictions=False):
 
         self.projection_factor = projection_factor
+        self.restrictions = restrictions
         self.wagons = None
         self.locoms = None
         super(RailwayNetwork, self).__init__()
@@ -566,7 +656,9 @@ class RailwayNetwork(BaseModalNetwork):
         """
 
         # check if od is in paths
-        if not od.id in self.paths:
+        try:
+            self.get_path(od.id)
+        except:
             return False
 
         # check the path is operable by railway

@@ -10,7 +10,8 @@ class BaseModalNetworkBuilder(object):
     It must be subclassed to build up a RailwayNetwork or a RoadwayNetwork."""
 
     def __init__(self, xl_parameters=None, xl_od_pairs=None, xl_links=None,
-                 xl_paths=None, xl_od_pairs_current=None):
+                 xl_paths=None, xl_od_pairs_current=None,
+                 xl_restricted_links=None):
         """
         Args:
             xl_parameters: The path to excel file containing a list of general
@@ -29,6 +30,8 @@ class BaseModalNetworkBuilder(object):
         # loading parameters or defaults
         self.xl_parameters = xl_parameters or self.XL_PARAMETERS
         self.xl_od_pairs = xl_od_pairs or self.XL_OD_PAIRS
+        self.xl_restricted_links = (xl_restricted_links or
+                                    self.XL_RESTRICTED_LINKS)
         self.xl_links = xl_links or self.XL_LINKS
         self.xl_paths = xl_paths or self.XL_PATHS
 
@@ -47,21 +50,22 @@ class BaseModalNetworkBuilder(object):
         self._load_from_xl(XlLoadParam, self.xl_parameters, mn.params)
         print "Loading od pairs..."
         self._load_od_pairs_from_xl(mn.od_pairs, mn.projection_factor)
+        print "Loading restricted links..."
+        self._load_links_from_xl(self.xl_restricted_links, mn.restricted_links)
         print "Loading links..."
-        self._load_links_from_xl(mn.links)
+        self._load_links_from_xl(self.xl_links, mn.links)
         print "Loading paths..."
         self._load_from_xl(XlLoadPath, self.xl_paths, mn.paths)
 
-        # find path for each od pair
+        if mn.restrictions:
+            self._remove_restricted_links(mn)
+
         self._find_paths(mn)
 
-        # calculate distance of od pairs from link distances data
         self._calculate_od_distances(mn)
 
-        # calculate tons carried by each link
         self._calculate_link_tons(mn)
 
-        # store lowest link scale for each od pair
         mn.find_lowest_scale_links()
 
     def create_od_pair(self, mn, id_od, category_od):
@@ -71,8 +75,9 @@ class BaseModalNetworkBuilder(object):
         od.tons.category = category_od
 
         # assign path
-        path = mn.paths[od.id].path
-        gauge = mn.paths[od.id].gauge
+        path_obj = mn.get_path(od.id)
+        path = path_obj.path
+        gauge = path_obj.gauge
         od.set_path(path, gauge)
 
         # calculate distance
@@ -86,6 +91,12 @@ class BaseModalNetworkBuilder(object):
         mn.od_pairs[id_od][category_od] = od
 
     # PRIVATE
+    def _remove_restricted_links(self, mn):
+
+        for link in mn.iter_links(restricted=True):
+            if (link.id in mn.links) and (link.gauge in mn.links[link.id]):
+                mn.remove_link(link.id, link.gauge)
+
     def _load_from_xl(self, loader_class, xl_name, output_dict):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
@@ -139,9 +150,13 @@ class BaseModalNetworkBuilder(object):
             if (not od.has_declared_path()) and (od.id in mn.paths):
 
                 # assign path and gauge from RailwayNetwork.paths
-                path = mn.paths[od.id].path
-                gauge = mn.paths[od.id].gauge
-                od.set_path(path, gauge)
+                try:
+                    path_obj = mn.get_path(od.id)
+                    path = path_obj.path
+                    gauge = path_obj.gauge
+                    od.set_path(path, gauge)
+                except:
+                    mn.remove_od(od.id)
 
     def _calculate_od_distances(self, mn):
         """Uses links distances to calculate all od pair distances, storing
@@ -172,8 +187,8 @@ class BaseModalNetworkBuilder(object):
             try:
                 link = mn.links[id_link][od.gauge]
                 link.tons.add_original(ton=od.tons.get(),
-                                      categories=od.tons.category,
-                                      id_ods=od.id)
+                                       categories=od.tons.category,
+                                       id_ods=od.id)
 
             # if impossible, there is no link-gauge in the network for od_pair
             except:
@@ -187,6 +202,7 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
     XL_PARAMETERS = "data/roadway_parameters.xlsx"
     XL_OD_PAIRS = "data/roadway_od_pairs.xlsx"
+    XL_RESTRICTED_LINKS = "data/roadway_restricted_links.xlsx"
     XL_LINKS = "data/roadway_links.xlsx"
     XL_PATHS = "data/roadway_paths.xlsx"
 
@@ -210,11 +226,11 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
 
             link.net_to_gross_factor = rn.params["net_to_gross_factor"].value
 
-    def _load_links_from_xl(self, links):
+    def _load_links_from_xl(self, xl_links, links):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
-        for link in XlLoadRoadwayLink(self.xl_links):
+        for link in XlLoadRoadwayLink(xl_links):
 
             # add link.id entry if not already in output dict
             if link.id not in links:
@@ -228,6 +244,7 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
 
     XL_PARAMETERS = "data/railway_parameters.xlsx"
     XL_OD_PAIRS = "data/railway_od_pairs.xlsx"
+    XL_RESTRICTED_LINKS = "data/railway_restricted_links.xlsx"
     XL_LINKS = "data/railway_links.xlsx"
     XL_PATHS = "data/railway_paths.xlsx"
 
@@ -249,11 +266,11 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
 
         print "RailwayNetwork object has been succesfully built.\n"
 
-    def _load_links_from_xl(self, links):
+    def _load_links_from_xl(self, xl_links, links):
         """Iterate an excel with data using a specific loader_class and storing
         results to output_dict."""
 
-        for link in XlLoadRailwayLink(self.xl_links):
+        for link in XlLoadRailwayLink(xl_links):
 
             # add link.id entry if not already in output dict
             if link.id not in links:

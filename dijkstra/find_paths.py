@@ -76,8 +76,9 @@ class Network():
 
         return paths
 
-    def find_shortest_path(self, id_od, strategy_name, argument=None):
-        """Find shortest paths for each possible pair of nodes, by gauge."""
+    def find_shortest_path(self, id_od, strategy_name="isolated_gauges",
+                           argument=None):
+        """Find shortest path for a pair of nodes, by gauge."""
 
         path_finder = get_path_finder_strategy(strategy_name)
         node_a, node_b = self._id_od_to_nodes(id_od)
