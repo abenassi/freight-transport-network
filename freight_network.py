@@ -456,7 +456,7 @@ class FreightNetwork():
 def main():
 
     # initialize freight transport network
-    fn = FreightNetwork(projection_factor=1.0, restrictions=True)
+    fn = FreightNetwork(projection_factor=1.0, restrictions=False)
 
     # cost network at current situation
     scenario = "current situation"
@@ -473,13 +473,45 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods"
-    # print "Costing", scenario
-    # fn.min_network_cost()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
+    print "Costing", scenario
+    fn.min_network_cost()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"
+    print "Costing", scenario
+    fn.derive.all_to_roadway()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # WITH LINK RESTRICTIONS
+
+    # initialize freight transport network
+    fn = FreightNetwork(projection_factor=1.0, restrictions=True)
+
+    # cost network at current situation
+    scenario = "current situation RESTR"
+    print "Costing", scenario
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all possible freight to railway
+    scenario = "derive all to railway RESTR"
+    print "Costing", scenario
+    fn.derive.all_to_railway()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all but some links and some od pairs
+    scenario = "derive all to railway but some links and ods RESTR"
+    print "Costing", scenario
+    fn.min_network_cost()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
+
+    # cost network deriving all freight to roadway
+    scenario = "derive all to roadway RESTR"
     print "Costing", scenario
     fn.derive.all_to_roadway()
     fn.cost_network()
