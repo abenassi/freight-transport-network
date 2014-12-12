@@ -1,6 +1,7 @@
 from modal_networks import RailwayNetwork, RoadwayNetwork
 import numpy as np
 from optimization import WeakLinksAggregator, WeakOdsAggregator
+from optimization import LinksTrafficRerouter
 from modules import BaseReport
 
 """
@@ -12,7 +13,59 @@ from modules import BaseReport
 """
 
 
-class DerivationMethods():
+class ReroutingMethods(object):
+    """Rerouting methods to be inherited by FreightNetwork.
+
+    This class is used just to separate a bunch of strongly related methods
+    used by FreightNetwork class."""
+
+    def __init__(self, freight_network):
+        self.fn = freight_network
+
+    def reroute_link(self, id_rail_link, gauge_rail_link, allow_original=True):
+        """Reroute all ods using a railway link or derive to roadway."""
+
+        # list to store road od pairs receiving derivated freight
+        road_od_derivations = []
+
+        # list to store rerouted od pairs
+        rerouted_ods = []
+
+        # get rail link from the rail network
+        rail_link = self.fn.rail.get_link(id_rail_link, gauge_rail_link)
+
+        for rail_od in self.fn.rail.iter_od_pairs():
+
+            use_rail_link = rail_link.id in rail_od.links
+            use_same_gauge = rail_link.gauge == rail_od.gauge
+            if use_rail_link and use_same_gauge:
+
+                succeed = self.reroute_od(self.fn.rail, rail_od, rail_link)
+
+                if not succeed:
+                    # derive rail tons to roadway
+                    COEFF = 1.0
+                    road_od_derivation = self.od_to_roadway(rail_od, COEFF,
+                                                            allow_original)
+
+                    # store reference to road od pair derivation for reversion
+                    road_od_derivations.append(road_od_derivation)
+
+                else:
+                    rerouted_ods.append(rail_od)
+
+        return rerouted_ods, road_od_derivations
+
+    def reroute_od(self, modal_network, od, link):
+        """Change path of od to avoid using link."""
+        pass
+
+    def revert_reroute_od(self, modal_network, od):
+        """Restore original path of od."""
+        pass
+
+
+class DerivationMethods(object):
 
     """Railway/Roadway derivation methods to be inherited by FreightNetwork.
 
@@ -150,7 +203,7 @@ class DerivationMethods():
                         allow_original=True):
         """Derive all possible rail od pairs that use rail_link to road."""
 
-        # list to store rail od pairs receiving derivated freight
+        # list to store road od pairs receiving derivated freight
         road_od_derivations = []
 
         # get rail link from the rail network
@@ -162,7 +215,7 @@ class DerivationMethods():
             use_same_gauge = rail_link.gauge == rail_od.gauge
             if use_rail_link and use_same_gauge:
 
-                # derive road tons to railway
+                # derive rail tons to roadway
                 COEFF = 1.0
                 road_od_derivation = self.od_to_roadway(rail_od, COEFF,
                                                         allow_original)
@@ -340,6 +393,7 @@ class FreightNetwork():
 
     LINKS_OPTIMIZATION_CLASS = WeakLinksAggregator
     ODS_OPTIMIZATION_CLASS = WeakOdsAggregator
+    REROUTING_OPTIMIZATION_CLASS = LinksTrafficRerouter
 
     def __init__(self, railway_network=None, roadway_network=None,
                  projection_factor=1.0, restrictions=False):
@@ -351,6 +405,7 @@ class FreightNetwork():
             projection_factor=projection_factor, restrictions=restrictions)
 
         self.derive = DerivationMethods(self)
+        self.reroute = ReroutingMethods(self)
 
     # PUBLIC
     # iters and getters
@@ -390,7 +445,7 @@ class FreightNetwork():
 
     # optimizing strategies
     def min_network_cost_deriving_links(self):
-        """Find the modal split with minimum overall cost.
+        """Find modal split with minimum overall cost analyzing links.
 
         Derive traffic from one mode to the other looking for the minimum
         overall cost of freight transportation.
@@ -408,7 +463,7 @@ class FreightNetwork():
         self.LINKS_OPTIMIZATION_CLASS(self).optimize()
 
     def min_network_cost_deriving_ods(self):
-        """Find the modal split with minimum overall cost.
+        """Find modal split with minimum overall cost analyzing od pairs.
 
         Derive traffic from one mode to the other looking for the minimum
         overall cost of freight transportation.
@@ -425,6 +480,24 @@ class FreightNetwork():
 
         self.cost_network()
         self.ODS_OPTIMIZATION_CLASS(self).optimize()
+
+    def min_network_cost_rerouting_links(self):
+        """Find modal split with minimum overall cost rerouting traffic.
+
+        Remove railway links rerouting traffic through other links when
+        possible and deriving to roadway when origin-destination pair turns to
+        be impossible to be done in railway.
+
+        The algorithm try to remove one railway link at a time rerouting
+        traffic towards other links or moving it to roadway mode looking to
+        reduce overall cost of the entire bimodal network by removing the less
+        convinient links of the network.
+
+        At first sight, there is no way to know what combination of freed
+        railway links will reduce the overall cost."""
+
+        self.cost_network()
+        self.REROUTING_OPTIMIZATION_CLASS(self).optimize()
 
     def min_network_cost(self):
         self.derive.all_to_railway()

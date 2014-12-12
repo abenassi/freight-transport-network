@@ -1,30 +1,73 @@
-class BaseOptimizationStrategy():
+class BaseOptimizationStrategy(object):
 
     ALLOW_ORIGINAL = False
 
     def __init__(self, fn):
         self.fn = fn
 
-    def _revert_derivations(self, deriv_ods):
-
-        for road_od in deriv_ods:
-            self.fn.derive.od_to_railway(road_od)
-
     def _cost_has_increased(self, old_cost):
-
         self.fn.cost_network()
         new_cost = self.fn.total_cost
 
         return new_cost > old_cost
 
     def _get_total_cost(self):
-
         self.fn.cost_network()
 
         return self.fn.total_cost
 
 
-class WeakLinksAggregator(BaseOptimizationStrategy):
+class BaseDerivationStrategy(BaseOptimizationStrategy):
+
+    """docstring for BaseDerivationStrategy"""
+
+    def _revert_derivations(self, deriv_ods):
+        for road_od in deriv_ods:
+            self.fn.derive.od_to_railway(road_od)
+
+
+class BaseReroutingStrategy(BaseDerivationStrategy):
+
+    """docstring for BaseReroutingStrategy"""
+
+    def _revert_reroutings(self, rerouted_ods):
+        for rail_od in rerouted_ods:
+            self.fn.reroute.revert_reroute_od(self.fn.rail, rail_od)
+
+
+class LinksTrafficRerouter(BaseDerivationStrategy, BaseReroutingStrategy):
+
+    """docstring for LinksTrafficRerouter   """
+
+    def optimize(self):
+
+        for rail_link in self.fn.iter_rail_links(sorted_by=True):
+
+            # only check links that has more than zero tons
+            if rail_link.tons.get() > 0.0:
+
+                print "Analyzing rerouting of", rail_link,
+
+                old_cost = self._get_total_cost()
+
+                # reroute (or derive, if impossible) all od pairs using a link
+                rail_link_id = rail_link.id
+                rail_link_gauge = rail_link.gauge
+                res = self.fn.reroute.reroute_link(rail_link_id,
+                                                   rail_link_gauge,
+                                                   self.ALLOW_ORIGINAL)
+                rerouted_ods, deriv_ods = res
+
+                if self._cost_has_increased(old_cost):
+                    self._revert_derivations(deriv_ods)
+                    self._revert_reroutings(rerouted_ods)
+                    print "...ok."
+
+                else:
+                    print "...REROUTED!"
+
+
+class WeakLinksAggregator(BaseDerivationStrategy):
 
     def optimize(self):
 
@@ -52,7 +95,7 @@ class WeakLinksAggregator(BaseOptimizationStrategy):
                     print "...DERIVED BACK TO ROADWAY!"
 
 
-class WeakOdsAggregator(BaseOptimizationStrategy):
+class WeakOdsAggregator(BaseDerivationStrategy):
 
     def optimize(self):
 
