@@ -58,12 +58,62 @@ class ReroutingMethods(object):
 
     def reroute_od(self, modal_network, od, link):
         """Change path of od to avoid using link."""
-        pass
+
+        new_path = modal_network.find_shortest_path(od.id,
+                                                    restrictions=[link.id])
+
+        if new_path:
+            sef._update_links_tons(new_path, od)
+            od.set_path(new_path.path, od.gauge)
+            succeed = True
+
+        else:
+            succeed = False
+
+        return succeed
 
     def revert_reroute_od(self, modal_network, od):
         """Restore original path of od."""
-        pass
 
+        original_path = modal_network.get_path(od)
+
+        assert bool(original_path) = True, "No original path could be found."
+
+        sef._update_links_tons(original_path, od)
+
+        od.set_path(original_path.path, od.gauge)
+
+    # PRIVATE
+    def _update_links_tons(self, new_path, od):
+        """Move tons from old_links to new_links."""
+
+        old_links = od.links
+        new_links = new_path.links
+
+        original_ton = od.tons.get_original()
+        derived_ton = od.tons.get_derived()
+
+        # remove tons from modal_network old_links used by od
+        for old_id_link in old_links:
+            if old_id_link not in new_links:
+                old_link = modal_network.get_link(old_id_link, od.gauge)
+                old_link.tons.remove_original(ton=original_ton,
+                                              categories=od.category,
+                                              id_ods=od.id)
+                old_link.tons.remove_derived(ton=original_ton,
+                                             categories=od.category,
+                                             id_ods=od.id)
+
+        # add derived tons to modal_network new_links, used by the new path
+        for new_id_link in new_links:
+            if new_id_link not in new_links:
+                new_link = modal_network.get_link(new_id_link, od.gauge)
+                new_link.tons.add_original(ton=original_ton,
+                                           categories=od.category,
+                                           id_ods=od.id)
+                new_link.tons.add_derived(ton=original_ton,
+                                          categories=od.category,
+                                          id_ods=od.id)
 
 class DerivationMethods(object):
 

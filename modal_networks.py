@@ -302,42 +302,49 @@ class BaseModalNetwork(object):
             # store a reference to lowest link in th od pair object
             od.set_lowest_scale_link(lowest_link)
 
-    def find_shortest_path(self, id_od, gauge_priority=True):
+    def find_shortest_path(self, id_od, gauge_priority=True,
+                           restrictions=None):
 
         paths_network = find_paths.Network()
         paths_network.create_graphs(self.links)
-        paths = paths_network.find_shortest_path(id_od)
+        paths = paths_network.find_shortest_path(id_od, argument=restrictions)
 
-        # select path by gauge priority
-        if gauge_priority:
+        if len(paths) > 0:
+            # select path by gauge priority
+            if gauge_priority:
 
-            if "ancha" in paths:
-                path_nodes = paths["ancha"]["path"]
-                gauge = "ancha"
-            elif "media" in paths:
-                path_nodes = paths["media"]["path"]
-                gauge = "media"
-            elif "angosta" in paths:
-                path_nodes = paths["angosta"]["path"]
-                gauge = "angosta"
+                if "ancha" in paths:
+                    path_nodes = paths["ancha"]["path"]
+                    gauge = "ancha"
+                elif "media" in paths:
+                    path_nodes = paths["media"]["path"]
+                    gauge = "media"
+                elif "angosta" in paths:
+                    path_nodes = paths["angosta"]["path"]
+                    gauge = "angosta"
+
+            # select path by distance
             else:
-                raise Exception("No path has been found for " + id_od)
 
-        # select path by distance
+                max_distance = sys.maxint
+                for possible_gauge in paths:
+
+                    distance = paths[possible_gauge]["distance"]
+                    if distance < max_distance:
+                        max_distance = distance
+                        path_nodes = paths[possible_gauge]["path"]
+                        gauge = possible_gauge
+
+            path = "-".join(path_nodes)
+            RV = Path(id_od, path, gauge)
+
+        elif len(paths) == 0 and not restrictions:
+            raise Exception("No path has been found for " + id_od)
+
         else:
+            RV = None
 
-            max_distance = sys.maxint
-            for possible_gauge in paths:
-
-                distance = paths[possible_gauge]["distance"]
-                if distance < max_distance:
-                    max_distance = distance
-                    path_nodes = paths[possible_gauge]["path"]
-                    gauge = possible_gauge
-
-        path = "-".join(path_nodes)
-
-        return Path(id_od, path, gauge)
+        return RV
 
     # booleans
     def has_od(self, id_od, category_od):
