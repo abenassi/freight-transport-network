@@ -43,7 +43,10 @@ class BaseGraphBuilder(object):
 
     @classmethod
     def _are_nodes_in_one_column(self, first_cell_value):
-        return "-" in first_cell_value
+        if type(first_cell_value) == int:
+            return False
+        else:
+            return "-" in first_cell_value
 
     def _split_nodes(self, node_a, node_b=None):
 

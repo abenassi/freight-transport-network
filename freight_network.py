@@ -14,6 +14,7 @@ from modules import BaseReport
 
 
 class ReroutingMethods(object):
+
     """Rerouting methods to be inherited by FreightNetwork.
 
     This class is used just to separate a bunch of strongly related methods
@@ -77,7 +78,7 @@ class ReroutingMethods(object):
 
         original_path = modal_network.get_path(od)
 
-        assert bool(original_path) = True, "No original path could be found."
+        assert bool(original_path) == True, "No original path could be found."
 
         sef._update_links_tons(original_path, od)
 
@@ -114,6 +115,7 @@ class ReroutingMethods(object):
                 new_link.tons.add_derived(ton=original_ton,
                                           categories=od.category,
                                           id_ods=od.id)
+
 
 class DerivationMethods(object):
 
@@ -348,9 +350,13 @@ class DerivationMethods(object):
         else:
             orig_road_ton = road_od.tons.get_original()
 
-        # check if od pair meet minimum tons adn distance to be derivable
-        min_ton = orig_road_ton > self.fn.rail.params[
-            "min_tons_to_derive"].value
+        # check if od pair meet minimum derivable tons to be derivable
+        coeff = self._get_derivation_coefficient(orig_road_ton, road_od.dist,
+                                                 category_od)
+        derived_ton = orig_road_ton * coeff
+        min_ton = derived_ton > self.fn.rail.params["min_tons_to_derive"].value
+
+        # check if od pair meet minimum distance to be derivable
         min_dist = road_od.dist > self.fn.rail.params[
             "min_dist_to_derive"].value
 
@@ -377,18 +383,40 @@ class DerivationMethods(object):
             od: Roadway od pair that will be derived to Railway mode.
         """
 
-        # assign parameters to short variables
+        # take distance parameters
         max_dist = float(self.fn.rail.params["dist_of_max_derivation"].value)
         min_dist = float(self.fn.rail.params["min_dist_to_derive"].value)
-        max_tons = float(self.fn.rail.params["tons_of_max_derivation"].value)
-        min_tons = float(self.fn.rail.params["min_tons_to_derive"].value)
 
         # get maximum derivation depending on od product category
-        param_name = "max_derivation_" + str(category)
-        if param_name in self.fn.rail.params:
-            max_deriv = float(self.fn.rail.params[param_name].value)
+        max_param_name = "max_derivation_" + str(category)
+        if max_param_name in self.fn.rail.params:
+            max_deriv = float(self.fn.rail.params[max_param_name].value)
         else:
             max_deriv = float(self.fn.rail.params["max_derivation"].value)
+
+        # get minimum derivation depending on od product category
+        min_param_name = "min_derivation_" + str(category)
+        if min_param_name in self.fn.rail.params:
+            min_deriv = float(self.fn.rail.params[min_param_name].value)
+        else:
+            if not self.fn.rail.params["min_derivation"].value:
+                min_deriv = 0.0
+            else:
+                min_deriv = float(self.fn.rail.params["min_derivation"].value)
+
+        # calculate max and min od tons to meet max and min derivable tons
+        # this depends on max and min derivation coefficients
+        t_max = float(self.fn.rail.params["tons_of_max_derivation"].value)
+        max_tons = t_max / max_deriv
+        t_min = float(self.fn.rail.params["min_tons_to_derive"].value)
+        min_tons = t_min / min_deriv
+
+        # if max_tons is not greater than min_tons, it means that this
+        # dimension is more than fulfilled by the od pair, so od_ton is set to
+        # be the maximum
+        if not max_tons > min_tons:
+            od_ton = max_tons
+            min_tons = max_tons
 
         # assign max derivation if distance and tons are greater than max
         if distance >= max_dist and od_ton >= max_tons:
@@ -396,7 +424,7 @@ class DerivationMethods(object):
 
         # assign zero derivation if distance and tons are lower than min
         elif distance <= min_dist and od_ton >= min_tons:
-            deriv_coefficient = 0.0
+            deriv_coefficient = min_deriv
 
         # interpolate derivation coefficient otherwise
         else:
@@ -426,7 +454,9 @@ class DerivationMethods(object):
             total_dist = dist_to_min + dist_to_max
 
             # calculate coefficient as % of total vectorial distance
-            deriv_coefficient = max_deriv * (dist_to_min / total_dist)
+            delta_deriv = max_deriv - min_deriv
+            interpolation_coeff = dist_to_min / total_dist
+            deriv_coefficient = delta_deriv * interpolation_coeff + min_deriv
 
         return deriv_coefficient
 
@@ -611,30 +641,31 @@ def main():
     # WITH LINK RESTRICTIONS
 
     # initialize freight transport network
+    print "\nCalculating costs with link restrictions\n"
     fn = FreightNetwork(projection_factor=1.0, restrictions=True)
 
     # cost network at current situation
-    scenario = "current situation RESTR"
+    scenario = "current situation RESTRICTED"
     print "Costing", scenario
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all possible freight to railway
-    scenario = "derive all to railway RESTR"
+    scenario = "derive all to railway RESTRICTED"
     print "Costing", scenario
     fn.derive.all_to_railway()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all but some links and some od pairs
-    scenario = "derive all to railway but some links and ods RESTR"
+    scenario = "derive all to railway but some links and ods RESTRICTED"
     print "Costing", scenario
     fn.min_network_cost()
     fn.cost_network()
     fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
-    scenario = "derive all to roadway RESTR"
+    scenario = "derive all to roadway RESTRICTED"
     print "Costing", scenario
     fn.derive.all_to_roadway()
     fn.cost_network()

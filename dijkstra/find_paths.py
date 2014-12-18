@@ -4,6 +4,7 @@ import sys
 import time
 from openpyxl import load_workbook, Workbook
 from modules import get_graph_builder, get_path_finder_strategy
+from pprint import pprint
 
 """
     This module is meant to be visible for the user and to be used directly
@@ -184,6 +185,7 @@ def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
 
     # create graphs from links, find shortest paths and store then in excel
     network.create_graphs(wb)
+    # pprint(network.graphs)
     paths = network.find_shortest_paths(strategy_name, argument)
     network.store_paths_in_excel(paths, xl_output)
 
@@ -194,7 +196,7 @@ def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
 def main_railway():
     """Find shortest paths for the railway network."""
 
-    XL_INPUT = "data/railway_links_table.xlsx"
+    XL_INPUT = "data/railway_links.xlsx"
     XL_OUTPUT = "paths/railway_shortest_paths.xlsx"
     network = main(XL_INPUT, XL_OUTPUT)
 
@@ -204,7 +206,7 @@ def main_railway():
 def main_roadway():
     """Find shortest paths for the roadway network."""
 
-    XL_INPUT = "data/roadway_links_table.xlsx"
+    XL_INPUT = "data/roadway_links.xlsx"
     XL_OUTPUT = "paths/roadway_shortest_paths.xlsx"
     network = main(XL_INPUT, XL_OUTPUT)
 

@@ -33,7 +33,7 @@ class FreightNetworkTestCase(unittest.TestCase):
         self.assertEqual((1 - coeff) * road_ton, od_road.tons.get())
 
     def test_get_derivation_coefficient(self):
-        expected_coefficient = 0.41124272600318179
+        expected_coefficient = 0.53272937412718746
         tons = 1412010
         dist = 216
         categ = 1

@@ -26,7 +26,7 @@ class BaseDerivationStrategy(BaseOptimizationStrategy):
             self.fn.derive.od_to_railway(road_od)
 
 
-class BaseReroutingStrategy(BaseDerivationStrategy):
+class BaseReroutingStrategy(BaseOptimizationStrategy):
 
     """docstring for BaseReroutingStrategy"""
 

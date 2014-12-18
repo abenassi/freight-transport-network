@@ -302,29 +302,28 @@ class BaseModalNetwork(object):
             # store a reference to lowest link in th od pair object
             od.set_lowest_scale_link(lowest_link)
 
-    def find_shortest_path(self, id_od, gauge_priority=True,
+    def find_shortest_path(self, id_od,
+                           gauge_priority=["ancha", "media", "angosta"],
                            restrictions=None):
+
+        path_nodes = []
 
         paths_network = find_paths.Network()
         paths_network.create_graphs(self.links)
         paths = paths_network.find_shortest_path(id_od, argument=restrictions)
 
         if len(paths) > 0:
-            # select path by gauge priority
-            if gauge_priority:
 
-                if "ancha" in paths:
-                    path_nodes = paths["ancha"]["path"]
-                    gauge = "ancha"
-                elif "media" in paths:
-                    path_nodes = paths["media"]["path"]
-                    gauge = "media"
-                elif "angosta" in paths:
-                    path_nodes = paths["angosta"]["path"]
-                    gauge = "angosta"
+            # select path by gauge priority
+            if len(gauge_priority) > 0:
+
+                for gauge in gauge_priority:
+                    if gauge in paths:
+                        path_nodes = paths[gauge]["path"]
+                        break
 
             # select path by distance
-            else:
+            if len(path_nodes) == 0:
 
                 max_distance = sys.maxint
                 for possible_gauge in paths:
@@ -334,6 +333,9 @@ class BaseModalNetwork(object):
                         max_distance = distance
                         path_nodes = paths[possible_gauge]["path"]
                         gauge = possible_gauge
+
+            msg = "Returned paths are not being taken." + str(paths)
+            assert len(path_nodes) > 0, msg
 
             path = "-".join(path_nodes)
             RV = Path(id_od, path, gauge)
@@ -664,13 +666,13 @@ class RailwayNetwork(BaseModalNetwork):
 
         # check if od is in paths
         try:
-            self.get_path(od.id)
+            path_obj = self.get_path(od.id)
         except:
             return False
 
         # check the path is operable by railway
-        path = self.paths[od.id].path
-        gauge = self.paths[od.id].gauge
+        path = path_obj.path
+        gauge = path_obj.gauge
 
         has_path_and_gauge = bool(path and gauge)
         has_links = "-" in path
