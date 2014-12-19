@@ -37,10 +37,10 @@ class OD(BasePath):
 
         # path properties
         self.path = path
-        self.path_nodes = self._get_path_nodes()
+        self.path_nodes = self._get_path_nodes(self.path)
         self.gauge = gauge
         self.dist = dist
-        self.links = self._create_links_list()
+        self.links = self._create_links_list(self.path_nodes)
 
         # traffic properties
         self.lowest_link = None
@@ -106,8 +106,8 @@ class OD(BasePath):
         self.gauge = gauge
 
         # get path nodes from new path and create links dictionary
-        self.path_nodes = self._get_path_nodes()
-        self.links = self._create_links_list()
+        self.path_nodes = self._get_path_nodes(self.path)
+        self.links = self._create_links_list(self.path_nodes)
 
     def set_lowest_scale_link(self, link):
         self.lowest_link = link
@@ -116,10 +116,6 @@ class OD(BasePath):
     def has_declared_path(self):
         """Has a path data member, even if its a "not found" one."""
         return bool(self.path and self.gauge)
-
-    def is_intrazone(self):
-        """Check if origin = destination."""
-        return len(self.nodes) == 2 and self.nodes[0] == self.nodes[1]
 
     def has_operable_path(self):
         """Has a positive path that can be operated."""

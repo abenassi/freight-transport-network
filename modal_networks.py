@@ -6,6 +6,7 @@ from modules.builder.components.path import Path
 import math
 from dijkstra import find_paths
 import sys
+from pprint import pprint
 
 """
     This module is used by freight_network. It exposes classes for the two
@@ -315,7 +316,7 @@ class BaseModalNetwork(object):
         if len(paths) > 0:
 
             # select path by gauge priority
-            if len(gauge_priority) > 0:
+            if len(gauge_priority) > 0 and len(paths) > 1:
 
                 for gauge in gauge_priority:
                     if gauge in paths:

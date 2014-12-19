@@ -21,22 +21,26 @@ class BasePath(object):
 
         return dist
 
+    def is_intrazone(self):
+        """Check if origin = destination."""
+        return len(self.nodes) == 2 and self.nodes[0] == self.nodes[1]
+
     # PRIVATE
-    def _create_links_list(self):
+    def _create_links_list(self, path_nodes):
         """Create list with all links used by OD path."""
 
         # create emtpy dict to store links
         links = []
 
         # check there is a path
-        if self.path_nodes:
+        if path_nodes:
 
             # iterate through path nodes creating links
-            for i in xrange(len(self.path_nodes) - 1):
+            for i in xrange(len(path_nodes) - 1):
 
                 # take two consecutive nodes
-                node_a = int(self.path_nodes[i])
-                node_b = int(self.path_nodes[i + 1])
+                node_a = int(path_nodes[i])
+                node_b = int(path_nodes[i + 1])
 
                 # create link, putting first the node with less value
                 if node_a < node_b:
@@ -50,22 +54,27 @@ class BasePath(object):
 
         return links
 
-    def _get_path_nodes(self):
+    def _get_path_nodes(self, path):
         """Create list with all nodes in OD path."""
 
-        # check if OD has no path (when O == D)
-        if self.path and self.nodes[0] != self.nodes[1]:
+        if self.is_intrazone():
+            return None
+
+        elif path:
 
             # if possible, split path in nodes
             try:
-                return [int(i) for i in self.path.split("-")]
+                nodes = [int(i) for i in path.split("-")]
+
+                if nodes[-1] < nodes[0]:
+                    nodes.reverse()
+
+                return nodes
 
             # where path doesn't have "-" is not a valid path
             except:
                 return None
 
-        else:
-            return None
 
     def _get_safe_id(self, id):
         """Return id properly built.
@@ -90,6 +99,18 @@ class BasePath(object):
 
         return id_checked
 
+    def _path_nodes_to_string(self, path_nodes):
+        """Take a list of path nodes and return a string path with them."""
+
+        if type(path_nodes) == list:
+            path_nodes_str = [str(i) for i in path_nodes]
+            return "-".join(path_nodes_str)
+
+        elif type(path_nodes) == int:
+            return path_nodes
+
+        else:
+            return None
 
 class Path(BasePath):
 
@@ -99,13 +120,13 @@ class Path(BasePath):
 
     def __init__(self, id, path, gauge):
         self.id = self._get_safe_id(id)
-        self.path = path
-        self.gauge = gauge
         self.nodes = [int(i) for i in self.id.split("-")]
 
-        # path properties
-        self.path_nodes = self._get_path_nodes()
-        self.links = self._create_links_list()
+        self.path_nodes = self._get_path_nodes(path)
+        self.path = self._path_nodes_to_string(self.path_nodes)
+        self.links = self._create_links_list(self.path_nodes)
+
+        self.gauge = gauge
 
     def __repr__(self):
         return "OD: " + self.id.ljust(10) + \

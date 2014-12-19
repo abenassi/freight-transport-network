@@ -4,6 +4,7 @@ from modules.builder import RailwayNetworkBuilder
 from modal_networks import RailwayNetwork
 
 
+# @unittest.skip("RailwayNetwork test skipped")
 class RailwayNetworkTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -56,6 +57,49 @@ class RailwayNetworkTestCase(unittest.TestCase):
         self.rn.calc_infrastructure_cost()
         self.assertAlmostEqual(self.rn.total_cost_tk, 0.0424800010113669,
                                delta=0.0002)
+
+
+class BaseModalNetworkTestCase(unittest.TestCase):
+
+    def setUp(self):
+        XL_PATHS = os.path.join(os.path.dirname(__file__),
+                                "test_data/railway_paths2.xlsx")
+
+        # create test builder
+        builder = RailwayNetworkBuilder(xl_paths=XL_PATHS)
+        self.rn = RailwayNetwork(builder)
+
+    def test_find_shortest_path(self):
+
+        expected_path = "21-19-20-58-56"
+
+        path_obj = self.rn.find_shortest_path("21-56")
+        path = path_obj.path
+
+        self.assertEqual(path, expected_path)
+
+    @unittest.skip("Integration test skipped")
+    def test_find_shortest_path_integrated(self):
+
+        ok_paths = 0
+        different_paths = 0
+        for exp_path_obj in self.rn.paths.values():
+            expected_path = exp_path_obj.path
+            path = self.rn.find_shortest_path(exp_path_obj.id).path
+
+            # count matched and non-matched paths
+            if path == expected_path:
+                ok_paths += 1
+
+            else:
+                different_paths += 1
+                # if different_paths < 100:
+                #     print expected_path, path
+
+        # print "ok paths:", ok_paths, "different paths:", different_paths
+
+        self.assertEqual(ok_paths, 3037)
+        self.assertEqual(different_paths, 20)
 
 
 if __name__ == '__main__':
