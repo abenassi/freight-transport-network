@@ -626,10 +626,10 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods"
-    print "Costing", scenario
-    fn.min_network_cost()
-    fn.cost_network()
-    fn.report_to_excel(scenario, append_report=True)
+    # print "Costing", scenario
+    # fn.min_network_cost()
+    # fn.cost_network()
+    # fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"
@@ -659,10 +659,10 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods RESTRICTED"
-    print "Costing", scenario
-    fn.min_network_cost()
-    fn.cost_network()
-    fn.report_to_excel(scenario, append_report=True)
+    # print "Costing", scenario
+    # fn.min_network_cost()
+    # fn.cost_network()
+    # fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway RESTRICTED"

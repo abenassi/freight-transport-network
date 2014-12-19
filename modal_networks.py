@@ -44,6 +44,7 @@ class BaseModalNetwork(object):
 
         self.params = {}
         self.od_pairs = {}
+        self.od_pairs_removed = {}
         self.restricted_links = {}
         self.links = {}
         self.paths = {}
@@ -55,11 +56,17 @@ class BaseModalNetwork(object):
 
     # PUBLIC
     # iters
-    def iter_od_pairs(self, limit=None):
+    def iter_od_pairs(self, limit=None, pathless=False):
         """Iterate od pairs with an optional limit in number of results."""
 
+        # select normal od pairs or pathless od pairs
+        if not pathless:
+            od_pairs = self.od_pairs.values()
+        else:
+            od_pairs = self.od_pairs_removed.values()
+
         counter = 0
-        for od_pair in self.od_pairs.values():
+        for od_pair in od_pairs:
             for od_pair_category in od_pair.values():
 
                 # check if limit is reached
@@ -124,6 +131,17 @@ class BaseModalNetwork(object):
             total_tons += od.tons.get()
 
         return total_tons
+
+    @property
+    def pathless_ton(self):
+        """Sum all tons from od_pairs_removed that has no path in the model."""
+        total_pathless_tons = 0.0
+
+        # iterate through all od pairs adding its tons
+        for od in self.iter_od_pairs(pathless=True):
+            total_pathless_tons += od.tons.get()
+
+        return total_pathless_tons
 
     @property
     def average_distance(self):
@@ -245,10 +263,17 @@ class BaseModalNetwork(object):
         return self.od_pairs[id_od][category_od]
 
     def remove_od(self, id_od, category_od=None):
+        """Remove an od from the network and add it to removed od pairs."""
 
         if category_od:
+            od = self.od_pairs[id_od][category_od]
+            self._add_removed_od_pair(od)
             del self.od_pairs[id_od][category_od]
+
         else:
+            for category_od in self.od_pairs[id_od]:
+                od = self.od_pairs[id_od][category_od]
+                self._add_removed_od_pair(od)
             del self.od_pairs[id_od]
 
     def get_regrouping_categories(self):
@@ -467,6 +492,19 @@ class BaseModalNetwork(object):
                 # check if there is any od_pair left, of another category
                 if len(self.od_pairs[od.id]) == 0:
                     self.od_pairs.pop(od.id)
+
+    def _add_removed_od_pair(self, od):
+        """Add an od pair to removed od pair dictionary.
+
+        Od pairs that have no path are removed from the network, and stored
+        into od_pairs_removed dictionary in case they can be moved into another
+        network."""
+
+        if od.id not in self.od_pairs_removed:
+            self.od_pairs_removed[od.id] = {}
+
+        self.od_pairs_removed[od.id][od.category] = od
+
 
 
 class RoadwayNetwork(BaseModalNetwork):

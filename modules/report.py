@@ -166,7 +166,8 @@ class BaseReport():
                       rn.dimension,
                       rn.high_density_dimension,
                       rn.low_density_dimension,
-                      rn.density]
+                      rn.density,
+                      rn.pathless_ton]
 
             for value in values:
                 ws.cell(row=i_row, column=i_col).value = value
@@ -188,6 +189,7 @@ class BaseReport():
             ws.append(["high density dimension", rn.high_density_dimension])
             ws.append(["low density dimension", rn.low_density_dimension])
             ws.append(["density", rn.density])
+            ws.append(["pathless ton", rn.pathless_ton])
 
     def _report_costs(self, rn, wb, ws_name):
 

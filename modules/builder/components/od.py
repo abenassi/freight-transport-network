@@ -59,6 +59,10 @@ class OD(BasePath):
         return self.tons.get() < other.tons.get()
 
     # PUBLIC
+    @property
+    def category(self):
+        return self.tons.category
+
     # getters
     def get_attributes(self):
         return [self.id, self.gauge, self.dist, self.tons.get_original(),

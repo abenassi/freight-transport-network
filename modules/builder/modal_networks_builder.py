@@ -146,16 +146,20 @@ class BaseModalNetworkBuilder(object):
         # iterate all od_pairs
         for od in mn.iter_od_pairs():
 
-            # check if od_pair doesn't have a path and RailwayNetwork has one
-            if (not od.has_declared_path()) and (od.id in mn.paths):
+            # check if od_pair doesn't have a path
+            if (not od.has_declared_path()):
 
-                # assign path and gauge from RailwayNetwork.paths
+                # try to assign path and gauge asking path to the modal network
                 try:
                     path_obj = mn.get_path(od.id)
                     path = path_obj.path
                     gauge = path_obj.gauge
                     od.set_path(path, gauge)
+
+                # remove od pair if modal network has no path for it
                 except:
+                    print "Attention:", od.id, "has no path in " + \
+                          mn.MODE_NAME + " network! It will be removed"
                     mn.remove_od(od.id)
 
     def _calculate_od_distances(self, mn):
