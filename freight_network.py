@@ -277,6 +277,41 @@ class DerivationMethods(object):
 
         return road_od_derivations
 
+    def all_rail_pathless_to_roadway(self):
+        """Derive to roadway all rail od pairs that have no rail path."""
+
+        for pathless_rail_od in self.fn.rail.iter_od_pairs(pathless=True):
+            print pathless_rail_od.id, "pathless rail od is derived to roadway."
+            self.od_pathless_to_roadway(pathless_rail_od)
+
+    def od_pathless_to_roadway(self, rail_od):
+        """Derive a pathless rail od pair to roadway mode.
+
+        Args:
+            rail_od: Pathless rail OD pair to be derived.
+        """
+
+        # get od pair caracteristics and rail od pair that will receive freight
+        id_od = rail_od.id
+        category = rail_od.tons.category
+        road_od = self.fn.road.get_od(id_od, category)
+
+        coeff = 1.0
+        allow_original = True
+
+        orig_ton_derived, returned_ton = rail_od.derive_ton(road_od, coeff,
+                                                            allow_original)
+
+        # add derived tons to roadway links, used by road_od
+        for id_road_link in road_od.links:
+            road_link = self.fn.road.get_link(id_road_link, road_od.gauge)
+            road_link.tons.add_original(ton=returned_ton,
+                                        categories=category,
+                                        id_ods=id_od)
+            road_link.tons.add_derived(ton=orig_ton_derived,
+                                       categories=category,
+                                       id_ods=id_od)
+
     # PRIVATE
     def _derive_od(self, from_od, to_od, coeff, from_mode, to_mode,
                    allow_original=True):
@@ -486,6 +521,8 @@ class FreightNetwork():
 
         self.derive = DerivationMethods(self)
         self.reroute = ReroutingMethods(self)
+
+        self.derive.all_rail_pathless_to_roadway()
 
     # PUBLIC
     # iters and getters

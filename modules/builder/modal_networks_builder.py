@@ -159,7 +159,7 @@ class BaseModalNetworkBuilder(object):
                 # remove od pair if modal network has no path for it
                 except:
                     print "Attention:", od.id, "has no path in " + \
-                          mn.MODE_NAME + " network! It will be removed"
+                          mn.MODE_NAME + " network. Has been removed from this network."
                     mn.remove_od(od.id)
 
     def _calculate_od_distances(self, mn):
