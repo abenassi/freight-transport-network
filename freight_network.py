@@ -166,6 +166,10 @@ class DerivationMethods(object):
             coeff: Percentage of tons to be derived.
         """
 
+        # check that road od can be derived
+        if not self._road_od_pair_is_derivable(road_od):
+            return None
+
         # get od pair caracteristics and rail od pair that will receive freight
         id_od = road_od.id
         category = road_od.tons.category
@@ -647,6 +651,7 @@ def main():
 
     # initialize freight transport network
     fn = FreightNetwork(projection_factor=1.0, restrictions=False)
+    print "\n"
 
     # cost network at current situation
     scenario = "current situation"
@@ -663,10 +668,10 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods"
-    # print "Costing", scenario
-    # fn.min_network_cost()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
+    print "Costing", scenario
+    fn.min_network_cost()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway"
@@ -696,10 +701,10 @@ def main():
 
     # cost network deriving all but some links and some od pairs
     scenario = "derive all to railway but some links and ods RESTRICTED"
-    # print "Costing", scenario
-    # fn.min_network_cost()
-    # fn.cost_network()
-    # fn.report_to_excel(scenario, append_report=True)
+    print "Costing", scenario
+    fn.min_network_cost()
+    fn.cost_network()
+    fn.report_to_excel(scenario, append_report=True)
 
     # cost network deriving all freight to roadway
     scenario = "derive all to roadway RESTRICTED"
