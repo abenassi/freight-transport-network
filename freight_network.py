@@ -64,7 +64,7 @@ class ReroutingMethods(object):
                                                     restrictions=[link.id])
 
         if new_path:
-            sef._update_links_tons(new_path, od)
+            self._update_links_tons(new_path, od)
             od.set_path(new_path.path, od.gauge)
             succeed = True
 
@@ -78,9 +78,9 @@ class ReroutingMethods(object):
 
         original_path = modal_network.get_path(od)
 
-        assert bool(original_path) == True, "No original path could be found."
+        assert bool(original_path), "No original path could be found."
 
-        sef._update_links_tons(original_path, od)
+        self._update_links_tons(original_path, od)
 
         od.set_path(original_path.path, od.gauge)
 
@@ -97,22 +97,22 @@ class ReroutingMethods(object):
         # remove tons from modal_network old_links used by od
         for old_id_link in old_links:
             if old_id_link not in new_links:
-                old_link = modal_network.get_link(old_id_link, od.gauge)
+                old_link = self.modal_network.get_link(old_id_link, od.gauge)
                 old_link.tons.remove_original(ton=original_ton,
                                               categories=od.category,
                                               id_ods=od.id)
-                old_link.tons.remove_derived(ton=original_ton,
+                old_link.tons.remove_derived(ton=derived_ton,
                                              categories=od.category,
                                              id_ods=od.id)
 
         # add derived tons to modal_network new_links, used by the new path
         for new_id_link in new_links:
             if new_id_link not in new_links:
-                new_link = modal_network.get_link(new_id_link, od.gauge)
+                new_link = self.modal_network.get_link(new_id_link, od.gauge)
                 new_link.tons.add_original(ton=original_ton,
                                            categories=od.category,
                                            id_ods=od.id)
-                new_link.tons.add_derived(ton=original_ton,
+                new_link.tons.add_derived(ton=derived_ton,
                                           categories=od.category,
                                           id_ods=od.id)
 
@@ -285,7 +285,8 @@ class DerivationMethods(object):
         """Derive to roadway all rail od pairs that have no rail path."""
 
         for pathless_rail_od in self.fn.rail.iter_od_pairs(pathless=True):
-            print pathless_rail_od.id, "pathless rail od is derived to roadway."
+            msg = "pathless rail od is derived to roadway."
+            print pathless_rail_od.id, msg
             self.od_pathless_to_roadway(pathless_rail_od)
 
     def od_pathless_to_roadway(self, rail_od):
