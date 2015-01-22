@@ -168,6 +168,7 @@ class DerivationMethods(object):
 
         # check that road od can be derived
         if not self._road_od_pair_is_derivable(road_od):
+            print "no derivable"
             return None
 
         # get od pair caracteristics and rail od pair that will receive freight
