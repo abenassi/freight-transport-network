@@ -12,8 +12,16 @@ class BaseNetworkCost(object):
 
         return shadow_cost
 
+    def _capital_recovery_factor(self, int_rate, use_life):
+        """Calculate capital recovery factor."""
+
+        a = int_rate * pow(1 + int_rate, use_life)
+        b = pow(1 + int_rate, use_life) - 1
+
+        return a / b
 
 # ***   RAILWAY cost subclasses   *** #
+
 
 class RailwayMobilityCost(BaseNetworkCost):
 
@@ -38,8 +46,14 @@ class RailwayMobilityCost(BaseNetworkCost):
         """Calculate eac by ton_km of wagons."""
 
         # assign parameters to short variables
-        wagon_eac = self.rn.params["wagon_eac"].value
+        wagon_price = self.rn.params["wagon_price"].value
+        int_rate = self.rn.params["interest_rate"].value
+        use_life = self.rn.params["useful_life_wagon"].value
         num_wagons = self.rn.wagons.get_units_needed_by_time()
+
+        # calculate capital recovery factor and equivalent annual cost
+        crf = self._capital_recovery_factor(int_rate, use_life)
+        wagon_eac = wagon_price * crf
 
         # convert market cost to shadow cost
         market_cost = self._cost_eac_ton_km(wagon_eac, num_wagons)
@@ -51,8 +65,14 @@ class RailwayMobilityCost(BaseNetworkCost):
         """Calculate eac by ton_km of locomotives."""
 
         # assign parameters to short variables
-        locom_eac = self.rn.params["locomotive_eac"].value
+        locom_price = self.rn.params["locomotive_price"].value
+        int_rate = self.rn.params["interest_rate"].value
+        use_life = self.rn.params["useful_life_locom"].value
         num_locoms = self.rn.locoms.get_units_needed_by_time()
+
+        # calculate capital recovery factor and equivalent annual cost
+        crf = self._capital_recovery_factor(int_rate, use_life)
+        locom_eac = locom_price * crf
 
         # convert market cost to shadow cost
         market_cost = self._cost_eac_ton_km(locom_eac, num_locoms)
@@ -65,14 +85,13 @@ class RailwayMobilityCost(BaseNetworkCost):
 
         # assign parameters to short variables
         fuel_by_km = self.rn.params["fuel_cost_by_km"].value
-        loc_average_haul = self.rn.locoms.get_average_haul()
-        num_locoms = num_locoms = self.rn.locoms.get_units_needed_by_time()
+        loc_running = self.rn.locoms.get_running_time()
+        speed = self.rn.params["speed"].value
         lub_fuel_ratio = self.rn.params["lubricants_fuel_ratio"].value
 
         # calculate fuel_ton_km cost
         if self.total_ton_km > 0.1:
-            fuel_ton_km = fuel_by_km * loc_average_haul * \
-                num_locoms / self.total_ton_km
+            fuel_ton_km = fuel_by_km * loc_running * speed / self.total_ton_km
 
         else:
             fuel_ton_km = 0.0
@@ -113,7 +132,10 @@ class RailwayMobilityCost(BaseNetworkCost):
         """Calculate cost of manpower on board of train."""
 
         # assign parameters to short variables
-        cost_by_hour = self.rn.params["manpower_cost_by_loc_hour"].value
+        manpower_cost_by_hour = self.rn.params["manpower_cost_by_hour"].value
+        manpower_by_loc = self.rn.params["manpower_by_loc"]
+
+        cost_by_hour = manpower_cost_by_hour * manpower_by_loc
 
         # calculate locomotive hours with manpower on the train
         operation_hours = self.rn.locoms.get_operation_time()
@@ -212,14 +234,6 @@ class RailwayInfrastructureCost(BaseNetworkCost):
         shadow_cost = self._market_to_shadow_prices(market_cost)
 
         return shadow_cost
-
-    def _capital_recovery_factor(self, int_rate, use_life):
-        """Calculate capital recovery factor."""
-
-        a = int_rate * pow(1 + int_rate, use_life)
-        b = pow(1 + int_rate, use_life) - 1
-
-        return a / b
 
     def _cost_eac_main_track(self, gross_tk, dist):
 

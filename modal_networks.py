@@ -506,7 +506,6 @@ class BaseModalNetwork(object):
         self.od_pairs_removed[od.id][od.category] = od
 
 
-
 class RoadwayNetwork(BaseModalNetwork):
 
     """Represents a road network with methods to cost it.
