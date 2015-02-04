@@ -20,9 +20,8 @@ class BaseNetworkCost(object):
 
         return a / b
 
+
 # ***   RAILWAY cost subclasses   *** #
-
-
 class RailwayMobilityCost(BaseNetworkCost):
 
     MARKET_TO_SHADOW = "mobility_cost_rpc"
@@ -133,7 +132,7 @@ class RailwayMobilityCost(BaseNetworkCost):
 
         # assign parameters to short variables
         manpower_cost_by_hour = self.rn.params["manpower_cost_by_hour"].value
-        manpower_by_loc = self.rn.params["manpower_by_loc"]
+        manpower_by_loc = self.rn.params["manpower_by_loc"].value
 
         cost_by_hour = manpower_cost_by_hour * manpower_by_loc
 
@@ -157,19 +156,19 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
     MARKET_TO_SHADOW = "infrast_cost_rpc"
 
-    def _cost_detour(self, gross_tk, dist):
-        """Calculate equivalent annual cost of detours."""
+    def _cost_turnout(self, gross_tk, dist):
+        """Calculate equivalent annual cost of turnouts."""
 
-        # calculate number of detours needed
-        num_detours = self._calc_number_of_detours(gross_tk, dist)
+        # calculate number of turnouts needed
+        num_turnouts = self._calc_number_of_turnouts(gross_tk, dist)
 
-        # calculate wages cost to maintain detours
-        wages_by_detour = self.rn.params["yearly_wages_by_turnout"].value
-        total_wages_cost = num_detours * wages_by_detour
+        # calculate wages cost to maintain turnouts
+        wages_by_turnout = self.rn.params["yearly_wages_by_turnout"].value
+        total_wages_cost = num_turnouts * wages_by_turnout
 
-        # calculate eac of detour tracks
+        # calculate eac of turnout tracks
         density = gross_tk / dist
-        total_eac_cost = num_detours * self._cost_eac_track(density, 1.0,
+        total_eac_cost = num_turnouts * self._cost_eac_track(density, 1.0,
                                                             True)
 
         # convert market cost to shadow cost
@@ -178,8 +177,8 @@ class RailwayInfrastructureCost(BaseNetworkCost):
 
         return shadow_cost
 
-    def _calc_number_of_detours(self, gross_tk, dist):
-        """Calculate number of detours needed in a certain track."""
+    def _calc_number_of_turnouts(self, gross_tk, dist):
+        """Calculate number of turnouts needed in a certain track."""
 
         # store parameters in short-name variables
         max_turnout_distance = self.rn.params["turnout_freq"].value
@@ -192,9 +191,9 @@ class RailwayInfrastructureCost(BaseNetworkCost):
         if not density < max_turnout_density:
             t_distance = max_turnout_distance / (density / max_turnout_density)
 
-        num_detours = dist / t_distance
+        num_turnouts = dist / t_distance
 
-        return num_detours
+        return num_turnouts
 
     def _cost_eac_track(self, gross_tk, dist, main_track):
         """Calculate equivalent annual cost of track.
@@ -421,11 +420,26 @@ class RailwayTimeCost(BaseNetworkCost):
         # get parameters into short name variables
         truck_to_train_time = self.rn.params["ratio_truck_to_train_travel_time"].value
         speed = self.rn.params["speed"].value
+        turnout_time = self.rn.params["turnout_time"].value
+        regroup_time = self.rn.params["regroup_time"].value
 
-        # TODO: it needs to take into account idle time during travel!!!
-        # currently, only running time is being considered, temporarily running
-        # time is multiplied by two to approximate total time
-        return od.dist / speed / 24 * 2 * truck_to_train_time
+        # calculate days of train running
+        running_days = od.dist / speed / 24
+
+        # calculate days of train stopped in turnouts
+        num_turnouts = self.rn.get_turnouts(od.links, od.gauge)
+        idle_turnout_days = num_turnouts * turnout_time / 24
+
+        # calculate days of train stopped at regrouping tasks
+        if self.rn.od_can_be_regrouped(od):
+            num_regroups = self.rn.get_regroups(od.links, od.gauge)
+            idle_regroup_days = num_regroups * regroup_time / 24
+        else:
+            num_regroups = 0
+
+        total_days = running_days + idle_turnout_days + idle_regroup_days
+
+        return total_days * truck_to_train_time
 
 
 class RailwayNetworkCost(BaseNetworkCost):
@@ -454,7 +468,7 @@ class RailwayNetworkCost(BaseNetworkCost):
 
         # initialize return value
         RV = {}
-        RV["eac_detour"] = 0.0
+        RV["eac_turnout"] = 0.0
         RV["eac_track"] = 0.0
         RV["maintenance"] = 0.0
 
@@ -477,25 +491,25 @@ class RailwayNetworkCost(BaseNetworkCost):
                 link.main_track = main_track
 
                 # calculate costs of link infrastructure
-                eac_detour = ric._cost_detour(gross_tk, link.dist)
+                eac_turnout = ric._cost_turnout(gross_tk, link.dist)
                 eac_track = ric._cost_eac_track(gross_tk, link.dist,
                                                 main_track)
                 maintenance = ric._cost_infrast_maint(gross_tk,
                                                       link.dist)
 
                 # update RV cost category with traffic of the link
-                RV["eac_detour"] += eac_detour
+                RV["eac_turnout"] += eac_turnout
                 RV["eac_track"] += eac_track
                 RV["maintenance"] += maintenance
 
                 # write costs to link object
-                link.eac_detour = eac_detour
+                link.eac_turnout = eac_turnout
                 link.eac_track = eac_track
                 link.maintenance = maintenance
 
             # set all costs in the link to zero
             else:
-                link.eac_detour = 0.0
+                link.eac_turnout = 0.0
                 link.eac_track = 0.0
                 link.maintenance = 0.0
 
@@ -530,7 +544,6 @@ class RailwayNetworkCost(BaseNetworkCost):
 
 
 # ***   ROADWAY cost subclasses   *** #
-
 class RoadwayMobilityCost(BaseNetworkCost):
 
     MARKET_TO_SHADOW = "mobility_cost_rpc"

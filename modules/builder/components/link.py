@@ -95,8 +95,8 @@ class RailwayLink(BaseLink):
     FIELDS = ["id_link_gauge", "id_link", "gauge", "distance", "original_tons",
               "derived_tons",
               "tons", "idle_capacity_regroup", "idle_capacity_no_regroup",
-              "detour_cost", "track_cost", "maintenance_cost", "gross ton-km",
-              "num_detours", "track_type", "category_1", "category_2",
+              "turnout_cost", "track_cost", "maintenance_cost", "gross ton-km",
+              "num_turnouts", "track_type", "category_1", "category_2",
               "category_3", "category_4", "category_5", "net_to_gross_factor"]
 
     def __init__(self, id, distance, gauge):
@@ -107,13 +107,14 @@ class RailwayLink(BaseLink):
         # traffic parameters
         self.idle_capacity_regroup = 0.0
         self.idle_capacity_no_regroup = 0.0
+        self.regrouped = False
 
-        # detour parameters
+        # turnout parameters
         self.turnout_freq = None
         self.turnout_freq_max_density = None
 
         # track costs
-        self.eac_detour = None
+        self.eac_turnout = None
 
     def __repr__(self):
         return "Link: " + str(self.id).ljust(10) + \
@@ -129,9 +130,9 @@ class RailwayLink(BaseLink):
                 self.tons.get_original(),
                 self.tons.get_derived(), self.tons.get(),
                 self.idle_capacity_regroup,
-                self.idle_capacity_no_regroup, self.eac_detour,
+                self.idle_capacity_no_regroup, self.eac_turnout,
                 self.eac_track, self.maintenance, self.gross_ton_km,
-                self.number_of_detours,
+                self.number_of_turnouts,
                 self.main_track] + self.tons.get_by_category() + [self.net_to_gross_factor]
 
     @property
@@ -172,17 +173,17 @@ class RailwayLink(BaseLink):
         return gross_tk
 
     @property
-    def number_of_detours(self):
-        """Calculate number of detours needed at the link."""
+    def number_of_turnouts(self):
+        """Calculate number of turnouts needed at the link."""
 
         # check if there is traffic
         if self.gross_ton_km > 0.1:
-            num_detours = self._calc_number_of_detours(self.gross_ton_km,
+            num_turnouts = self._calc_number_of_turnouts(self.gross_ton_km,
                                                        self.dist)
         else:
-            num_detours = 0
+            num_turnouts = 0
 
-        return num_detours
+        return num_turnouts
 
     # regroup methods
     def regroup(self, idle_capacity_ton):
@@ -196,10 +197,12 @@ class RailwayLink(BaseLink):
             raise ValueError(msg)
 
         self.idle_capacity_regroup -= idle_capacity_ton
+        self.regrouped = True
 
     def revert_regroup(self, idle_capacity_ton):
         """Regain idle capacity passed in ton."""
         self.idle_capacity_regroup += idle_capacity_ton
+        self.regrouped = False
 
     def reset(self):
         self.eac_track = None
@@ -207,14 +210,15 @@ class RailwayLink(BaseLink):
 
         self.idle_capacity_regroup = 0.0
         self.idle_capacity_no_regroup = 0.0
-        self.eac_detour = 0.0
+        self.eac_turnout = 0.0
+        self.regrouped = False
 
         # check stored values of tons are significant
         self.tons.clean_insignificant_ton_values(0.01)
 
     # PRIVATE
-    def _calc_number_of_detours(self, gross_tk, dist):
-        """Calculate number of detours needed in a certain track."""
+    def _calc_number_of_turnouts(self, gross_tk, dist):
+        """Calculate number of turnouts needed in a certain track."""
 
         # store parameters in short-name variables
         max_turnout_distance = self.turnout_freq
@@ -227,6 +231,6 @@ class RailwayLink(BaseLink):
         if not density < max_turnout_density:
             t_distance = max_turnout_distance / (density / max_turnout_density)
 
-        num_detours = dist / t_distance
+        num_turnouts = dist / t_distance
 
-        return num_detours
+        return num_turnouts

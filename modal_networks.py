@@ -804,6 +804,69 @@ class RailwayNetwork(BaseModalNetwork):
             else:
                 link.idle_capacity_no_regroup -= idle_cap_w
 
+    def get_turnouts(self, id_links, gauge):
+        """Count turnouts placed in links passed.
+
+        Args:
+            id_links: list of link ids or a single link id (string)
+
+        Returns:
+            Number of turnouts in all the links.
+        """
+
+        num_turnouts = 0
+
+        # convert single link id in a list, if string passed
+        if not type(id_links) == list:
+            id_links = [id_links]
+
+        # sum turnouts
+        for id_link in id_links:
+            link = self.get_link(id_link, gauge)
+            num_turnouts += link.number_of_turnouts
+
+        return num_turnouts
+
+    def get_regroups(self, id_links, gauge):
+        """Count links that have been regrouped.
+
+        Args:
+            id_links: list of link ids or a single link id
+
+        Returns:
+            Number of regrouped links from the list passed.
+        """
+        num_regroups = 0
+
+        # convert single link id in a list, if string passed
+        if not type(id_links) == list:
+            id_links = [id_links]
+
+        # sum turnouts
+        for id_link in id_links:
+            link = self.get_link(id_link, gauge)
+
+            if link.regrouped:
+                num_regroups += 1
+
+        return num_regroups
+
+    def od_can_be_regrouped(self, od):
+        """Check if an od pair can be regrouped."""
+
+        regroup_category = self.params["regroup_" + str(od.category)].value
+
+        if not regroup_category:
+            raise Exception("There is no regroup category for " +
+                            str(od.category))
+
+        if int(regroup_category) == 1:
+            return True
+        elif int(regroup_category) == 0:
+            return False
+        else:
+            raise Exception("Regroup category parameter is not 0 or 1.")
+
     # PRIVATE
     def regroup_link(self, link):
 

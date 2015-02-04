@@ -224,7 +224,7 @@ class RoadwayNetworkBuilder(BaseModalNetworkBuilder):
         print "RoadwayNetwork object has been succesfully built.\n"
 
     def _set_link_parameters(self, rn):
-        """Set parameters to calculate number of detours needed per link."""
+        """Set parameters to calculate number of turnouts needed per link."""
 
         for link in rn.iter_links():
 
@@ -313,7 +313,7 @@ class RailwayNetworkBuilder(BaseModalNetworkBuilder):
         rn.locoms.regroup_time = rn.params["regroup_time"].value
 
     def _set_link_parameters(self, rn):
-        """Set parameters to calculate number of detours needed per link."""
+        """Set parameters to calculate number of turnouts needed per link."""
 
         for link in rn.iter_links():
             turnout_max_density = rn.params["turnout_freq_max_density"].value

@@ -89,20 +89,20 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
         eac = self.inf._cost_eac_secondary_track(gross_tk, dist)
         self.assertAlmostEqual(eac, expected_eac, delta=1)
 
-    def test_calc_number_of_detours(self):
-        num_detours = self.inf._calc_number_of_detours(self.gross_tk,
+    def test_calc_number_of_turnouts(self):
+        num_turnouts = self.inf._calc_number_of_turnouts(self.gross_tk,
                                                        self.dist)
-        self.assertAlmostEqual(num_detours, 76.83, 2)
+        self.assertAlmostEqual(num_turnouts, 76.83, 2)
 
-    def test_cost_eac_track_with_detours(self):
+    def test_cost_eac_track_with_turnouts(self):
         density = 2008271.0
         distance = 1.0
-        cost_eac_detour = self.inf._cost_eac_track(density, distance, True)
-        self.assertAlmostEqual(cost_eac_detour, 26460.433998923036, 2)
+        cost_eac_turnout = self.inf._cost_eac_track(density, distance, True)
+        self.assertAlmostEqual(cost_eac_turnout, 26460.433998923036, 2)
 
-    def test_cost_detour(self):
-        detours_cost = self.inf._cost_detour(self.gross_tk, self.dist)
-        self.assertAlmostEqual(detours_cost, 8226343.6445830725, delta=100000)
+    def test_cost_turnout(self):
+        turnouts_cost = self.inf._cost_turnout(self.gross_tk, self.dist)
+        self.assertAlmostEqual(turnouts_cost, 8226343.6445830725, delta=100000)
 
     # MOBILITY cost tests
     def test_cost_manpower(self):
@@ -116,7 +116,7 @@ class RailwayNetworkCostTestCase(unittest.TestCase):
     # TIME cost tests
     def test_cost_time(self):
         total_time_cost_tk = self.nc.cost_time()["total_time"]
-        self.assertAlmostEqual(total_time_cost_tk, 0.011905434303139083)
+        self.assertAlmostEqual(total_time_cost_tk, 0.012058865470056235)
 
     # AUXILIAR METHODS
     def _load_from_xl(self, loader_class, xl_name, output_dict):
