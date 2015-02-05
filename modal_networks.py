@@ -854,11 +854,8 @@ class RailwayNetwork(BaseModalNetwork):
     def od_can_be_regrouped(self, od):
         """Check if an od pair can be regrouped."""
 
-        regroup_category = self.params["regroup_" + str(od.category)].value
-
-        if not regroup_category:
-            raise Exception("There is no regroup category for " +
-                            str(od.category))
+        regroup_param = "regroup_" + str(od.category)
+        regroup_category = self.params[regroup_param].value
 
         if int(regroup_category) == 1:
             return True

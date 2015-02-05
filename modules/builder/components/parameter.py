@@ -4,8 +4,8 @@ class Parameter():
 
     def __init__(self, id_param, value, desc=None):
         self.id = id_param
+        self.value = value
         self.desc = desc
-        self.value = None
 
         # if value is passed, convert to float
         if value:
@@ -13,11 +13,6 @@ class Parameter():
 
     def __repr__(self):
 
-        if self.value:
-            value = self.NF.format(self.value)
-        else:
-            value = str(None)
-
         return "Parameter: " + str(self.id).ljust(28) + \
-               "Value: " + value.ljust(11) + \
+               "Value: " + str(self.value).ljust(11) + \
                "Description: " + str(self.desc)

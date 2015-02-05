@@ -435,7 +435,7 @@ class RailwayTimeCost(BaseNetworkCost):
             num_regroups = self.rn.get_regroups(od.links, od.gauge)
             idle_regroup_days = num_regroups * regroup_time / 24
         else:
-            num_regroups = 0
+            idle_regroup_days = 0
 
         total_days = running_days + idle_turnout_days + idle_regroup_days
 
