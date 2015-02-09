@@ -321,9 +321,9 @@ class RollingMaterial():
                 ws.append([data_member[0], data_member[1]])
 
             # copy function calls
-            ws.append(["get_units_needed_by_time",
+            ws.append(["units",
                        self.get_units_needed_by_time()])
-            ws.append(["get_average_haul",
+            ws.append(["average_haul",
                        self.get_average_haul()])
 
     # PRIVATE
