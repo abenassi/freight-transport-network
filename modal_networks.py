@@ -765,7 +765,7 @@ class RailwayNetwork(BaseModalNetwork):
             if can_be_regrouped:
                 link.idle_capacity_regroup += idle_cap_l
             else:
-                link.idle_capacity_no_regroup += idle_cap_w
+                link.idle_capacity_no_regroup += idle_cap_l
 
     def remove_mobility_requirements(self, od):
         """Takes an OD object and remove mobility requirements from network.
