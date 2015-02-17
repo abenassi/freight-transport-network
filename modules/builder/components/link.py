@@ -42,10 +42,25 @@ class BaseLink(object):
 
     @property
     def ton_km(self):
+        """Calculates ton-km being transported in a link.
+
+        >>> link = BaseLink("1-3", 100.0, "ancha")
+        >>> link.tons.add_original(10.0, 1, "1-3")
+        >>> link.ton_km
+        1000.0
+        """
         return self.tons.get() * self.dist
 
     @property
     def gross_ton_km(self):
+        """Calculates gross ton-km being transported in a link.
+
+        >>> link = BaseLink("1-3", 100.0, "ancha")
+        >>> link.tons.add_original(10.0, 1, "1-3")
+        >>> link.net_to_gross_factor = 2
+        >>> link.gross_ton_km
+        2000.0
+        """
         return self.ton_km * self.net_to_gross_factor
 
     @property
@@ -179,7 +194,7 @@ class RailwayLink(BaseLink):
         # check if there is traffic
         if self.gross_ton_km > 0.1:
             num_turnouts = self._calc_number_of_turnouts(self.gross_ton_km,
-                                                       self.dist)
+                                                         self.dist)
         else:
             num_turnouts = 0
 
@@ -234,3 +249,9 @@ class RailwayLink(BaseLink):
         num_turnouts = dist / t_distance
 
         return num_turnouts
+
+
+if __name__ == '__main__':
+
+    import doctest
+    doctest.testmod()
