@@ -64,11 +64,10 @@ python find_paths.py
 You could pass parameters to find shortest paths of any other links table you may have, providing:
 
 1. Name of excel from which links are to be taken
-2. Name of gauges of the network separated by commas
-3. Name of excel where calculated paths will be written
+2. Name of excel where calculated paths will be written
 
 ```cmd
-python find_paths.py xl_input.xlsx gauge1,gauge2,gauge3 xl_output.xlsx
+python find_paths.py xl_input.xlsx xl_output.xlsx
 ```
 
 Also, from the main folder of the package, you could import find_paths module in python:
@@ -77,10 +76,9 @@ Also, from the main folder of the package, you could import find_paths module in
 from dijkstra import find_paths
 
 xl_input = "xl_input.xlsx"
-network_names = ["gauge1", "gauge2", "gauge3"]
 xl_output = "xl_output.xlsx"
 
-find_paths.main(xl_input, network_names, xl_output)
+find_paths.main(xl_input, xl_output)
 ```
 
 Or you could execute railway and roadway main methods without parameters:

@@ -173,7 +173,6 @@ def main(xl_input, xl_output, strategy_name="isolated_gauges", argument=None):
 
     Args:
         xl_input: List of links of a network, by gauge.
-        gauge_names: Names of the different gauges that are in the network.
         xl_output: List of shortest paths between all nodes, by gauge.
     """
 
@@ -216,12 +215,11 @@ def main_roadway():
 if __name__ == "__main__":
 
     # parse arguments if called with arguments
-    if len(sys.argv) == 4:
+    if len(sys.argv) == 3:
         xl_input = sys.argv[1]
-        gauge_names = sys.argv[2].split("-")
-        xl_output = sys.argv[3]
+        xl_output = sys.argv[2]
 
-        main(xl_input, gauge_names, xl_output)
+        main(xl_input, xl_output)
 
     # call methods using default arguments if none are passed
     else:
